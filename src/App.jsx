@@ -319,11 +319,12 @@ export default function App() {
 
       const res = await fetch("/api/chat", {
         method: "POST",
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: apiMessages,
+                     headers: { "Content-Type": "application/json" },
+                     body: JSON.stringify({
+                     model: "claude-sonnet-4-20250514",
+                     max_tokens: 1000,
+                     system: SYSTEM_PROMPT,
+                     messages: apiMessages,
         }),
       });
       const data = await res.json();

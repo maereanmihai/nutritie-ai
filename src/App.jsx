@@ -69,7 +69,6 @@ Răspunzi concis, tehnic și structurat. Folosești emoji-uri relevante pentru l
 - **L-Carnitină** — Dimineața sau pre-antrenament, cu carbohidrați
 - **Magneziu bisglicinat** — Seara, cu 60–90 min înainte de somn
 - **Zinc** — Seara, departe de semințe dovleac și nuci braziliene
-- **Tadalafil doză mică** — Seara, consistent
 - **Vitamax** — Dimineața cu masă (zilele active — o zi da/una nu)
 - **Coenzima Q10** — Dimineața cu masă care conține grăsimi
 - **Vitamina D3** — Dimineața cu masă care conține grăsimi
@@ -145,7 +144,7 @@ function renderMarkdown(text) {
         row.split('|').filter(c => c.trim() !== '').map(c => c.trim())
       );
       result.push(
-        <table key={i} style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0', fontSize: '12px' }}>
+        <table key={i} style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0', fontSize: '14px' }}>
           <thead>
             <tr>{headers.map((h, j) => (
               <th key={j} style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid #1e2530', color: '#9ca3af', fontFamily: 'Space Mono, monospace', fontWeight: 700, letterSpacing: '0.05em' }}
@@ -233,7 +232,7 @@ function renderMarkdown(text) {
 
     // Regular paragraph
     result.push(
-      <p key={i} style={{ color: '#d1d5db', lineHeight: '1.6', margin: '2px 0' }}
+      <p key={i} style={{ color: '#d1d5db', lineHeight: '1.7', margin: '3px 0', fontSize: '15px' }}
         dangerouslySetInnerHTML={{ __html: inlineFormat(line) }} />
     );
     i++;
@@ -317,14 +316,14 @@ export default function App() {
         content: m.role === 'user' ? (m === userMsg ? fullText : m.content) : m.content
       }));
 
-      const res = await fetch("/api/chat", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
-                     headers: { "Content-Type": "application/json" },
-                     body: JSON.stringify({
-                     model: "claude-sonnet-4-20250514",
-                     max_tokens: 1000,
-                     system: SYSTEM_PROMPT,
-                     messages: apiMessages,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: SYSTEM_PROMPT,
+          messages: apiMessages,
         }),
       });
       const data = await res.json();
@@ -433,10 +432,10 @@ export default function App() {
         .clear-btn:hover { border-color: #ef4444; color: #ef4444; }
 
         .day-info {
-          font-size: 10px;
+          font-size: 12px;
           color: #4b5563;
           letter-spacing: 0.05em;
-          padding: 6px 16px;
+          padding: 8px 16px;
           background: #0d1017;
           border-bottom: 1px solid #111827;
           display: flex;
@@ -469,7 +468,7 @@ export default function App() {
           border-radius: 3px;
           color: #9ca3af;
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 11px;
+          font-size: 13px;
           cursor: pointer;
           white-space: nowrap;
           transition: all 0.15s;
@@ -563,10 +562,10 @@ export default function App() {
           padding: 10px 14px;
           color: #e8e0d0;
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 13px;
+          font-size: 16px;
           resize: none;
           outline: none;
-          min-height: 44px;
+          min-height: 48px;
           max-height: 140px;
           transition: border-color 0.15s;
           line-height: 1.5;
@@ -718,7 +717,7 @@ export default function App() {
               {m.role === "assistant" ? (
                 <div>{renderMarkdown(m.content)}</div>
               ) : (
-                <div style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.5' }}>{m.display || m.content}</div>
+                <div style={{ color: '#d1d5db', fontSize: '16px', lineHeight: '1.6' }}>{m.display || m.content}</div>
               )}
             </div>
           ))}

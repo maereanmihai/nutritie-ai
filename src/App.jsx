@@ -99,6 +99,12 @@ const DEFAULT_TEMPLATES = [
   { id:'cina',      name:'Cină ușoară',        icon:'🌙', items:[{id:'pastrav',qty:200},{id:'varza',qty:150},{id:'sfecla',qty:80}] },
 ];
 
+const QUICK_COMMANDS = [
+  {label:'Start zi', icon:'🌅', cmd:'Start zi'},
+  {label:'Total zi', icon:'📊', cmd:'Total zi'},
+  {label:'Analiză săpt.', icon:'📈', cmd:'Analiză săptămână'},
+];
+
 const RO_DAYS   = ['Du','Lu','Ma','Mi','Jo','Vi','Sâ'];
 const RO_MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
 

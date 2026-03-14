@@ -1390,6 +1390,144 @@ function WorkoutTab({workouts,setWorkouts,onSendToCoach,theme=THEMES.dark}){
 }
 
 // ─── STATS TAB ────────────────────────────────────────────────────────────────
+function TDEECalculator({theme=THEMES.dark}){
+  const [form,setForm]=useState(()=>ls('mp_tdee_form_v1',{
+    varsta:'45', inaltime:'188', greutate:'96', sex:'male',
+    activitate:'1.55', obiectiv:'deficit'
+  }));
+  const [result,setResult]=useState(null);
+
+  const ACTIVITATE=[
+    {val:'1.2',  label:'Sedentar',        desc:'Birou, fără sport'},
+    {val:'1.375',label:'Ușor activ',      desc:'1-3 zile/săpt'},
+    {val:'1.55', label:'Moderat activ',   desc:'3-5 zile/săpt'},
+    {val:'1.725',label:'Foarte activ',    desc:'6-7 zile/săpt'},
+    {val:'1.9',  label:'Extrem activ',    desc:'2x/zi sau muncă fizică'},
+  ];
+
+  const OBIECTIV=[
+    {val:'deficit_agresiv', label:'Slăbire rapidă',   kcal:-500, desc:'-500 kcal/zi'},
+    {val:'deficit',         label:'Slăbire moderată', kcal:-250, desc:'-250 kcal/zi'},
+    {val:'mentinere',       label:'Menținere',         kcal:0,    desc:'±0 kcal/zi'},
+    {val:'surplus',         label:'Creștere masă',     kcal:250,  desc:'+250 kcal/zi'},
+  ];
+
+  const calculate=()=>{
+    const v=parseInt(form.varsta),h=parseInt(form.inaltime),w=parseFloat(form.greutate);
+    if(!v||!h||!w)return;
+    // Mifflin-St Jeor
+    const bmr=form.sex==='male'?(10*w+6.25*h-5*v+5):(10*w+6.25*h-5*v-161);
+    const tdee=Math.round(bmr*parseFloat(form.activitate));
+    const obj=OBIECTIV.find(o=>o.val===form.obiectiv);
+    const target=tdee+(obj?.kcal||0);
+    const protein=Math.round(w*2.2); // 2.2g/kg
+    const fat=Math.round(target*0.25/9);
+    const carbs=Math.round((target-protein*4-fat*9)/4);
+    const bmi=Math.round(w/((h/100)**2)*10)/10;
+    const idealWeight=Math.round((22*(h/100)**2)*10)/10;
+    setResult({bmr:Math.round(bmr),tdee,target,protein,fat,carbs,bmi,idealWeight});
+    lsSet('mp_tdee_form_v1',form);
+  };
+
+  return(
+    <div style={{background:'rgba(59,130,246,0.05)',border:'1px solid rgba(59,130,246,0.2)',borderRadius:'16px',padding:'14px'}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#3b82f6',letterSpacing:'0.05em',marginBottom:'14px'}}>🧮 CALCULATOR TDEE & MACROS</div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'12px'}}>
+        {[
+          {key:'varsta',    label:'Vârstă (ani)',    placeholder:'45'},
+          {key:'inaltime',  label:'Înălțime (cm)',   placeholder:'188'},
+          {key:'greutate',  label:'Greutate (kg)',   placeholder:'96'},
+        ].map(({key,label,placeholder})=>(
+          <div key={key} style={key==='greutate'?{gridColumn:'1/-1'}:{}}>
+            <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'4px'}}>{label}</div>
+            <input type="number" value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}
+              placeholder={placeholder}
+              style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'8px',padding:'8px 10px',color:theme.text,fontSize:'15px',outline:'none',fontFamily:"'Inter',sans-serif",textAlign:'center'}}/>
+          </div>
+        ))}
+      </div>
+
+      <div style={{marginBottom:'12px'}}>
+        <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'6px'}}>SEX</div>
+        <div style={{display:'flex',gap:'8px'}}>
+          {[{val:'male',label:'👨 Bărbat'},{val:'female',label:'👩 Femeie'}].map(({val,label})=>(
+            <button key={val} onClick={()=>setForm(f=>({...f,sex:val}))}
+              style={{flex:1,padding:'8px',borderRadius:'10px',border:`1.5px solid ${form.sex===val?'#3b82f6':theme.border}`,
+                background:form.sex===val?'rgba(59,130,246,0.12)':'transparent',
+                color:form.sex===val?'#3b82f6':theme.text3,fontSize:'14px',fontWeight:700,cursor:'pointer'}}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{marginBottom:'12px'}}>
+        <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'6px'}}>NIVEL ACTIVITATE</div>
+        <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+          {ACTIVITATE.map(({val,label,desc})=>(
+            <button key={val} onClick={()=>setForm(f=>({...f,activitate:val}))}
+              style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',borderRadius:'10px',
+                border:`1.5px solid ${form.activitate===val?'#3b82f6':theme.border}`,
+                background:form.activitate===val?'rgba(59,130,246,0.1)':'transparent',cursor:'pointer'}}>
+              <span style={{fontSize:'13px',fontWeight:600,color:form.activitate===val?'#3b82f6':theme.text2}}>{label}</span>
+              <span style={{fontSize:'11px',color:theme.text3}}>{desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{marginBottom:'14px'}}>
+        <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'6px'}}>OBIECTIV</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
+          {OBIECTIV.map(({val,label,desc})=>(
+            <button key={val} onClick={()=>setForm(f=>({...f,obiectiv:val}))}
+              style={{padding:'8px 10px',borderRadius:'10px',border:`1.5px solid ${form.obiectiv===val?'#f97316':theme.border}`,
+                background:form.obiectiv===val?'rgba(249,115,22,0.1)':'transparent',cursor:'pointer',textAlign:'left'}}>
+              <div style={{fontSize:'12px',fontWeight:700,color:form.obiectiv===val?'#f97316':theme.text2}}>{label}</div>
+              <div style={{fontSize:'11px',color:theme.text3}}>{desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button onClick={calculate} style={{width:'100%',padding:'13px',background:'linear-gradient(135deg,#3b82f6,#6366f1)',border:'none',borderRadius:'12px',color:'#fff',fontSize:'15px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 4px 15px rgba(59,130,246,0.3)',marginBottom:'14px'}}>
+        🧮 CALCULEAZĂ
+      </button>
+
+      {result&&(
+        <div style={{display:'flex',flexDirection:'column',gap:'10px',animation:'tabIn 0.3s ease'}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+            {[
+              {l:'BMR',v:`${result.bmr} kcal`,c:'#8b5cf6',desc:'Metabolism bazal'},
+              {l:'TDEE',v:`${result.tdee} kcal`,c:'#3b82f6',desc:'Necesarul total'},
+              {l:'TARGET',v:`${result.target} kcal`,c:'#f97316',desc:'Cu obiectivul tău'},
+              {l:'BMI',v:result.bmi,c:result.bmi<25?'#4ade80':result.bmi<30?'#f59e0b':'#ef4444',desc:`Ideal: ${result.idealWeight}kg`},
+            ].map(({l,v,c,desc})=>(
+              <div key={l} style={{background:`${c}12`,border:`1px solid ${c}30`,borderRadius:'12px',padding:'12px',textAlign:'center'}}>
+                <div style={{fontSize:'10px',color:theme.text3,marginBottom:'3px',textTransform:'uppercase',fontWeight:700}}>{l}</div>
+                <div style={{fontSize:'20px',fontWeight:900,color:c,fontFamily:"'Barlow Condensed',sans-serif"}}>{v}</div>
+                <div style={{fontSize:'10px',color:theme.text4,marginTop:'2px'}}>{desc}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:'rgba(249,115,22,0.06)',border:'1px solid rgba(249,115,22,0.15)',borderRadius:'12px',padding:'12px'}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:'13px',color:'#f97316',marginBottom:'8px',letterSpacing:'0.05em'}}>MACROS RECOMANDATE / ZI</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
+              {[{l:'PROTEINE',v:`${result.protein}g`,c:'#8b5cf6'},{l:'CARBOHIDRAȚI',v:`${result.carbs}g`,c:'#3b82f6'},{l:'GRĂSIMI',v:`${result.fat}g`,c:'#10b981'}].map(({l,v,c})=>(
+                <div key={l} style={{textAlign:'center'}}>
+                  <div style={{fontSize:'9px',color:theme.text3,marginBottom:'2px',fontWeight:700}}>{l}</div>
+                  <div style={{fontSize:'18px',fontWeight:900,color:c,fontFamily:"'Barlow Condensed',sans-serif"}}>{v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function WeeklyComparison({stats,workouts,theme=THEMES.dark}){
   const getWeekKeys=(weeksAgo=0)=>{
     const keys=[];
@@ -1509,6 +1647,7 @@ function StatsTab({stats,workouts,onSendToCoach,setStats,theme=THEMES.dark}){
       {energyData.length>1&&<div style={{...panel(theme),padding:'16px'}}><LineChart data={energyData} color="#f59e0b" label="Energie" unit="/10" theme={theme}/></div>}
       {libidoData.length>1&&<div style={{...panel(theme),padding:'16px'}}><LineChart data={libidoData} color="#ec4899" label="Libido" unit="/10" theme={theme}/></div>}
       {weightData.length>0&&<div style={{...panel(theme),padding:'14px'}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'13px',letterSpacing:'0.1em',color:theme.text3,textTransform:'uppercase',marginBottom:'10px'}}>📋 Jurnal Greutate</div><div style={{display:'flex',flexDirection:'column',gap:'5px'}}>{[...weightData].reverse().map((d,i,arr)=><div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',background:theme.surface,borderRadius:'10px',border:`1px solid ${theme.border}`}}><span style={{fontSize:'13px',color:theme.text3}}>{d.date}</span><span style={{fontSize:'16px',fontWeight:700,color:'#f97316'}}>{d.value} kg</span>{arr[i+1]&&<span style={{fontSize:'12px',fontWeight:600,color:d.value<arr[i+1].value?'#4ade80':'#ef4444'}}>{d.value<arr[i+1].value?'↓':'↑'}{Math.abs(d.value-arr[i+1].value).toFixed(1)}</span>}</div>)}</div></div>}
+      <TDEECalculator theme={theme}/>
       <WeeklyComparison stats={stats} workouts={workouts} theme={theme}/>
       <BloodAnalysis theme={theme}/>
       <PhotoFoodAnalysis onSendToCoach={onSendToCoach} theme={theme}/>

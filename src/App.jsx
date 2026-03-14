@@ -795,7 +795,19 @@ function MacroBar({stats,dayType,theme=THEMES.dark}){
 function StreakBadge({stats}){
   const streak=calcStreak(stats);
   if(!streak)return null;
-  return(<div style={{display:'flex',alignItems:'center',gap:'4px',padding:'3px 10px',background:'rgba(251,191,36,0.1)',border:'1px solid rgba(251,191,36,0.25)',borderRadius:'100px',fontSize:'12px',fontWeight:700,color:'#fbbf24',whiteSpace:'nowrap'}}>🔥 {streak}d</div>);
+  const isHot=streak>=7;
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:'5px',padding:'4px 12px',
+      background:isHot?'linear-gradient(135deg,rgba(251,191,36,0.2),rgba(249,115,22,0.15))':'rgba(251,191,36,0.1)',
+      border:`1px solid ${isHot?'rgba(251,191,36,0.4)':'rgba(251,191,36,0.2)'}`,
+      borderRadius:'100px',fontWeight:800,color:'#fbbf24',whiteSpace:'nowrap',
+      boxShadow:isHot?'0 0 12px rgba(251,191,36,0.25)':'none',
+      animation:isHot?'pulseBadge 2s ease-in-out infinite':'none'}}>
+      <span style={{fontSize:'16px'}}>{isHot?'🔥':'⚡'}</span>
+      <span style={{fontSize:'13px',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>{streak}</span>
+      <span style={{fontSize:'10px',opacity:0.7}}>zile</span>
+    </div>
+  );
 }
 
 function CalendarPicker({selectedDate,onSelect,stats,workouts,theme=THEMES.dark}){
@@ -1378,6 +1390,83 @@ function WorkoutTab({workouts,setWorkouts,onSendToCoach,theme=THEMES.dark}){
 }
 
 // ─── STATS TAB ────────────────────────────────────────────────────────────────
+function WeeklyComparison({stats,workouts,theme=THEMES.dark}){
+  const getWeekKeys=(weeksAgo=0)=>{
+    const keys=[];
+    const today=new Date();
+    const dayOfWeek=(today.getDay()+6)%7; // 0=luni
+    const startOfWeek=new Date(today);
+    startOfWeek.setDate(today.getDate()-dayOfWeek-(weeksAgo*7));
+    for(let i=0;i<7;i++){
+      const d=new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate()+i);
+      keys.push(localDateKey(d));
+    }
+    return keys;
+  };
+
+  const thisWeek=getWeekKeys(0);
+  const lastWeek=getWeekKeys(1);
+
+  const calcWeekStats=(keys)=>{
+    const days=keys.map(k=>stats.daily?.[k]).filter(Boolean);
+    const weights=keys.map(k=>stats.weight?.[k]).filter(Boolean);
+    const workoutDays=keys.filter(k=>workouts.days?.[k]?.exercises?.length>0);
+    return{
+      avgCal:days.length?Math.round(days.reduce((a,d)=>a+(d.calories||0),0)/days.length):0,
+      avgProt:days.length?Math.round(days.reduce((a,d)=>a+(d.protein||0),0)/days.length):0,
+      loggedDays:days.length,
+      workoutDays:workoutDays.length,
+      avgWeight:weights.length?Math.round(weights.reduce((a,w)=>a+parseFloat(w),0)/weights.length*10)/10:null,
+    };
+  };
+
+  const tw=calcWeekStats(thisWeek);
+  const lw=calcWeekStats(lastWeek);
+
+  if(!tw.loggedDays&&!lw.loggedDays)return null;
+
+  const Diff=({curr,prev,unit='',inverse=false})=>{
+    if(!curr||!prev)return null;
+    const diff=curr-prev;
+    if(diff===0)return<span style={{fontSize:'11px',color:theme.text3}}>—</span>;
+    const positive=inverse?(diff<0):(diff>0);
+    return<span style={{fontSize:'11px',fontWeight:700,color:positive?'#4ade80':'#ef4444'}}>{diff>0?'+':''}{diff}{unit}</span>;
+  };
+
+  const COLS=[
+    {label:'Calorii medii',  twVal:tw.avgCal,  lwVal:lw.avgCal,  unit:' kcal', color:'#f97316'},
+    {label:'Proteine medii', twVal:tw.avgProt, lwVal:lw.avgProt, unit:'g',     color:'#8b5cf6'},
+    {label:'Zile logate',    twVal:tw.loggedDays,lwVal:lw.loggedDays,unit:'/7',color:'#3b82f6'},
+    {label:'Antrenamente',   twVal:tw.workoutDays,lwVal:lw.workoutDays,unit:'',color:'#10b981'},
+    {label:'Greutate medie', twVal:tw.avgWeight,lwVal:lw.avgWeight,unit:'kg',  color:'#d4a847'},
+  ];
+
+  return(
+    <div style={{background:'rgba(212,168,71,0.05)',border:'1px solid rgba(212,168,71,0.15)',borderRadius:'16px',padding:'14px'}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#d4a847',letterSpacing:'0.05em',marginBottom:'14px'}}>📊 COMPARAȚIE SĂPTĂMÂNI</div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:'0',marginBottom:'8px'}}>
+        {['METRIC','SĂPT. CURENTĂ','SĂPT. TRECUTĂ','±'].map((h,i)=>(
+          <div key={i} style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em',padding:'4px 8px',borderBottom:`1px solid ${theme.border}`,textAlign:i>0?'center':'left'}}>{h}</div>
+        ))}
+      </div>
+      {COLS.map(({label,twVal,lwVal,unit,color})=>(
+        <div key={label} style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:'0',borderBottom:`1px solid ${theme.border}`}}>
+          <div style={{padding:'10px 8px',fontSize:'13px',color:theme.text2,fontWeight:600}}>{label}</div>
+          <div style={{padding:'10px 8px',textAlign:'center',fontSize:'14px',fontWeight:800,color:twVal?color:theme.text4}}>{twVal||'—'}{twVal?unit:''}</div>
+          <div style={{padding:'10px 8px',textAlign:'center',fontSize:'14px',fontWeight:600,color:lwVal?theme.text3:theme.text4}}>{lwVal||'—'}{lwVal?unit:''}</div>
+          <div style={{padding:'10px 8px',textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Diff curr={twVal} prev={lwVal} unit={unit==='kg'?'kg':unit==='/7'?'':unit==='g'?'g':''} inverse={label.includes('Greutate')||label.includes('Calorii')}/>
+          </div>
+        </div>
+      ))}
+      <div style={{fontSize:'11px',color:theme.text3,marginTop:'8px',textAlign:'center'}}>
+        Verde = îmbunătățire · Roșu = scădere față de săptămâna trecută
+      </div>
+    </div>
+  );
+}
+
 function StatsTab({stats,workouts,onSendToCoach,setStats,theme=THEMES.dark}){
   const [sel,setSel]=useState(todayKey());
   const prep=(key,filter,valFn)=>Object.entries(stats[key]||{}).filter(filter).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([k,v])=>{const[,m,d]=k.split('-');return{date:`${d}/${m}`,value:valFn(v)};});
@@ -1420,6 +1509,7 @@ function StatsTab({stats,workouts,onSendToCoach,setStats,theme=THEMES.dark}){
       {energyData.length>1&&<div style={{...panel(theme),padding:'16px'}}><LineChart data={energyData} color="#f59e0b" label="Energie" unit="/10" theme={theme}/></div>}
       {libidoData.length>1&&<div style={{...panel(theme),padding:'16px'}}><LineChart data={libidoData} color="#ec4899" label="Libido" unit="/10" theme={theme}/></div>}
       {weightData.length>0&&<div style={{...panel(theme),padding:'14px'}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'13px',letterSpacing:'0.1em',color:theme.text3,textTransform:'uppercase',marginBottom:'10px'}}>📋 Jurnal Greutate</div><div style={{display:'flex',flexDirection:'column',gap:'5px'}}>{[...weightData].reverse().map((d,i,arr)=><div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',background:theme.surface,borderRadius:'10px',border:`1px solid ${theme.border}`}}><span style={{fontSize:'13px',color:theme.text3}}>{d.date}</span><span style={{fontSize:'16px',fontWeight:700,color:'#f97316'}}>{d.value} kg</span>{arr[i+1]&&<span style={{fontSize:'12px',fontWeight:600,color:d.value<arr[i+1].value?'#4ade80':'#ef4444'}}>{d.value<arr[i+1].value?'↓':'↑'}{Math.abs(d.value-arr[i+1].value).toFixed(1)}</span>}</div>)}</div></div>}
+      <WeeklyComparison stats={stats} workouts={workouts} theme={theme}/>
       <BloodAnalysis theme={theme}/>
       <PhotoFoodAnalysis onSendToCoach={onSendToCoach} theme={theme}/>
       <ExportPanel stats={stats} workouts={workouts} theme={theme}/>
@@ -1443,6 +1533,8 @@ export default function App(){
   const [workouts,setWorkouts]=useState(()=>loadWorkouts());
   const [picker,  setPicker]  =useState(false);
   const [showMealPlan,setShowMealPlan]=useState(false);
+  const [showWeightWidget,setShowWeightWidget]=useState(false);
+  const [quickWeight,setQuickWeight]=useState('');
   const [darkMode,setDarkMode]=useState(()=>ls(KEYS.theme,true));
   const messagesEndRef=useRef(null),textareaRef=useRef(null),messagesRef=useRef(messages);
   useEffect(()=>{messagesRef.current=messages;},[messages]);
@@ -1567,6 +1659,7 @@ export default function App(){
         select option{background:${darkMode?'#0a0d18':'#fff'};color:${textC};}
         @keyframes shimmer{0%{background-position:0% center;}100%{background-position:200% center;}}
         @keyframes tabIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes pulseBadge{0%,100%{box-shadow:0 0 8px rgba(251,191,36,0.2);}50%{box-shadow:0 0 18px rgba(251,191,36,0.5);}}
       `}</style>
 
       <div className="hdr">
@@ -1589,7 +1682,30 @@ export default function App(){
             <span>{currentDay?.icon}</span><span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'13px'}}>{currentDay?.label}</span><span style={{opacity:0.5}}>·</span><span style={{opacity:0.8,fontSize:'12px'}}>{currentDay?.desc}</span>
           </div>
           <div className="sbadge" style={{background:darkMode?'rgba(212,168,71,0.05)':'rgba(0,0,0,0.04)',border:`1px solid ${darkMode?'rgba(212,168,71,0.1)':borderC}`,color:darkMode?'rgba(160,144,112,0.7)':theme.text3}}>📅 {new Date().toLocaleDateString('ro-RO',{weekday:'short',day:'numeric',month:'short'})}</div>
+          <button onClick={()=>setShowWeightWidget(w=>!w)} style={{display:'flex',alignItems:'center',gap:'5px',padding:'4px 12px',background:'rgba(249,115,22,0.08)',border:'1px solid rgba(249,115,22,0.2)',borderRadius:'100px',color:'#f97316',fontSize:'12px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:"'Barlow Condensed',sans-serif"}}>
+            ⚖️ {stats.weight?.[todayKey()]?`${stats.weight[todayKey()]}kg`:'+ Greutate'}
+          </button>
         </div>
+        {showWeightWidget&&(
+          <div style={{display:'flex',gap:'8px',alignItems:'center',padding:'8px 0',borderTop:`1px solid ${darkMode?'rgba(212,168,71,0.08)':borderC}`}}>
+            <span style={{fontSize:'13px',color:darkMode?'rgba(212,168,71,0.7)':'#7a6a50',fontWeight:600,whiteSpace:'nowrap'}}>⚖️ Greutate azi:</span>
+            <input type="number" step="0.1" value={quickWeight} onChange={e=>setQuickWeight(e.target.value)}
+              placeholder="ex: 95.8"
+              style={{flex:1,background:darkMode?'rgba(212,168,71,0.06)':'rgba(0,0,0,0.05)',border:`1.5px solid ${darkMode?'rgba(212,168,71,0.2)':borderC}`,borderRadius:'10px',padding:'7px 12px',color:textC,fontSize:'15px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+            <span style={{fontSize:'13px',color:darkMode?'rgba(160,144,112,0.6)':'#7a6a50'}}>kg</span>
+            <button onClick={()=>{
+              if(!quickWeight||parseFloat(quickWeight)<=0)return;
+              const ns=loadStats();
+              ns.weight[todayKey()]=parseFloat(quickWeight);
+              saveStats(ns);setStats({...ns});
+              setQuickWeight('');setShowWeightWidget(false);
+              showToast(`⚖️ ${quickWeight}kg salvat!`);
+            }} style={{padding:'7px 14px',background:'linear-gradient(135deg,#d4a847,#f97316)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",whiteSpace:'nowrap'}}>
+              SALVEAZĂ
+            </button>
+            <button onClick={()=>setShowWeightWidget(false)} style={{padding:'7px 10px',background:'transparent',border:`1px solid ${darkMode?'rgba(212,168,71,0.15)':borderC}`,borderRadius:'10px',color:darkMode?'rgba(160,144,112,0.5)':'#7a6a50',fontSize:'13px',cursor:'pointer'}}>✕</button>
+          </div>
+        )}
       </div>
 
       <div className="tab-bar" style={{borderBottom:`1px solid ${darkMode?'rgba(212,168,71,0.1)':borderC}`,background:darkMode?'rgba(6,8,16,0.95)':bgHdr}}>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-// ─── System Prompt ────────────────────────────────────────────────
+// ─── System Prompt ────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `# ASISTENT PERSONAL — NUTRIȚIE, METABOLISM, PERFORMANȚĂ FIZICĂ & OPTIMIZARE HORMONALĂ
 
 ## IDENTITATE ȘI MISIUNE
@@ -17,7 +17,7 @@ Dacă nu există date de extras, NU adăuga JSON.
 ## PROFIL
 | Parametru | Valoare |
 |---|---|
-| Nume | Mihai, 45 ani, 188 cm, ~96 kg → țintă 88–90 kg |
+| Nume | Mihai, 45 ani, 188 cm, ~96 kg → Țintă 88–90 kg |
 | TDEE | 2.550–2.750 kcal/zi |
 | Antrenament | 2× Fullbody + 3× Split/săptămână |
 
@@ -36,8 +36,7 @@ L-Carnitină, Mg bisglicinat, Zinc, Vitamax, CoQ10, D3, Omega-3, Boron, Centrum 
 2. Nuci braziliene: max 1–2 buc/zi
 3. Somn <6h = alertă testosteron`;
 
-// ─── Style helpers ───────────────────────────────────────────────
-// Style helpers
+// ─── Style helpers ────────────────────────────────────────────────────────────
 const panel        = (th, r=16) => ({background:th.surface, border:`1px solid ${th.border}`, borderRadius:`${r}px`});
 const card         = (th, color) => ({background:`${color}12`, border:`1px solid ${color}30`, borderRadius:'12px'});
 const inputStyle   = (th) => ({background:th.surface, border:`1px solid ${th.border}`, borderRadius:'10px', padding:'10px 14px', color:th.text, fontSize:'16px', outline:'none', fontFamily:"'Inter',sans-serif", width:'100%'});
@@ -49,7 +48,7 @@ const secondaryBtn = (th) => ({padding:'10px', ...ghostBtn(th)});
 const pillBtn      = (th, active, color) => ({padding:'8px 16px', borderRadius:'10px', border:`1.5px solid ${active?color:th.border}`, background:active?`${color}15`:th.surface, color:active?color:th.text3, fontSize:'14px', fontWeight:700, cursor:'pointer', transition:'all 0.15s'});
 const accentPill   = (th, active, color) => ({padding:'6px 14px', borderRadius:'100px', border:`1.5px solid ${active?color:th.border}`, background:active?`${color}12`:th.surface, color:active?color:th.text3, fontSize:'12px', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:'0.05em'});
 
-// ─── Micro components ────────────────────────────────────────────
+// ─── Micro components ─────────────────────────────────────────────────────────
 function StatCard({label, value, unit, color, theme}) {
   return (
     <div style={{...card(theme,color), padding:'12px', textAlign:'center'}}>
@@ -94,14 +93,14 @@ function EmptyState({icon, title, subtitle, theme}) {
   );
 }
 
-// ─── API helper ──────────────────────────────────────────────────
+// ─── API helper ───────────────────────────────────────────────────────────────
 async function callCoach(messages, maxTokens=1200, system=SYSTEM_PROMPT){
   const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens,system,messages})});
   const data=await res.json();
   return data.content?.[0]?.text||'Eroare.';
 }
 
-// ─── Theme ────────────────────────────────────────────────────────
+// ─── Theme ────────────────────────────────────────────────────────────────────
 const THEMES = {
   dark: {
     bg: '#080b14', bg2: '#0d1220', bg3: '#111827',
@@ -119,7 +118,7 @@ const THEMES = {
   },
 };
 
-// ─── Constants ────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 const DAY_TYPES = [
   { val:'antrenament', label:'ANTRENAMENT', labelShort:'ANTR',  icon:'⚡', gradient:'linear-gradient(135deg,#f97316,#ef4444)', color:'#f97316', glow:'rgba(249,115,22,0.4)', desc:'2.150–2.250 kcal · 165–180g prot', calTarget:2200, protTarget:172 },
   { val:'normal',      label:'ZI ACTIVĂ',   labelShort:'ACTIV', icon:'🔥', gradient:'linear-gradient(135deg,#3b82f6,#6366f1)', color:'#3b82f6', glow:'rgba(59,130,246,0.4)',  desc:'1.900–2.000 kcal · 160–175g prot', calTarget:1950, protTarget:167 },
@@ -128,14 +127,14 @@ const DAY_TYPES = [
 
 const QUICK_COMMANDS = [
   {label:'Start zi', icon:'🌅', cmd:'Start zi'},
-  {label:'Total zi', icon:'📊', cmd:'Total zi'},
-  {label:'Analiză săpt.', icon:'📈', cmd:'Analiză săptămână'},
+  {label:'Total zi', icon:'📈', cmd:'Total zi'},
+  {label:'Analiză săpt.', icon:'📊', cmd:'Analiză săptămână'},
 ];
 
 const MUSCLE_GROUPS = [
   { id:'piept',    label:'Piept',    icon:'💪', color:'#ef4444' },
-  { id:'spate',    label:'Spate',    icon:'🔙', color:'#3b82f6' },
-  { id:'umeri',    label:'Umeri',    icon:'🏋️', color:'#8b5cf6' },
+  { id:'spate',    label:'Spate',    icon:'🏋', color:'#3b82f6' },
+  { id:'umeri',    label:'Umeri',    icon:'🏅', color:'#8b5cf6' },
   { id:'brate',    label:'Brațe',    icon:'💪', color:'#f59e0b' },
   { id:'picioare', label:'Picioare', icon:'🦵', color:'#10b981' },
   { id:'core',     label:'Core',     icon:'🎯', color:'#f97316' },
@@ -153,46 +152,67 @@ const EXERCISES = {
 const CARDIO_TYPES = [
   { id:'mers',     name:'Mers pe jos',  icon:'🚶', met:3.5, color:'#10b981' },
   { id:'alergare', name:'Alergare',     icon:'🏃', met:9.0, color:'#f97316' },
-  { id:'munca',    name:'Muncă fizică', icon:'🔨', met:4.0, color:'#f59e0b' },
+  { id:'munca',    name:'Muncă fizică', icon:'🔧', met:4.0, color:'#f59e0b' },
   { id:'bicicleta',name:'Bicicletă',    icon:'🚴', met:7.5, color:'#3b82f6' },
   { id:'inot',     name:'Înot',         icon:'🏊', met:8.0, color:'#6366f1' },
 ];
 
 const FOODS = [
-  { id:'ou',       name:'Ou întreg',       emoji:'🥚', unit:'buc', unitG:55,  kcal:155, p:13,  c:1.1, f:11,  cat:'proteine' },
-  { id:'albus',    name:'Albuș lichid',    emoji:'🥛', unit:'ml',  unitG:1,   kcal:52,  p:11,  c:0.7, f:0.2, cat:'proteine' },
-  { id:'iaurt',    name:'Iaurt proteic 2%',emoji:'🥣', unit:'g',   unitG:1,   kcal:65,  p:9,   c:5,   f:1.5, cat:'proteine' },
-  { id:'branza',   name:'Brânză de vaci',  emoji:'🧀', unit:'g',   unitG:1,   kcal:98,  p:12,  c:3.5, f:4,   cat:'proteine' },
-  { id:'parmezan', name:'Parmezan',        emoji:'🧀', unit:'g',   unitG:1,   kcal:431, p:38,  c:0,   f:29,  cat:'proteine' },
-  { id:'vita',     name:'Vită mușchi',     emoji:'🥩', unit:'g',   unitG:1,   kcal:158, p:26,  c:0,   f:6,   cat:'proteine' },
-  { id:'pui',      name:'Piept pui',       emoji:'🍗', unit:'g',   unitG:1,   kcal:165, p:31,  c:0,   f:3.6, cat:'proteine' },
-  { id:'pulpe',    name:'Pulpe pui',       emoji:'🍗', unit:'g',   unitG:1,   kcal:209, p:26,  c:0,   f:11,  cat:'proteine' },
-  { id:'pastrav',  name:'Păstrăv',         emoji:'🐟', unit:'g',   unitG:1,   kcal:148, p:21,  c:0,   f:7,   cat:'proteine' },
-  { id:'cartof_d', name:'Cartof dulce',    emoji:'🍠', unit:'g',   unitG:1,   kcal:86,  p:1.6, c:20,  f:0.1, cat:'carbs' },
-  { id:'cartof',   name:'Cartof',          emoji:'🥔', unit:'g',   unitG:1,   kcal:77,  p:2,   c:17,  f:0.1, cat:'carbs' },
-  { id:'ovaz',     name:'Ovăz',            emoji:'🌾', unit:'g',   unitG:1,   kcal:389, p:17,  c:66,  f:7,   cat:'carbs' },
-  { id:'ciuperci', name:'Ciuperci',        emoji:'🍄', unit:'g',   unitG:1,   kcal:22,  p:3.1, c:3.3, f:0.3, cat:'legume' },
-  { id:'sfecla',   name:'Sfeclă roșie',    emoji:'🫐', unit:'g',   unitG:1,   kcal:43,  p:1.6, c:9.6, f:0.2, cat:'legume' },
-  { id:'varza',    name:'Varză',           emoji:'🥬', unit:'g',   unitG:1,   kcal:25,  p:1.3, c:5.8, f:0.1, cat:'legume' },
-  { id:'varzam',   name:'Varză murată',    emoji:'🥬', unit:'g',   unitG:1,   kcal:19,  p:0.9, c:4.3, f:0.1, cat:'legume' },
-  { id:'ulei',     name:'Ulei măsline',    emoji:'🫒', unit:'ml',  unitG:0.9, kcal:884, p:0,   c:0,   f:100, cat:'grasimi' },
-  { id:'chia',     name:'Semințe chia',    emoji:'🌱', unit:'g',   unitG:1,   kcal:486, p:17,  c:42,  f:31,  cat:'grasimi' },
-  { id:'psyllium', name:'Psyllium',        emoji:'🌿', unit:'g',   unitG:1,   kcal:200, p:2,   c:85,  f:1,   cat:'grasimi' },
+  // ─── PROTEINE ───
+  { id:'ou',         name:'Ou întreg',        emoji:'🥚', unit:'buc', unitG:55,  kcal:155, p:13,  c:1.1, f:11,  cat:'proteine' },
+  { id:'albus',      name:'Albuș lichid',     emoji:'🥛', unit:'ml',  unitG:1,   kcal:52,  p:11,  c:0.7, f:0.2, cat:'proteine' },
+  { id:'iaurt',      name:'Iaurt proteic 2%', emoji:'🥛', unit:'g',   unitG:1,   kcal:65,  p:9,   c:5,   f:1.5, cat:'proteine' },
+  { id:'branza',     name:'Brânză de vaci',   emoji:'🧀', unit:'g',   unitG:1,   kcal:98,  p:12,  c:3.5, f:4,   cat:'proteine' },
+  { id:'cottage',    name:'Brânză Cottage',   emoji:'🧀', unit:'g',   unitG:1,   kcal:98,  p:11,  c:3.4, f:4.3, cat:'proteine' },
+  { id:'fagaras',    name:'Brânză Făgăraș',   emoji:'🧀', unit:'g',   unitG:1,   kcal:263, p:18,  c:2,   f:21,  cat:'proteine' },
+  { id:'parmezan',   name:'Parmezan',         emoji:'🧀', unit:'g',   unitG:1,   kcal:431, p:38,  c:0,   f:29,  cat:'proteine' },
+  { id:'vita',       name:'Vită mușchi',      emoji:'🥩', unit:'g',   unitG:1,   kcal:158, p:26,  c:0,   f:6,   cat:'proteine' },
+  { id:'pui',        name:'Piept pui',        emoji:'🍗', unit:'g',   unitG:1,   kcal:165, p:31,  c:0,   f:3.6, cat:'proteine' },
+  { id:'pulpe',      name:'Pulpe pui',        emoji:'🍗', unit:'g',   unitG:1,   kcal:209, p:26,  c:0,   f:11,  cat:'proteine' },
+  { id:'pastrav',    name:'Păstrăv',          emoji:'🐟', unit:'g',   unitG:1,   kcal:148, p:21,  c:0,   f:7,   cat:'proteine' },
+  // ─── CARBS ───
+  { id:'cartof_d',   name:'Cartof dulce',     emoji:'🍠', unit:'g',   unitG:1,   kcal:86,  p:1.6, c:20,  f:0.1, cat:'carbs' },
+  { id:'cartof',     name:'Cartof',           emoji:'🥔', unit:'g',   unitG:1,   kcal:77,  p:2,   c:17,  f:0.1, cat:'carbs' },
+  { id:'ovaz',       name:'Ovăz',             emoji:'🌾', unit:'g',   unitG:1,   kcal:389, p:17,  c:66,  f:7,   cat:'carbs' },
+  { id:'orez',       name:'Orez fiert',       emoji:'🍚', unit:'g',   unitG:1,   kcal:130, p:2.7, c:28,  f:0.3, cat:'carbs' },
+  { id:'banana',     name:'Banană',           emoji:'🍌', unit:'buc', unitG:120, kcal:89,  p:1.1, c:23,  f:0.3, cat:'carbs' },
+  { id:'mar',        name:'Măr',              emoji:'🍎', unit:'buc', unitG:150, kcal:52,  p:0.3, c:14,  f:0.2, cat:'carbs' },
+  { id:'para',       name:'Pară',             emoji:'🍐', unit:'buc', unitG:160, kcal:57,  p:0.4, c:15,  f:0.1, cat:'carbs' },
+  { id:'paine_n',    name:'Pâine neagră',     emoji:'🍞', unit:'felie', unitG:30, kcal:65,  p:2.5, c:12,  f:0.8, cat:'carbs' },
+  // ─── LEGUME ───
+  { id:'ciuperci',   name:'Ciuperci',         emoji:'🍄', unit:'g',   unitG:1,   kcal:22,  p:3.1, c:3.3, f:0.3, cat:'legume' },
+  { id:'sfecla',     name:'Sfeclă roșie',     emoji:'🟣', unit:'g',   unitG:1,   kcal:43,  p:1.6, c:9.6, f:0.2, cat:'legume' },
+  { id:'varza',      name:'Varză',            emoji:'🥬', unit:'g',   unitG:1,   kcal:25,  p:1.3, c:5.8, f:0.1, cat:'legume' },
+  { id:'varzam',     name:'Varză murată',     emoji:'🥬', unit:'g',   unitG:1,   kcal:19,  p:0.9, c:4.3, f:0.1, cat:'legume' },
+  { id:'ardei_k',    name:'Ardei Kapia',      emoji:'🫑', unit:'g',   unitG:1,   kcal:31,  p:1,   c:6,   f:0.3, cat:'legume' },
+  { id:'conopida',   name:'Conopidă',         emoji:'🥦', unit:'g',   unitG:1,   kcal:25,  p:1.9, c:5,   f:0.3, cat:'legume' },
+  // ─── GRĂSIMI ───
+  { id:'ulei',       name:'Ulei măsline',     emoji:'🫒', unit:'ml',  unitG:0.9, kcal:884, p:0,   c:0,   f:100, cat:'grasimi' },
+  { id:'chia',       name:'Semințe chia',     emoji:'🌱', unit:'g',   unitG:1,   kcal:486, p:17,  c:42,  f:31,  cat:'grasimi' },
+  { id:'psyllium',   name:'Psyllium',         emoji:'🌿', unit:'g',   unitG:1,   kcal:200, p:2,   c:85,  f:1,   cat:'grasimi' },
+  { id:'migdale',    name:'Migdale',          emoji:'🌰', unit:'g',   unitG:1,   kcal:579, p:21,  c:22,  f:50,  cat:'grasimi' },
+  { id:'cioc_n',     name:'Ciocolată neagră 85%', emoji:'🍫', unit:'g', unitG:1, kcal:598, p:8,   c:46,  f:43,  cat:'grasimi' },
 ];
 
-const FOOD_CATS = [{id:'all',label:'Toate'},{id:'proteine',label:'Proteine'},{id:'carbs',label:'Carbs'},{id:'legume',label:'Legume'},{id:'grasimi',label:'Grăsimi'}];
+const FOOD_CATS = [
+  {id:'all',label:'Toate'},
+  {id:'proteine',label:'Proteine'},
+  {id:'carbs',label:'Carbs'},
+  {id:'legume',label:'Legume'},
+  {id:'grasimi',label:'Grăsimi'}
+];
 
 const DEFAULT_TEMPLATES = [
   { id:'mic_dejun', name:'Mic dejun standard', icon:'🌅', items:[{id:'ou',qty:3},{id:'albus',qty:100},{id:'ovaz',qty:50}] },
   { id:'post_antr', name:'Post-antrenament',   icon:'💪', items:[{id:'pui',qty:200},{id:'cartof_d',qty:150},{id:'branza',qty:50}] },
-  { id:'pranz',     name:'Prânz proteic',      icon:'🍽️', items:[{id:'pui',qty:180},{id:'ciuperci',qty:100},{id:'varza',qty:100},{id:'ulei',qty:10}] },
+  { id:'pranz',     name:'Prânz proteic',      icon:'🍽', items:[{id:'pui',qty:180},{id:'ciuperci',qty:100},{id:'varza',qty:100},{id:'ulei',qty:10}] },
   { id:'cina',      name:'Cină ușoară',        icon:'🌙', items:[{id:'pastrav',qty:200},{id:'varza',qty:150},{id:'sfecla',qty:80}] },
 ];
 
 const RO_DAYS   = ['Du','Lu','Ma','Mi','Jo','Vi','Sâ'];
 const RO_MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
 
-// ─── Storage ──────────────────────────────────────────────────────
+// ─── Storage ──────────────────────────────────────────────────────────────────
 const KEYS = {
   session:'mp_session_v7', stats:'mp_stats_v7', workout:'mp_workout_v7',
   pattern:'mp_patterns_v1', templates:'mp_tpl_v1', photos:'mp_photos_v1',
@@ -213,13 +233,13 @@ function saveWorkouts(w){ lsSet(KEYS.workout,w); }
 function localDateKey(date=new Date()){const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');return `${y}-${m}-${d}`;}
 function todayKey(){ return localDateKey(); }
 
-// ─── Helpers ──────────────────────────────────────────────────────
-function calcMacros(food,qty){ const g=food.unit==='buc'?qty*food.unitG:food.unit==='ml'?qty*food.unitG:qty,f=g/100; return{kcal:Math.round(food.kcal*f),p:Math.round(food.p*f*10)/10,c:Math.round(food.c*f*10)/10,fat:Math.round(food.f*f*10)/10}; }
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function calcMacros(food,qty){ const g=food.unit==='buc'?qty*food.unitG:food.unit==='ml'?qty*food.unitG:food.unit==='felie'?qty*food.unitG:qty,f=g/100; return{kcal:Math.round(food.kcal*f),p:Math.round(food.p*f*10)/10,c:Math.round(food.c*f*10)/10,fat:Math.round(food.f*f*10)/10}; }
 function calcTemplateMacros(items){ return items.reduce((a,item)=>{ const food=FOODS.find(f=>f.id===item.id);if(!food)return a;const m=calcMacros(food,item.qty);return{kcal:a.kcal+m.kcal,p:a.p+m.p,c:a.c+m.c,fat:a.fat+m.fat}; },{kcal:0,p:0,c:0,fat:0}); }
 function calcBurned(met,min){ return Math.round((met*3.5*96/200)*min); }
 function calcStreak(stats){if(!stats?.daily)return 0;let streak=0;const cur=new Date();for(let i=0;i<60;i++){const k=localDateKey(cur);if(stats.daily[k])streak++;else if(i>0)break;cur.setDate(cur.getDate()-1);}return streak;}
 
-// ─── Markdown ─────────────────────────────────────────────────────
+// ─── Markdown ─────────────────────────────────────────────────────────────────
 function escapeHtml(str=''){return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function inlineFormat(t, th){
   const safe=escapeHtml(t);
@@ -248,7 +268,7 @@ function renderMarkdown(text, th){
     if(line.trim().match(/^---+$/)){result.push(<hr key={i} style={{border:'none',borderTop:`1px solid ${brd}`,margin:'14px 0'}}/>);i++;continue;}
     if(line.match(/^[\-\*] /)){
       const items=[];while(i<lines.length&&lines[i].match(/^[\-\*] /)){items.push(lines[i].slice(2));i++;}
-      result.push(<ul key={i} style={{margin:'8px 0',paddingLeft:0,listStyle:'none'}}>{items.map((item,j)=><li key={j} style={{color:body,marginBottom:'6px',display:'flex',gap:'10px',alignItems:'flex-start',fontSize:'15px',lineHeight:'1.55'}}><span style={{background:'linear-gradient(135deg,#f97316,#ef4444)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',flexShrink:0,fontWeight:800}}>▸</span><span dangerouslySetInnerHTML={{__html:inlineFormat(item,th)}}/></li>)}</ul>);
+      result.push(<ul key={i} style={{margin:'8px 0',paddingLeft:0,listStyle:'none'}}>{items.map((item,j)=><li key={j} style={{color:body,marginBottom:'6px',display:'flex',gap:'10px',alignItems:'flex-start',fontSize:'15px',lineHeight:'1.55'}}><span style={{background:'linear-gradient(135deg,#f97316,#ef4444)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',flexShrink:0,fontWeight:800}}>◆</span><span dangerouslySetInnerHTML={{__html:inlineFormat(item,th)}}/></li>)}</ul>);
       continue;
     }
     if(line.match(/^\d+\. /)){
@@ -262,7 +282,7 @@ function renderMarkdown(text, th){
   return result;
 }
 
-// ─── Mini Line Chart ──────────────────────────────────────────────
+// ─── Mini Line Chart ──────────────────────────────────────────────────────────
 function LineChart({data,color,label,unit,target,theme=THEMES.dark}){
   if(!data||data.length===0)return<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'90px',color:theme.text3,fontSize:'13px'}}>Nicio dată</div>;
   const vals=data.map(d=>d.value),min=Math.min(...vals)-1,max=Math.max(...vals)+1,W=300,H=90;
@@ -293,21 +313,8 @@ function WaterTracker({stats, setStats, theme=THEMES.dark}) {
   const target = 3400;
   const pct = Math.min(100, Math.round((ml/target)*100));
   const color = pct>=100?'#4ade80':pct>=70?'#3b82f6':'#f97316';
-
-  const add = (amount) => {
-    const ns = loadStats();
-    if (!ns.water) ns.water = {};
-    ns.water[key] = (ns.water[key]||0) + amount;
-    saveStats(ns); setStats({...ns});
-  };
-
-  const reset = () => {
-    const ns = loadStats();
-    if (!ns.water) ns.water = {};
-    ns.water[key] = 0;
-    saveStats(ns); setStats({...ns});
-  };
-
+  const add = (amount) => {const ns = loadStats();if (!ns.water) ns.water = {};ns.water[key] = (ns.water[key]||0) + amount;saveStats(ns); setStats({...ns});};
+  const reset = () => {const ns = loadStats();if (!ns.water) ns.water = {};ns.water[key] = 0;saveStats(ns); setStats({...ns});};
   return (
     <div style={{background:'rgba(59,130,246,0.06)',border:'1px solid rgba(59,130,246,0.18)',borderRadius:'16px',padding:'14px'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
@@ -331,32 +338,23 @@ function WaterTracker({stats, setStats, theme=THEMES.dark}) {
   );
 }
 
-// ─── 2. REST TIMER ────────────────────────────────────────────────
 function RestTimer({theme=THEMES.dark}) {
   const [duration, setDuration] = useState(90);
   const [remaining, setRemaining] = useState(null);
   const [running, setRunning] = useState(false);
   const intervalRef = useRef(null);
-
   useEffect(()=>{
-    if (running && remaining > 0) {
-      intervalRef.current = setInterval(()=>setRemaining(r=>r-1), 1000);
-    } else if (remaining === 0) {
-      setRunning(false);
-      if (typeof navigator!=='undefined'&&'vibrate' in navigator) navigator.vibrate([200,100,200]);
-      if (typeof Notification!=='undefined'&&Notification.permission==='granted') new Notification('⏱️ Rest finalizat!',{body:'Pregătit pentru următorul set!'});
-    }
+    if (running && remaining > 0) {intervalRef.current = setInterval(()=>setRemaining(r=>r-1), 1000);}
+    else if (remaining === 0) {setRunning(false);if (typeof navigator!=='undefined'&&'vibrate' in navigator) navigator.vibrate([200,100,200]);}
     return ()=>clearInterval(intervalRef.current);
   },[running, remaining]);
-
   const start = (dur) => { setDuration(dur); setRemaining(dur); setRunning(true); };
   const stop  = () => { setRunning(false); setRemaining(null); clearInterval(intervalRef.current); };
   const pct   = remaining!==null ? Math.round((remaining/duration)*100) : 100;
   const color = remaining!==null&&remaining<=10?'#ef4444':remaining!==null&&remaining<=30?'#f59e0b':'#10b981';
-
   return (
     <div style={{background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.18)',borderRadius:'16px',padding:'14px'}}>
-      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#10b981',letterSpacing:'0.05em',marginBottom:'12px'}}>⏱️ REST TIMER</div>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#10b981',letterSpacing:'0.05em',marginBottom:'12px'}}>⏱ REST TIMER</div>
       {running && remaining !== null ? (
         <div style={{textAlign:'center'}}>
           <div style={{position:'relative',width:'120px',height:'120px',margin:'0 auto 14px'}}>
@@ -388,26 +386,13 @@ function RestTimer({theme=THEMES.dark}) {
   );
 }
 
-// ─── 3. EXERCISE PROGRESS CHART ───────────────────────────────────
 function ExerciseProgress({workouts, theme=THEMES.dark}) {
   const [selEx, setSelEx] = useState('squat');
-
-  const progressData = Object.entries(workouts.days||{})
-    .sort(([a],[b])=>a.localeCompare(b))
-    .slice(-20)
-    .flatMap(([date,day])=>{
-      const matches=(day.exercises||[]).filter(e=>e.id===selEx);
-      if(!matches.length)return[];
-      const maxKg=Math.max(...matches.flatMap(ex=>ex.sets.map(s=>parseFloat(s.kg)||0)));
-      const[,m,d]=date.split('-');
-      return[{date:`${d}/${m}`,value:maxKg}];
-    });
-
+  const progressData = Object.entries(workouts.days||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-20).flatMap(([date,day])=>{const matches=(day.exercises||[]).filter(e=>e.id===selEx);if(!matches.length)return[];const maxKg=Math.max(...matches.flatMap(ex=>ex.sets.map(s=>parseFloat(s.kg)||0)));const[,m,d]=date.split('-');return[{date:`${d}/${m}`,value:maxKg}];});
   const pr = progressData.length ? Math.max(...progressData.map(d=>d.value)) : 0;
-
   return (
     <div style={{...panel(theme),padding:'14px'}}>
-      <SectionTitle icon="📈" label="PROGRES EXERCIȚIU" color={theme.text2} theme={theme}/>
+      <SectionTitle icon="📊" label="PROGRES EXERCIȚIU" color={theme.text2} theme={theme}/>
       <select value={selEx} onChange={e=>setSelEx(e.target.value)} style={{...selectStyle(theme),marginBottom:'12px'}}>
         {Object.entries(EXERCISES).map(([group,exList])=>(
           <optgroup key={group} label={group.toUpperCase()}>
@@ -415,225 +400,68 @@ function ExerciseProgress({workouts, theme=THEMES.dark}) {
           </optgroup>
         ))}
       </select>
-      {progressData.length>1 ? (
-        <>
-          <LineChart data={progressData} color="#f59e0b" label="Greutate maximă" unit=" kg" theme={theme}/>
-          <div style={{marginTop:'10px',textAlign:'center',padding:'8px',background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:'10px'}}>
-            <span style={{fontSize:'12px',color:theme.text3}}>RECORD PERSONAL: </span>
-            <span style={{fontSize:'18px',fontWeight:800,color:'#f59e0b',fontFamily:"'Barlow Condensed',sans-serif"}}>{pr} kg 🏆</span>
-          </div>
-        </>
-      ) : (
-        <EmptyState subtitle="Loghează cel puțin 2 sesiuni pentru a vedea progresul." theme={theme}/>
-      )}
+      {progressData.length>1 ? (<><LineChart data={progressData} color="#f59e0b" label="Greutate maximă" unit=" kg" theme={theme}/><div style={{marginTop:'10px',textAlign:'center',padding:'8px',background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:'10px'}}><span style={{fontSize:'12px',color:theme.text3}}>RECORD PERSONAL: </span><span style={{fontSize:'18px',fontWeight:800,color:'#f59e0b',fontFamily:"'Barlow Condensed',sans-serif"}}>{pr} kg 🏅</span></div></>) : (<EmptyState subtitle="Loghează cel puțin 2 sesiuni pentru a vedea progresul." theme={theme}/>)}
     </div>
   );
 }
 
-// ─── 4. HRV & WELLBEING TRACKER ───────────────────────────────────
 function WellbeingTracker({onSendToCoach, theme=THEMES.dark}) {
-  const [energy,  setEnergy]  = useState('');
-  const [libido,  setLibido]  = useState('');
-  const [sleep,   setSleep]   = useState('');
-  const [sleepQ,  setSleepQ]  = useState('');
-  const [recovery,setRecovery]= useState('');
-  const [saved,   setSaved]   = useState(false);
-
-  const hrvData = ls(KEYS.hrv, {});
-  const todayHrv = hrvData[todayKey()];
-
-  const handleSave = () => {
-    if (!energy && !libido && !sleep) return;
-    const entry = { energy:energy?parseInt(energy):null, libido:libido?parseInt(libido):null, sleep:sleep?parseFloat(sleep):null, sleepQuality:sleepQ?parseInt(sleepQ):null, recovery:recovery?parseInt(recovery):null, time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}) };
-    const newData = {...hrvData, [todayKey()]:entry};
-    lsSet(KEYS.hrv, newData);
-    setSaved(true);
-    const parts = [];
-    if (energy)   parts.push(`Energie: ${energy}/10`);
-    if (libido)   parts.push(`Libido: ${libido}/10`);
-    if (recovery) parts.push(`Recuperare: ${recovery}/10`);
-    if (sleep)    parts.push(`Somn: ${sleep}h (calitate ${sleepQ}/10)`);
-    if (parts.length) onSendToCoach(parts.join(', '));
-    setTimeout(()=>setSaved(false), 2000);
-  };
-
-  const ScoreInput = ({label, value, setValue, color}) => (
-    <div>
-      <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em',marginBottom:'6px'}}>{label}</div>
-      <div style={{display:'flex',gap:'4px'}}>
-        {[1,2,3,4,5,6,7,8,9,10].map(n=>(
-          <button key={n} onClick={()=>setValue(String(n))} style={{flex:1,padding:'8px 2px',borderRadius:'6px',border:`1px solid ${parseInt(value)>=n?color:theme.softBorder}`,background:parseInt(value)>=n?`${color}20`:'transparent',color:parseInt(value)>=n?color:theme.text4,fontSize:'11px',fontWeight:700,cursor:'pointer',transition:'all 0.1s'}}>{n}</button>
-        ))}
-      </div>
-    </div>
-  );
-
+  const [energy,setEnergy]=useState('');const [libido,setLibido]=useState('');const [sleep,setSleep]=useState('');const [sleepQ,setSleepQ]=useState('');const [recovery,setRecovery]=useState('');const [saved,setSaved]=useState(false);
+  const hrvData = ls(KEYS.hrv, {});const todayHrv = hrvData[todayKey()];
+  const handleSave = () => {if (!energy && !libido && !sleep) return;const entry = { energy:energy?parseInt(energy):null, libido:libido?parseInt(libido):null, sleep:sleep?parseFloat(sleep):null, sleepQuality:sleepQ?parseInt(sleepQ):null, recovery:recovery?parseInt(recovery):null, time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}) };const newData = {...hrvData, [todayKey()]:entry};lsSet(KEYS.hrv, newData);setSaved(true);const parts = [];if (energy) parts.push(`Energie: ${energy}/10`);if (libido) parts.push(`Libido: ${libido}/10`);if (recovery) parts.push(`Recuperare: ${recovery}/10`);if (sleep) parts.push(`Somn: ${sleep}h (calitate ${sleepQ}/10)`);if (parts.length) onSendToCoach(parts.join(', '));setTimeout(()=>setSaved(false), 2000);};
+  const ScoreInput = ({label, value, setValue, color}) => (<div><div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em',marginBottom:'6px'}}>{label}</div><div style={{display:'flex',gap:'4px'}}>{[1,2,3,4,5,6,7,8,9,10].map(n=>(<button key={n} onClick={()=>setValue(String(n))} style={{flex:1,padding:'8px 2px',borderRadius:'6px',border:`1px solid ${parseInt(value)>=n?color:theme.softBorder}`,background:parseInt(value)>=n?`${color}20`:'transparent',color:parseInt(value)>=n?color:theme.text4,fontSize:'11px',fontWeight:700,cursor:'pointer',transition:'all 0.1s'}}>{n}</button>))}</div></div>);
   return (
     <div style={{background:'rgba(236,72,153,0.05)',border:'1px solid rgba(236,72,153,0.18)',borderRadius:'16px',padding:'14px'}}>
       <SectionTitle icon="❤️" label="WELLBEING & HRV" color="#ec4899" theme={theme}/>
-      {todayHrv && (
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'14px'}}>
-          {[{l:'ENERGIE',v:todayHrv.energy,c:'#f59e0b'},{l:'LIBIDO',v:todayHrv.libido,c:'#ec4899'},{l:'RECUPERARE',v:todayHrv.recovery,c:'#10b981'}].map(x=>x.v&&(
-            <div key={x.l} style={{background:`${x.c}12`,border:`1px solid ${x.c}30`,borderRadius:'10px',padding:'8px',textAlign:'center'}}>
-              <div style={{fontSize:'9px',color:theme.text3,marginBottom:'2px'}}>{x.l}</div>
-              <div style={{fontSize:'20px',fontWeight:900,color:x.c,fontFamily:"'Barlow Condensed',sans-serif"}}>{x.v}/10</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {todayHrv && (<div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'14px'}}>{[{l:'ENERGIE',v:todayHrv.energy,c:'#f59e0b'},{l:'LIBIDO',v:todayHrv.libido,c:'#ec4899'},{l:'RECUPERARE',v:todayHrv.recovery,c:'#10b981'}].map(x=>x.v&&(<div key={x.l} style={{background:`${x.c}12`,border:`1px solid ${x.c}30`,borderRadius:'10px',padding:'8px',textAlign:'center'}}><div style={{fontSize:'9px',color:theme.text3,marginBottom:'2px'}}>{x.l}</div><div style={{fontSize:'20px',fontWeight:900,color:x.c,fontFamily:"'Barlow Condensed',sans-serif"}}>{x.v}/10</div></div>))}</div>)}
       <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
         <ScoreInput label="⚡ ENERGIE (1-10)" value={energy} setValue={setEnergy} color="#f59e0b"/>
         <ScoreInput label="🔥 LIBIDO (1-10)"  value={libido}  setValue={setLibido}  color="#ec4899"/>
-        <ScoreInput label="💚 RECUPERARE (1-10)" value={recovery} setValue={setRecovery} color="#10b981"/>
+        <ScoreInput label="💪 RECUPERARE (1-10)" value={recovery} setValue={setRecovery} color="#10b981"/>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-          <div>
-            <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em',marginBottom:'6px'}}>😴 SOMN (ore)</div>
-            <input type="number" value={sleep} onChange={e=>setSleep(e.target.value)} placeholder="7.5" step="0.5" style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px',color:theme.text,fontSize:'15px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
-          </div>
-          <div>
-            <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em',marginBottom:'6px'}}>⭐ CALITATE SOMN</div>
-            <input type="number" value={sleepQ} onChange={e=>setSleepQ(e.target.value)} placeholder="1-10" min="1" max="10" style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px',color:theme.text,fontSize:'15px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
-          </div>
+          <div><div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em',marginBottom:'6px'}}>😴 SOMN (ore)</div><input type="number" value={sleep} onChange={e=>setSleep(e.target.value)} placeholder="7.5" step="0.5" style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px',color:theme.text,fontSize:'15px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/></div>
+          <div><div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em',marginBottom:'6px'}}>⭐ CALITATE SOMN</div><input type="number" value={sleepQ} onChange={e=>setSleepQ(e.target.value)} placeholder="1-10" min="1" max="10" style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px',color:theme.text,fontSize:'15px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/></div>
         </div>
         <button onClick={handleSave} style={{padding:'12px',background:saved?'rgba(74,222,128,0.15)':'linear-gradient(135deg,#ec4899,#8b5cf6)',border:'none',borderRadius:'12px',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s',boxShadow:'0 4px 15px rgba(236,72,153,0.25)'}}>
-          {saved?'✅ SALVAT':'▸ SALVEAZĂ WELLBEING'}
+          {saved?'✅ SALVAT':'◆ SALVEAZĂ WELLBEING'}
         </button>
       </div>
     </div>
   );
 }
 
-// ─── 5. BLOOD ANALYSIS ────────────────────────────────────────────
 function BloodAnalysis({theme=THEMES.dark}) {
   const [records, setRecords] = useState(ls(KEYS.blood, []));
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({date:'', ldl:'', hdl:'', testosterone:'', glucose:'', triglycerides:'', note:''});
-
-  const save = () => {
-    if (!form.date) return;
-    const existing=records.find(r=>r.date===form.date);
-    let updated;
-    if(existing){
-      updated=records.map(r=>r.date===form.date?{...r,...form}:r);
-    }else{
-      updated=[...records,{...form,id:Date.now()}];
-    }
-    updated.sort((a,b)=>a.date.localeCompare(b.date));
-    setRecords(updated); lsSet(KEYS.blood, updated);
-    setEditing(false);
-    setForm({date:'', ldl:'', hdl:'', testosterone:'', glucose:'', triglycerides:'', note:''});
-  };
-
+  const save = () => {if (!form.date) return;const existing=records.find(r=>r.date===form.date);let updated;if(existing){updated=records.map(r=>r.date===form.date?{...r,...form}:r);}else{updated=[...records,{...form,id:Date.now()}];}updated.sort((a,b)=>a.date.localeCompare(b.date));setRecords(updated); lsSet(KEYS.blood, updated);setEditing(false);setForm({date:'', ldl:'', hdl:'', testosterone:'', glucose:'', triglycerides:'', note:''}); };
   const del = (id) => { const u=records.filter(r=>r.id!==id); setRecords(u); lsSet(KEYS.blood,u); };
-
   const ldlData = records.filter(r=>r.ldl).map(r=>({date:r.date.slice(5),value:parseFloat(r.ldl)}));
   const testData = records.filter(r=>r.testosterone).map(r=>({date:r.date.slice(5),value:parseFloat(r.testosterone)}));
-
-  const InputField = ({label, field, suffix}) => (
-    <div>
-      <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'4px'}}>{label}</div>
-      <div style={{display:'flex',gap:'6px',alignItems:'center'}}>
-        <input type="number" value={form[field]} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))} style={{flex:1,...inputSmall(theme),width:'auto'}}/>
-        {suffix&&<span style={{fontSize:'12px',color:theme.text3,whiteSpace:'nowrap'}}>{suffix}</span>}
-      </div>
-    </div>
-  );
-
+  const InputField = ({label, field, suffix}) => (<div><div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'4px'}}>{label}</div><div style={{display:'flex',gap:'6px',alignItems:'center'}}><input type="number" value={form[field]} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))} style={{flex:1,...inputSmall(theme),width:'auto'}}/>{suffix&&<span style={{fontSize:'12px',color:theme.text3,whiteSpace:'nowrap'}}>{suffix}</span>}</div></div>);
   return (
     <div style={{background:'rgba(239,68,68,0.04)',border:'1px solid rgba(239,68,68,0.15)',borderRadius:'16px',padding:'14px'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
         <SectionTitle icon="🩸" label="ANALIZE SÂNGE" color="#ef4444" theme={theme}/>
         <button onClick={()=>setEditing(e=>!e)} style={{padding:'6px 14px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.25)',borderRadius:'10px',color:'#ef4444',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>+ ADAUGĂ</button>
       </div>
-
-      {editing && (
-        <div style={{background:theme.surface,borderRadius:'12px',padding:'14px',marginBottom:'12px',display:'flex',flexDirection:'column',gap:'10px'}}>
-          <div>
-            <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'4px'}}>DATA</div>
-            <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'8px',padding:'8px 10px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-            <InputField label="LDL" field="ldl" suffix="mg/dL"/>
-            <InputField label="HDL" field="hdl" suffix="mg/dL"/>
-            <InputField label="Testosteron" field="testosterone" suffix="ng/dL"/>
-            <InputField label="Glucoză" field="glucose" suffix="mg/dL"/>
-            <InputField label="Trigliceride" field="triglycerides" suffix="mg/dL"/>
-          </div>
-          <div>
-            <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'4px'}}>NOTE</div>
-            <input value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} placeholder="Observații..." style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'8px',padding:'8px 10px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-            <button onClick={()=>setEditing(false)} style={{padding:'10px',background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'10px',color:theme.text3,fontSize:'14px',fontWeight:600,cursor:'pointer'}}>Anulează</button>
-            <button onClick={save} style={{padding:'10px',background:'linear-gradient(135deg,#ef4444,#dc2626)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>SALVEAZĂ ▸</button>
-          </div>
-        </div>
-      )}
-
+      {editing && (<div style={{background:theme.surface,borderRadius:'12px',padding:'14px',marginBottom:'12px',display:'flex',flexDirection:'column',gap:'10px'}}><div><div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'4px'}}>DATA</div><input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'8px',padding:'8px 10px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/></div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}><InputField label="LDL" field="ldl" suffix="mg/dL"/><InputField label="HDL" field="hdl" suffix="mg/dL"/><InputField label="Testosteron" field="testosterone" suffix="ng/dL"/><InputField label="Glucoză" field="glucose" suffix="mg/dL"/><InputField label="Trigliceride" field="triglycerides" suffix="mg/dL"/></div><div><div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'4px'}}>NOTE</div><input value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} placeholder="Observații..." style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'8px',padding:'8px 10px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/></div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}><button onClick={()=>setEditing(false)} style={{padding:'10px',background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'10px',color:theme.text3,fontSize:'14px',fontWeight:600,cursor:'pointer'}}>Anulează</button><button onClick={save} style={{padding:'10px',background:'linear-gradient(135deg,#ef4444,#dc2626)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>SALVEAZĂ ◆</button></div></div>)}
       {ldlData.length>1&&<div style={{marginBottom:'12px'}}><LineChart data={ldlData} color="#ef4444" label="LDL" unit=" mg/dL" target="<100" theme={theme}/></div>}
       {testData.length>1&&<div style={{marginBottom:'12px'}}><LineChart data={testData} color="#f59e0b" label="Testosteron" unit=" ng/dL" target="400-900" theme={theme}/></div>}
-
-      {records.length > 0 && (
-        <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
-          {[...records].reverse().slice(0,5).map(r=>(
-            <div key={r.id} style={{padding:'10px 12px',background:theme.surface,borderRadius:'10px',border:`1px solid ${theme.border}`,display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
-              <div>
-                <div style={{fontSize:'12px',color:theme.text3,marginBottom:'4px'}}>{r.date}</div>
-                <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-                  {r.ldl&&<span style={{fontSize:'12px',color:'#ef4444',fontWeight:600}}>LDL: {r.ldl}</span>}
-                  {r.hdl&&<span style={{fontSize:'12px',color:'#4ade80',fontWeight:600}}>HDL: {r.hdl}</span>}
-                  {r.testosterone&&<span style={{fontSize:'12px',color:'#f59e0b',fontWeight:600}}>T: {r.testosterone}</span>}
-                  {r.glucose&&<span style={{fontSize:'12px',color:'#3b82f6',fontWeight:600}}>Glc: {r.glucose}</span>}
-                </div>
-              </div>
-              <button onClick={()=>del(r.id)} style={{background:'none',border:'none',color:theme.text4,cursor:'pointer',fontSize:'14px',padding:'0 4px'}}>×</button>
-            </div>
-          ))}
-        </div>
-      )}
+      {records.length > 0 && (<div style={{display:'flex',flexDirection:'column',gap:'6px'}}>{[...records].reverse().slice(0,5).map(r=>(<div key={r.id} style={{padding:'10px 12px',background:theme.surface,borderRadius:'10px',border:`1px solid ${theme.border}`,display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}><div><div style={{fontSize:'12px',color:theme.text3,marginBottom:'4px'}}>{r.date}</div><div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>{r.ldl&&<span style={{fontSize:'12px',color:'#ef4444',fontWeight:600}}>LDL: {r.ldl}</span>}{r.hdl&&<span style={{fontSize:'12px',color:'#4ade80',fontWeight:600}}>HDL: {r.hdl}</span>}{r.testosterone&&<span style={{fontSize:'12px',color:'#f59e0b',fontWeight:600}}>T: {r.testosterone}</span>}{r.glucose&&<span style={{fontSize:'12px',color:'#3b82f6',fontWeight:600}}>Glc: {r.glucose}</span>}</div></div><button onClick={()=>del(r.id)} style={{background:'none',border:'none',color:theme.text4,cursor:'pointer',fontSize:'14px',padding:'0 4px'}}>×</button></div>))}</div>)}
       {records.length===0&&!editing&&<EmptyState subtitle="Adaugă prima analiză pentru a urmări evoluția." theme={theme}/>}
     </div>
   );
 }
 
-// ─── 6. EXPORT PDF ────────────────────────────────────────────────
 function ExportPanel({stats, workouts, theme=THEMES.dark}) {
-  const exportCSV = () => {
-    const rows = [['Data','Greutate(kg)','Calorii','Proteine(g)','Exercitii','Cardio(kcal)']];
-    const allDates = new Set([...Object.keys(stats.weight||{}), ...Object.keys(stats.daily||{}), ...Object.keys(workouts.days||{})]);
-    [...allDates].sort().forEach(date=>{
-      rows.push([
-        date,
-        stats.weight?.[date]||'',
-        stats.daily?.[date]?.calories||'',
-        stats.daily?.[date]?.protein||'',
-        workouts.days?.[date]?.exercises?.length||0,
-        (workouts.days?.[date]?.cardio||[]).reduce((a,c)=>a+c.kcal,0)||''
-      ]);
-    });
-    const csvCell=v=>{const s=String(v??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:`${s}`;};
-    const csv = rows.map(r=>r.map(csvCell).join(',')).join('\n');
-    const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href=url; a.download=`mihai_performance_${todayKey()}.csv`; a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportJSON = () => {
-    const data = { exportDate:todayKey(), stats: loadStats(), workouts: loadWorkouts(), blood: ls(KEYS.blood,[]), hrv: ls(KEYS.hrv,{}) };
-    const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href=url; a.download=`mihai_performance_backup_${todayKey()}.json`; a.click();
-    URL.revokeObjectURL(url);
-  };
-
+  const exportCSV = () => {const rows = [['Data','Greutate(kg)','Calorii','Proteine(g)','Exercitii','Cardio(kcal)']];const allDates = new Set([...Object.keys(stats.weight||{}), ...Object.keys(stats.daily||{}), ...Object.keys(workouts.days||{})]);[...allDates].sort().forEach(date=>{rows.push([date,stats.weight?.[date]||'',stats.daily?.[date]?.calories||'',stats.daily?.[date]?.protein||'',workouts.days?.[date]?.exercises?.length||0,(workouts.days?.[date]?.cardio||[]).reduce((a,c)=>a+c.kcal,0)||'']);});const csvCell=v=>{const s=String(v??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:`${s}`;};const csv = rows.map(r=>r.map(csvCell).join(',')).join('\n');const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});const url = URL.createObjectURL(blob);const a = document.createElement('a');a.href=url; a.download=`mihai_performance_${todayKey()}.csv`; a.click();URL.revokeObjectURL(url);};
+  const exportJSON = () => {const data = { exportDate:todayKey(), stats: loadStats(), workouts: loadWorkouts(), blood: ls(KEYS.blood,[]), hrv: ls(KEYS.hrv,{}) };const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url = URL.createObjectURL(blob);const a = document.createElement('a');a.href=url; a.download=`mihai_performance_backup_${todayKey()}.json`; a.click();URL.revokeObjectURL(url);};
   return (
     <div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'14px'}}>
       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:theme.text2,letterSpacing:'0.05em',textTransform:'uppercase',marginBottom:'12px'}}>📤 EXPORT DATE</div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-        <button onClick={exportCSV} style={{padding:'12px',background:'rgba(16,185,129,0.1)',border:'1px solid rgba(16,185,129,0.25)',borderRadius:'12px',color:'#10b981',fontSize:'14px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>📊 CSV</button>
+        <button onClick={exportCSV} style={{padding:'12px',background:'rgba(16,185,129,0.1)',border:'1px solid rgba(16,185,129,0.25)',borderRadius:'12px',color:'#10b981',fontSize:'14px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>📈 CSV</button>
         <button onClick={exportJSON} style={{padding:'12px',background:'rgba(59,130,246,0.1)',border:'1px solid rgba(59,130,246,0.25)',borderRadius:'12px',color:'#3b82f6',fontSize:'14px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>💾 JSON Backup</button>
       </div>
       <div style={{fontSize:'11px',color:theme.text4,marginTop:'8px',textAlign:'center'}}>CSV pentru Excel/medic · JSON pentru backup complet</div>
@@ -641,7 +469,7 @@ function ExportPanel({stats, workouts, theme=THEMES.dark}) {
   );
 }
 
-// ─── FOOD PICKER ──────────────────────────────────────────────────
+// ─── FOOD PICKER ──────────────────────────────────────────────────────────────
 function FoodPicker({onSend,onClose,theme=THEMES.dark}){
   const [cat,setCat]=useState('all'),[quantities,setQuantities]=useState({});
   const [activeTab,setActiveTab]=useState('alimente');
@@ -660,11 +488,11 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
       <div onClick={e=>e.stopPropagation()} style={{background:theme.bg2,borderRadius:'24px 24px 0 0',maxHeight:'90vh',display:'flex',flexDirection:'column',border:`1px solid ${theme.border}`,borderBottom:'none'}}>
         <div style={{padding:'14px 18px 0',flexShrink:0,background:theme.bg2}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'18px',background:'linear-gradient(90deg,#f97316,#ef4444)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>🍽️ ADAUGĂ MASĂ</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'18px',background:'linear-gradient(90deg,#f97316,#ef4444)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>🍽 ADAUGĂ MASĂ</div>
             <button onClick={onClose} style={{background:theme.surface2,border:'none',borderRadius:'10px',color:theme.text3,padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>✕</button>
           </div>
           <div style={{display:'flex',borderBottom:`1px solid ${theme.border}`}}>
-            {[{id:'alimente',label:'🥗 Alimente'},{id:'templates',label:'⭐ Templates'}].map(t=><button key={t.id} onClick={()=>setActiveTab(t.id)} style={{flex:1,padding:'8px',fontSize:'13px',fontWeight:700,cursor:'pointer',border:'none',background:'transparent',color:activeTab===t.id?'#f97316':theme.text3,borderBottom:`2px solid ${activeTab===t.id?'#f97316':'transparent'}`,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>{t.label}</button>)}
+            {[{id:'alimente',label:'🍙 Alimente'},{id:'templates',label:'⭐ Templates'}].map(t=><button key={t.id} onClick={()=>setActiveTab(t.id)} style={{flex:1,padding:'8px',fontSize:'13px',fontWeight:700,cursor:'pointer',border:'none',background:'transparent',color:activeTab===t.id?'#f97316':theme.text3,borderBottom:`2px solid ${activeTab===t.id?'#f97316':'transparent'}`,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>{t.label}</button>)}
           </div>
         </div>
         {activeTab==='alimente'&&<>
@@ -674,19 +502,19 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
           <div style={{overflowY:'auto',flex:1,padding:'0 16px'}}>
             <table style={{width:'100%',borderCollapse:'collapse'}}>
               <thead style={{position:'sticky',top:0,background:theme.bg2,zIndex:2}}><tr>{['ALIMENT','CANT.','MACRO'].map((h,i)=><th key={i} style={{textAlign:i===2?'right':i===1?'center':'left',padding:'8px '+(i===1?'6px':'0'),fontSize:'11px',color:theme.text4,fontWeight:700,letterSpacing:'0.08em',borderBottom:`1px solid ${theme.border}`,width:i===1?'80px':i===2?'90px':'auto'}}>{h}</th>)}</tr></thead>
-              <tbody>{filtered.map(food=>{const qty=quantities[food.id]||'';const m=qty&&parseFloat(qty)>0?calcMacros(food,parseFloat(qty)):null;const active=!!(qty&&parseFloat(qty)>0);return(<tr key={food.id} style={{borderBottom:`1px solid ${theme.border}`,background:active?'rgba(249,115,22,0.04)':'transparent'}}><td style={{padding:'10px 0'}}><div style={{fontSize:'15px',fontWeight:600,color:active?'#f97316':theme.text2}}>{food.emoji} {food.name}</div><div style={{fontSize:'11px',color:theme.text4,marginTop:'1px'}}>{food.kcal} kcal · {food.p}g P / 100{food.unit==='buc'?'g':food.unit}</div></td><td style={{padding:'10px 6px',textAlign:'center'}}><div style={{display:'flex',alignItems:'center',gap:'4px',justifyContent:'center'}}><input type="number" value={qty} onChange={e=>setQty(food.id,e.target.value)} placeholder="0" style={{width:'52px',background:theme.surface2,border:`1.5px solid ${active?'rgba(249,115,22,0.4)':theme.softBorder}`,borderRadius:'8px',padding:'6px 8px',color:theme.text,fontSize:'15px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/><span style={{fontSize:'11px',color:theme.text3}}>{food.unit}</span></div></td><td style={{padding:'10px 0',textAlign:'right'}}>{m?<div><div style={{fontSize:'14px',fontWeight:700,color:'#f97316'}}>{m.kcal} kcal</div><div style={{fontSize:'11px',color:theme.text3}}>{m.p}P</div></div>:<div style={{fontSize:'11px',color:theme.text4}}>—</div>}</td></tr>);})}</tbody>
+              <tbody>{filtered.map(food=>{const qty=quantities[food.id]||'';const m=qty&&parseFloat(qty)>0?calcMacros(food,parseFloat(qty)):null;const active=!!(qty&&parseFloat(qty)>0);return(<tr key={food.id} style={{borderBottom:`1px solid ${theme.border}`,background:active?'rgba(249,115,22,0.04)':'transparent'}}><td style={{padding:'10px 0'}}><div style={{fontSize:'15px',fontWeight:600,color:active?'#f97316':theme.text2}}>{food.emoji} {food.name}</div><div style={{fontSize:'11px',color:theme.text4,marginTop:'1px'}}>{food.kcal} kcal · {food.p}g P / 100{food.unit==='buc'||food.unit==='felie'?'g':food.unit}</div></td><td style={{padding:'10px 6px',textAlign:'center'}}><div style={{display:'flex',alignItems:'center',gap:'4px',justifyContent:'center'}}><input type="number" value={qty} onChange={e=>setQty(food.id,e.target.value)} placeholder="0" style={{width:'52px',background:theme.surface2,border:`1.5px solid ${active?'rgba(249,115,22,0.4)':theme.softBorder}`,borderRadius:'8px',padding:'6px 8px',color:theme.text,fontSize:'15px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/><span style={{fontSize:'11px',color:theme.text3}}>{food.unit}</span></div></td><td style={{padding:'10px 0',textAlign:'right'}}>{m?<div><div style={{fontSize:'14px',fontWeight:700,color:'#f97316'}}>{m.kcal} kcal</div><div style={{fontSize:'11px',color:theme.text3}}>{m.p}P</div></div>:<div style={{fontSize:'11px',color:theme.text4}}>—</div>}</td></tr>);})}</tbody>
             </table>
           </div>
           <div style={{padding:'12px 16px',borderTop:`1px solid ${theme.border}`,flexShrink:0}}>
             {hasItems&&<div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'10px'}}>{[{l:'KCAL',v:totals.kcal,c:'#f97316'},{l:'PROT',v:`${totals.p}g`,c:'#8b5cf6'},{l:'CARBS',v:`${totals.c}g`,c:'#3b82f6'},{l:'GR',v:`${totals.fat}g`,c:'#10b981'}].map(x=><div key={x.l} style={{background:theme.surface,borderRadius:'10px',padding:'8px',textAlign:'center'}}><div style={{fontSize:'10px',color:theme.text3,marginBottom:'2px'}}>{x.l}</div><div style={{fontSize:'16px',fontWeight:800,color:x.c}}>{x.v}</div></div>)}</div>}
             {hasItems&&<div style={{display:'flex',gap:'8px',marginBottom:'8px'}}><input value={newTplName} onChange={e=>setNewTplName(e.target.value)} placeholder="Salvează ca template..." style={{flex:1,background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'10px',padding:'8px 12px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/><button onClick={saveAsTpl} disabled={!newTplName.trim()} style={{padding:'8px 14px',background:newTplName.trim()?'rgba(251,191,36,0.15)':theme.surface,border:`1px solid ${newTplName.trim()?'rgba(251,191,36,0.3)':theme.softBorder}`,borderRadius:'10px',color:newTplName.trim()?'#fbbf24':theme.text4,fontSize:'13px',fontWeight:700,cursor:newTplName.trim()?'pointer':'not-allowed'}}>⭐</button></div>}
             <button onClick={handleSend} disabled={!hasItems} style={{width:'100%',padding:'14px',background:hasItems?'linear-gradient(135deg,#f97316,#ef4444)':theme.surface2,border:'none',borderRadius:'14px',color:hasItems?'#fff':'#334155',fontSize:'15px',fontWeight:800,cursor:hasItems?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',textTransform:'uppercase',transition:'all 0.2s'}}>
-              {hasItems?`▸ TRIMITE MASA (${totals.kcal} kcal)`:'Introduceți cantitățile'}
+              {hasItems?`◆ TRIMITE MASA (${totals.kcal} kcal)`:'Introduceți cantitățile'}
             </button>
           </div>
         </>}
         {activeTab==='templates'&&<div style={{overflowY:'auto',flex:1,padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px'}}>
-          {templates.map(tpl=>{const m=calcTemplateMacros(tpl.items);return(<div key={tpl.id} style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'14px',padding:'14px',display:'flex',alignItems:'center',gap:'12px'}}><div style={{fontSize:'28px',flexShrink:0}}>{tpl.icon}</div><div style={{flex:1}}><div style={{fontSize:'15px',fontWeight:700,color:theme.text,marginBottom:'4px'}}>{tpl.name}</div><div style={{display:'flex',gap:'10px'}}><span style={{fontSize:'12px',color:'#f97316',fontWeight:600}}>{m.kcal} kcal</span><span style={{fontSize:'12px',color:'#8b5cf6'}}>{m.p}g prot</span></div></div><div style={{display:'flex',gap:'6px'}}><button onClick={()=>sendTemplate(tpl)} style={{padding:'8px 16px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>▸</button>{!DEFAULT_TEMPLATES.find(d=>d.id===tpl.id)&&<button onClick={()=>delTpl(tpl.id)} style={{padding:'8px 10px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'10px',color:'#ef4444',fontSize:'13px',cursor:'pointer'}}>×</button>}</div></div>);})}
+          {templates.map(tpl=>{const m=calcTemplateMacros(tpl.items);return(<div key={tpl.id} style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'14px',padding:'14px',display:'flex',alignItems:'center',gap:'12px'}}><div style={{fontSize:'28px',flexShrink:0}}>{tpl.icon}</div><div style={{flex:1}}><div style={{fontSize:'15px',fontWeight:700,color:theme.text,marginBottom:'4px'}}>{tpl.name}</div><div style={{display:'flex',gap:'10px'}}><span style={{fontSize:'12px',color:'#f97316',fontWeight:600}}>{m.kcal} kcal</span><span style={{fontSize:'12px',color:'#8b5cf6'}}>{m.p}g prot</span></div></div><div style={{display:'flex',gap:'6px'}}><button onClick={()=>sendTemplate(tpl)} style={{padding:'8px 16px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>◆</button>{!DEFAULT_TEMPLATES.find(d=>d.id===tpl.id)&&<button onClick={()=>delTpl(tpl.id)} style={{padding:'8px 10px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'10px',color:'#ef4444',fontSize:'13px',cursor:'pointer'}}>×</button>}</div></div>);})}
           <div style={{height:'20px'}}/>
         </div>}
       </div>
@@ -694,7 +522,7 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
   );
 }
 
-// ─── MACRO BAR ────────────────────────────────────────────────────
+// ─── MACRO BAR ────────────────────────────────────────────────────────────────
 function MacroBar({stats,dayType,theme=THEMES.dark}){
   const currentDay=DAY_TYPES.find(d=>d.val===dayType);
   const todayData=stats.daily?.[todayKey()]||{};
@@ -707,26 +535,18 @@ function MacroBar({stats,dayType,theme=THEMES.dark}){
   if(!cal&&!prot)return null;
   return(
     <div style={{background:theme.bg2,borderBottom:`1px solid ${theme.border}`,padding:'8px 16px',display:'flex',gap:'16px',alignItems:'center',flexShrink:0}}>
-      <div style={{flex:1}}>
-        <div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}><span style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em'}}>CALORII</span><span style={{fontSize:'11px',fontWeight:700,color:calColor}}>{cal}/{calTarget}</span></div>
-        <div style={{height:'5px',background:theme.surface2,borderRadius:'3px',overflow:'hidden'}}><div style={{height:'100%',width:`${calPct}%`,background:calColor,borderRadius:'3px',transition:'width 0.5s ease'}}/></div>
-      </div>
-      <div style={{flex:1}}>
-        <div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}><span style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em'}}>PROTEINE</span><span style={{fontSize:'11px',fontWeight:700,color:protColor}}>{prot}g/{protTarget}g</span></div>
-        <div style={{height:'5px',background:theme.surface2,borderRadius:'3px',overflow:'hidden'}}><div style={{height:'100%',width:`${protPct}%`,background:protColor,borderRadius:'3px',transition:'width 0.5s ease'}}/></div>
-      </div>
+      <div style={{flex:1}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}><span style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em'}}>CALORII</span><span style={{fontSize:'11px',fontWeight:700,color:calColor}}>{cal}/{calTarget}</span></div><div style={{height:'5px',background:theme.surface2,borderRadius:'3px',overflow:'hidden'}}><div style={{height:'100%',width:`${calPct}%`,background:calColor,borderRadius:'3px',transition:'width 0.5s ease'}}/></div></div>
+      <div style={{flex:1}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}><span style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em'}}>PROTEINE</span><span style={{fontSize:'11px',fontWeight:700,color:protColor}}>{prot}g/{protTarget}g</span></div><div style={{height:'5px',background:theme.surface2,borderRadius:'3px',overflow:'hidden'}}><div style={{height:'100%',width:`${protPct}%`,background:protColor,borderRadius:'3px',transition:'width 0.5s ease'}}/></div></div>
     </div>
   );
 }
 
-// ─── STREAK BADGE ─────────────────────────────────────────────────
 function StreakBadge({stats}){
   const streak=calcStreak(stats);
   if(!streak)return null;
   return(<div style={{display:'flex',alignItems:'center',gap:'4px',padding:'3px 10px',background:'rgba(251,191,36,0.1)',border:'1px solid rgba(251,191,36,0.25)',borderRadius:'100px',fontSize:'12px',fontWeight:700,color:'#fbbf24',whiteSpace:'nowrap'}}>🔥 {streak}d</div>);
 }
 
-// ─── CALENDAR ─────────────────────────────────────────────────────
 function CalendarPicker({selectedDate,onSelect,stats,workouts,theme=THEMES.dark}){
   const [vd,setVd]=useState(new Date());
   const year=vd.getFullYear(),month=vd.getMonth();
@@ -740,7 +560,6 @@ function CalendarPicker({selectedDate,onSelect,stats,workouts,theme=THEMES.dark}
   return(<div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'14px'}}><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px'}}><button onClick={()=>setVd(new Date(year,month-1,1))} style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'8px',color:theme.text2,padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>‹</button><span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'17px',color:theme.text}}>{RO_MONTHS[month]} {year}</span><button onClick={()=>setVd(new Date(year,month+1,1))} style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'8px',color:theme.text2,padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>›</button></div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'3px',marginBottom:'6px'}}>{RO_DAYS.map(d=><div key={d} style={{textAlign:'center',fontSize:'11px',fontWeight:700,color:theme.text4,padding:'3px 0'}}>{d}</div>)}</div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'3px'}}>{cells.map((day,idx)=><div key={idx} onClick={()=>{if(!day)return;onSelect(k(day));}} style={{textAlign:'center',padding:'7px 2px',borderRadius:'9px',fontSize:'14px',fontWeight:600,cursor:day?'pointer':'default',background:isSel(day)?'linear-gradient(135deg,#f97316,#ef4444)':isToday(day)?'rgba(249,115,22,0.1)':hasData(day)?theme.surface:'transparent',color:isSel(day)?'#fff':isToday(day)?'#f97316':day?theme.text2:'transparent',border:isToday(day)&&!isSel(day)?'1px solid rgba(249,115,22,0.3)':'1px solid transparent',position:'relative',transition:'all 0.15s'}}>{day||''}{day&&hasData(day)&&!isSel(day)&&<div style={{position:'absolute',bottom:'2px',left:'50%',transform:'translateX(-50%)',width:'3px',height:'3px',borderRadius:'50%',background:hasW(day)?'#8b5cf6':'#f97316'}}/>}</div>)}</div></div>);
 }
 
-// ─── MUSCLE VOLUME ────────────────────────────────────────────────
 function MuscleVolumeChart({workouts,theme=THEMES.dark}){
   const last7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return localDateKey(d);});
   const vol={};MUSCLE_GROUPS.forEach(g=>{vol[g.id]=0;});
@@ -750,24 +569,22 @@ function MuscleVolumeChart({workouts,theme=THEMES.dark}){
   return(<div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'16px'}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:theme.text2,letterSpacing:'0.05em',textTransform:'uppercase',marginBottom:'14px'}}>💪 VOLUM / GRUPĂ (7 zile)</div><div style={{display:'flex',flexDirection:'column',gap:'8px'}}>{MUSCLE_GROUPS.map(g=>{const sets=vol[g.id]||0,pct=Math.round((sets/maxS)*100),warn=sets<4&&totalS>8;return(<div key={g.id}><div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}><span style={{fontSize:'12px',color:warn?'#ef4444':theme.text2,fontWeight:600}}>{g.icon} {g.label}{warn?' ⚠️':''}</span><span style={{fontSize:'12px',fontWeight:700,color:g.color}}>{sets} seturi</span></div><div style={{height:'6px',background:theme.surface2,borderRadius:'3px',overflow:'hidden'}}><div style={{height:'100%',width:`${pct}%`,background:g.color,borderRadius:'3px',transition:'width 0.5s ease',opacity:sets===0?0.2:1}}/></div></div>);})}</div></div>);
 }
 
-// ─── PATTERN DETECTION ────────────────────────────────────────────
 function PatternPanel({stats,workouts,theme=THEMES.dark}){
   const [report,setReport]=useState(null),[loading,setLoading]=useState(false),[lastRun,setLastRun]=useState(null),[expanded,setExpanded]=useState(false);
   useEffect(()=>{try{const s=localStorage.getItem(KEYS.pattern);if(s){const d=JSON.parse(s);setReport(d.report);setLastRun(d.date);const days=(Date.now()-new Date(d.date).getTime())/(1000*60*60*24);if(days>=7)run(true);}else run(true);}catch{}},[])
   function run(silent=false){const ld=Object.keys(stats.daily||{}).length;if(ld<3)return;if(!silent)setExpanded(true);setLoading(true);const w=Object.entries(stats.weight||{}).slice(-14),d=Object.entries(stats.daily||{}).slice(-14),days=Object.entries(workouts.days||{}).slice(-14);callCoach([{role:'user',content:`Analizează datele: greutate ${JSON.stringify(w)}, nutriție ${JSON.stringify(d)}, antrenamente ${JSON.stringify(days)}. Profil: 45ani/188cm/96→88kg. Analiză: 1.TREND 2.CONSISTENȚĂ 3.CORELAȚII 4.PUNCTE SLABE 5.RECOMANDĂRI. Direct, română.`}],1500).then(text=>{const now=new Date().toISOString();setReport(text);setLastRun(now);setExpanded(true);lsSet(KEYS.pattern,{report:text,date:now});}).catch(()=>setReport('⚠️ Eroare.')).finally(()=>setLoading(false));}
   const ld=Object.keys(stats.daily||{}).length;
-  return(<div style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'16px',overflow:'hidden'}}><div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExpanded(e=>!e)}><div><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',background:'linear-gradient(90deg,#8b5cf6,#ec4899)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.05em'}}>🧠 PATTERN DETECTION</div><div style={{fontSize:'11px',color:theme.text3,marginTop:'2px'}}>{lastRun?`Ultima: ${new Date(lastRun).toLocaleDateString('ro-RO',{day:'numeric',month:'short'})}`:ld>=3?'Date disponibile':`Necesare ${3-ld} zile în plus`}</div></div><div style={{display:'flex',gap:'8px'}}>{ld>=3&&<button onClick={e=>{e.stopPropagation();run();}} disabled={loading} style={{padding:'7px 14px',background:loading?'rgba(139,92,246,0.1)':'linear-gradient(135deg,#8b5cf6,#ec4899)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:"'Barlow Condensed',sans-serif",opacity:loading?0.6:1}}>{loading?'⏳':'▸ ANALIZEAZĂ'}</button>}<span style={{color:theme.text3,fontSize:'18px'}}>{expanded?'↑':'↓'}</span></div></div>{expanded&&<div style={{borderTop:'1px solid rgba(139,92,246,0.15)',padding:'16px'}}>{loading&&<div style={{display:'flex',justifyContent:'center',padding:'16px',gap:'6px'}}>{[0,1,2].map(i=><div key={i} style={{width:'8px',height:'8px',borderRadius:'50%',background:'#8b5cf6',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div>}{!loading&&report&&<div>{renderMarkdown(report,theme)}</div>}{!loading&&!report&&<div style={{textAlign:'center',color:theme.text4,fontSize:'13px',padding:'16px'}}>Loghează min. 3 zile pentru analiză.</div>}</div>}</div>);
+  return(<div style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'16px',overflow:'hidden'}}><div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExpanded(e=>!e)}><div><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',background:'linear-gradient(90deg,#8b5cf6,#ec4899)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.05em'}}>🧠 PATTERN DETECTION</div><div style={{fontSize:'11px',color:theme.text3,marginTop:'2px'}}>{lastRun?`Ultima: ${new Date(lastRun).toLocaleDateString('ro-RO',{day:'numeric',month:'short'})}`:ld>=3?'Date disponibile':`Necesare ${3-ld} zile în plus`}</div></div><div style={{display:'flex',gap:'8px'}}>{ld>=3&&<button onClick={e=>{e.stopPropagation();run();}} disabled={loading} style={{padding:'7px 14px',background:loading?'rgba(139,92,246,0.1)':'linear-gradient(135deg,#8b5cf6,#ec4899)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:"'Barlow Condensed',sans-serif",opacity:loading?0.6:1}}>{loading?'⟳':'◆ ANALIZEAZĂ'}</button>}<span style={{color:theme.text3,fontSize:'18px'}}>{expanded?'↑':'↓'}</span></div></div>{expanded&&<div style={{borderTop:'1px solid rgba(139,92,246,0.15)',padding:'16px'}}>{loading&&<div style={{display:'flex',justifyContent:'center',padding:'16px',gap:'6px'}}>{[0,1,2].map(i=><div key={i} style={{width:'8px',height:'8px',borderRadius:'50%',background:'#8b5cf6',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div>}{!loading&&report&&<div>{renderMarkdown(report,theme)}</div>}{!loading&&!report&&<div style={{textAlign:'center',color:theme.text4,fontSize:'13px',padding:'16px'}}>Loghează min. 3 zile pentru analiză.</div>}</div>}</div>);
 }
 
-// ─── WEEKLY REPORT ────────────────────────────────────────────────
 function WeeklyReport({stats,workouts,theme=THEMES.dark}){
   const [report,setReport]=useState(ls(KEYS.weekly,null)),[loading,setLoading]=useState(false),[expanded,setExpanded]=useState(false);
   useEffect(()=>{const day=new Date().getDay(),lr=report?.date,lrd=lr?new Date(lr).getDay():null;if(day===1&&lrd!==1&&Object.keys(stats.daily||{}).length>=3)run();},[]);
   function run(){setLoading(true);setExpanded(true);const keys=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return localDateKey(d);}).reverse();const wn=keys.map(k=>stats.daily?.[k]).filter(Boolean);const avgCal=wn.length?Math.round(wn.reduce((a,d)=>a+(d.calories||0),0)/wn.length):0;const avgProt=wn.length?Math.round(wn.reduce((a,d)=>a+(d.protein||0),0)/wn.length):0;callCoach([{role:'user',content:`Raport săptămânal Mihai: ${wn.length}/7 zile logate, calorii medii ${avgCal}, proteine medii ${avgProt}g. Profil: 45ani/188cm/96kg→88kg. Concis, emoji, max 200 cuvinte, română.`}],600).then(text=>{const r={text,date:new Date().toISOString()};setReport(r);lsSet(KEYS.weekly,r);}).catch(()=>setReport({text:'⚠️ Eroare.',date:new Date().toISOString()})).finally(()=>setLoading(false));}
-  return(<div style={{background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.18)',borderRadius:'16px',overflow:'hidden'}}><div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExpanded(e=>!e)}><div><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',color:'#10b981',letterSpacing:'0.05em'}}>📅 RAPORT SĂPTĂMÂNAL</div><div style={{fontSize:'11px',color:theme.text3,marginTop:'2px'}}>{report?.date?new Date(report.date).toLocaleDateString('ro-RO',{weekday:'long',day:'numeric',month:'short'}):'Auto-generat luni'}</div></div><div style={{display:'flex',gap:'8px'}}><button onClick={e=>{e.stopPropagation();run();}} disabled={loading} style={{padding:'7px 14px',background:'rgba(16,185,129,0.15)',border:'1px solid rgba(16,185,129,0.3)',borderRadius:'10px',color:'#10b981',fontSize:'13px',fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:"'Barlow Condensed',sans-serif",opacity:loading?0.6:1}}>{loading?'⏳':'▸'}</button><span style={{color:theme.text3,fontSize:'18px'}}>{expanded?'↑':'↓'}</span></div></div>{expanded&&<div style={{borderTop:'1px solid rgba(16,185,129,0.12)',padding:'16px'}}>{loading&&<div style={{display:'flex',justifyContent:'center',gap:'6px',padding:'16px'}}>{[0,1,2].map(i=><div key={i} style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div>}{!loading&&report&&<div>{renderMarkdown(report.text,theme)}</div>}</div>}</div>);
+  return(<div style={{background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.18)',borderRadius:'16px',overflow:'hidden'}}><div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExpanded(e=>!e)}><div><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',color:'#10b981',letterSpacing:'0.05em'}}>📅 RAPORT SĂPTĂMÂNAL</div><div style={{fontSize:'11px',color:theme.text3,marginTop:'2px'}}>{report?.date?new Date(report.date).toLocaleDateString('ro-RO',{weekday:'long',day:'numeric',month:'short'}):'Auto-generat luni'}</div></div><div style={{display:'flex',gap:'8px'}}><button onClick={e=>{e.stopPropagation();run();}} disabled={loading} style={{padding:'7px 14px',background:'rgba(16,185,129,0.15)',border:'1px solid rgba(16,185,129,0.3)',borderRadius:'10px',color:'#10b981',fontSize:'13px',fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:"'Barlow Condensed',sans-serif",opacity:loading?0.6:1}}>{loading?'⟳':'◆'}</button><span style={{color:theme.text3,fontSize:'18px'}}>{expanded?'↑':'↓'}</span></div></div>{expanded&&<div style={{borderTop:'1px solid rgba(16,185,129,0.12)',padding:'16px'}}>{loading&&<div style={{display:'flex',justifyContent:'center',gap:'6px',padding:'16px'}}>{[0,1,2].map(i=><div key={i} style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div>}{!loading&&report&&<div>{renderMarkdown(report.text,theme)}</div>}</div>}</div>);
 }
 
-// ─── WORKOUT TAB ──────────────────────────────────────────────────
+// ─── WORKOUT TAB ──────────────────────────────────────────────────────────────
 function WorkoutTab({workouts,setWorkouts,onSendToCoach,theme=THEMES.dark}){
   const [mode,setMode]=useState('gym'),[selGroup,setSelGroup]=useState('piept'),[selEx,setSelEx]=useState(null),[sets,setSets]=useState([]);
   const [cardioType,setCT]=useState('mers'),[cardioDur,setCD]=useState(''),[cardioInt,setCI]=useState('moderată');
@@ -776,18 +593,18 @@ function WorkoutTab({workouts,setWorkouts,onSendToCoach,theme=THEMES.dark}){
   const updSet=(i,f,v)=>setSets(s=>s.map((set,idx)=>idx===i?{...set,[f]:v}:set));
   const rmSet=i=>setSets(s=>s.filter((_,idx)=>idx!==i));
   const getPR=exId=>{const all=Object.values(workouts.days).flatMap(d=>(d.exercises||[]).filter(e=>e.id===exId).flatMap(e=>e.sets));if(!all.length)return null;return Math.max(...all.map(s=>parseFloat(s.kg)));};
-  const saveEx=()=>{if(!selEx||!sets.length)return;const valid=sets.filter(s=>s.kg&&s.reps&&parseFloat(s.kg)>0&&parseInt(s.reps)>0);if(!valid.length)return;const ex=EXERCISES[selGroup].find(e=>e.id===selEx);const vol=valid.reduce((a,s)=>a+parseFloat(s.kg)*parseInt(s.reps),0);const entry={id:selEx,name:ex.name,group:selGroup,sets:valid,volume:Math.round(vol),time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};const nw={...workouts};if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};nw.days[key].exercises=[...nw.days[key].exercises,entry];const allEx=Object.values(nw.days).flatMap(d=>d.exercises||[]).filter(e=>e.id===selEx);const maxPrev=Math.max(0,...allEx.slice(0,-1).map(e=>Math.max(...e.sets.map(s=>parseFloat(s.kg)))));const maxNew=Math.max(...valid.map(s=>parseFloat(s.kg)));const isPR=maxNew>maxPrev;saveWorkouts(nw);setWorkouts({...nw});setSets([]);setSelEx(null);onSendToCoach(`Forță: ${ex.name} — ${valid.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}${isPR?' 🏆 RECORD PERSONAL':''}`);};
+  const saveEx=()=>{if(!selEx||!sets.length)return;const valid=sets.filter(s=>s.kg&&s.reps&&parseFloat(s.kg)>0&&parseInt(s.reps)>0);if(!valid.length)return;const ex=EXERCISES[selGroup].find(e=>e.id===selEx);const vol=valid.reduce((a,s)=>a+parseFloat(s.kg)*parseInt(s.reps),0);const entry={id:selEx,name:ex.name,group:selGroup,sets:valid,volume:Math.round(vol),time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};const nw={...workouts};if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};nw.days[key].exercises=[...nw.days[key].exercises,entry];const allEx=Object.values(nw.days).flatMap(d=>d.exercises||[]).filter(e=>e.id===selEx);const maxPrev=Math.max(0,...allEx.slice(0,-1).map(e=>Math.max(...e.sets.map(s=>parseFloat(s.kg)))));const maxNew=Math.max(...valid.map(s=>parseFloat(s.kg)));const isPR=maxNew>maxPrev;saveWorkouts(nw);setWorkouts({...nw});setSets([]);setSelEx(null);onSendToCoach(`Forță: ${ex.name} — ${valid.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}${isPR?' 🏅 RECORD PERSONAL':''}`);};
   const saveCardio=()=>{if(!cardioDur||parseInt(cardioDur)<=0)return;const ct=CARDIO_TYPES.find(c=>c.id===cardioType);const kcal=calcBurned(ct.met,parseInt(cardioDur));const entry={id:cardioType,name:ct.name,icon:ct.icon,duration:parseInt(cardioDur),intensity:cardioInt,kcal,time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};const nw={...workouts};if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};nw.days[key].cardio=[...(nw.days[key].cardio||[]),entry];saveWorkouts(nw);setWorkouts({...nw});setCD('');onSendToCoach(`Activitate: ${ct.name} ${cardioDur} min (${cardioInt}) — ~${kcal} kcal arse`);};
   const totalVol=todayW.exercises.reduce((a,e)=>a+e.volume,0);const totalCard=(todayW.cardio||[]).reduce((a,c)=>a+c.kcal,0);
   return(
     <div style={{flex:1,overflowY:'auto',padding:'14px',maxWidth:'800px',margin:'0 auto',width:'100%',display:'flex',flexDirection:'column',gap:'14px'}}>
       {(todayW.exercises.length>0||(todayW.cardio||[]).length>0)&&<div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px'}}>{[{l:'EXERCIȚII',v:todayW.exercises.length,c:'#f97316'},{l:'VOLUM',v:`${(totalVol/1000).toFixed(1)}t`,c:'#8b5cf6'},{l:'CARDIO',v:`${totalCard}kcal`,c:'#10b981'}].map(x=><StatCard key={x.l} label={x.l} value={x.v} color={x.c} theme={theme}/>)}</div>}
       <RestTimer theme={theme}/>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>{[{id:'gym',label:'🏋️ Sală',c:'#f97316'},{id:'cardio',label:'🏃 Cardio',c:'#10b981'}].map(m=><button key={m.id} onClick={()=>setMode(m.id)} style={{padding:'12px',borderRadius:'12px',border:`2px solid ${mode===m.id?m.c:theme.border}`,background:mode===m.id?`${m.c}15`:'transparent',color:mode===m.id?m.c:theme.text3,fontSize:'15px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s'}}>{m.label}</button>)}</div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>{[{id:'gym',label:'🏋 Sală',c:'#f97316'},{id:'cardio',label:'🏃 Cardio',c:'#10b981'}].map(m=><button key={m.id} onClick={()=>setMode(m.id)} style={{padding:'12px',borderRadius:'12px',border:`2px solid ${mode===m.id?m.c:theme.border}`,background:mode===m.id?`${m.c}15`:'transparent',color:mode===m.id?m.c:theme.text3,fontSize:'15px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s'}}>{m.label}</button>)}</div>
       {mode==='gym'&&<>
         <div style={{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'2px'}}>{MUSCLE_GROUPS.map(g=><button key={g.id} onClick={()=>{setSelGroup(g.id);setSelEx(null);setSets([]);}} style={{padding:'8px 14px',borderRadius:'100px',fontSize:'13px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s',flexShrink:0,borderColor:selGroup===g.id?g.color:theme.softBorder,background:selGroup===g.id?`${g.color}18`:'transparent',color:selGroup===g.id?g.color:theme.text3}}>{g.icon} {g.label}</button>)}</div>
         <div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'12px',display:'flex',flexDirection:'column',gap:'6px'}}><div style={{fontSize:'11px',color:theme.text3,letterSpacing:'0.1em',fontWeight:700,textTransform:'uppercase',marginBottom:'4px'}}>ALEGE EXERCIȚIU</div>{EXERCISES[selGroup].map(ex=>{const pr=getPR(ex.id);return(<button key={ex.id} onClick={()=>{setSelEx(ex.id);if(!sets.length)setSets([{kg:'',reps:''}]);}} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',borderRadius:'10px',border:`1.5px solid ${selEx===ex.id?'rgba(249,115,22,0.5)':theme.surface2}`,background:selEx===ex.id?'rgba(249,115,22,0.08)':theme.surface,cursor:'pointer',transition:'all 0.15s',textAlign:'left'}}><span style={{fontSize:'15px',fontWeight:600,color:selEx===ex.id?'#f97316':theme.text2}}>{ex.name}</span>{pr&&<span style={{fontSize:'11px',color:theme.text3,background:theme.surface,padding:'2px 8px',borderRadius:'6px'}}>PR: {pr}kg</span>}</button>);})}</div>
-        {selEx&&<div style={{background:theme.surface,border:'1px solid rgba(249,115,22,0.2)',borderRadius:'16px',padding:'14px'}}><div style={{fontSize:'13px',color:'#f97316',fontWeight:700,letterSpacing:'0.05em',marginBottom:'12px',fontFamily:"'Barlow Condensed',sans-serif",textTransform:'uppercase'}}>{EXERCISES[selGroup].find(e=>e.id===selEx)?.name}</div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:'8px',marginBottom:'8px'}}>{['KG','REPS',''].map((h,i)=><div key={i} style={{fontSize:'11px',color:theme.text3,textAlign:'center',letterSpacing:'0.08em',width:i===2?'32px':'auto'}}>{h}</div>)}</div>{sets.map((set,i)=><div key={i} style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:'8px',marginBottom:'6px',alignItems:'center'}}><input type="number" value={set.kg} onChange={e=>updSet(i,'kg',e.target.value)} placeholder="kg" style={{background:theme.surface2,border:`1.5px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px',color:theme.text,fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/><input type="number" value={set.reps} onChange={e=>updSet(i,'reps',e.target.value)} placeholder="reps" style={{background:theme.surface2,border:`1.5px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px',color:theme.text,fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/><button onClick={()=>rmSet(i)} style={{width:'32px',height:'42px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'10px',color:'#ef4444',cursor:'pointer',fontSize:'16px',display:'flex',alignItems:'center',justifyContent:'center'}}>×</button></div>)}<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginTop:'10px'}}><button onClick={addSet} style={{padding:'10px',background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'10px',color:theme.text3,fontSize:'14px',fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>+ Set</button><button onClick={saveEx} style={{padding:'10px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 4px 15px rgba(249,115,22,0.3)'}}>SALVEAZĂ ▸</button></div></div>}
+        {selEx&&<div style={{background:theme.surface,border:'1px solid rgba(249,115,22,0.2)',borderRadius:'16px',padding:'14px'}}><div style={{fontSize:'13px',color:'#f97316',fontWeight:700,letterSpacing:'0.05em',marginBottom:'12px',fontFamily:"'Barlow Condensed',sans-serif",textTransform:'uppercase'}}>{EXERCISES[selGroup].find(e=>e.id===selEx)?.name}</div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:'8px',marginBottom:'8px'}}>{['KG','REPS',''].map((h,i)=><div key={i} style={{fontSize:'11px',color:theme.text3,textAlign:'center',letterSpacing:'0.08em',width:i===2?'32px':'auto'}}>{h}</div>)}</div>{sets.map((set,i)=><div key={i} style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:'8px',marginBottom:'6px',alignItems:'center'}}><input type="number" value={set.kg} onChange={e=>updSet(i,'kg',e.target.value)} placeholder="kg" style={{background:theme.surface2,border:`1.5px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px',color:theme.text,fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/><input type="number" value={set.reps} onChange={e=>updSet(i,'reps',e.target.value)} placeholder="reps" style={{background:theme.surface2,border:`1.5px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px',color:theme.text,fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/><button onClick={()=>rmSet(i)} style={{width:'32px',height:'42px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'10px',color:'#ef4444',cursor:'pointer',fontSize:'16px',display:'flex',alignItems:'center',justifyContent:'center'}}>×</button></div>)}<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginTop:'10px'}}><button onClick={addSet} style={{padding:'10px',background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'10px',color:theme.text3,fontSize:'14px',fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>+ Set</button><button onClick={saveEx} style={{padding:'10px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 4px 15px rgba(249,115,22,0.3)'}}>SALVEAZĂ ◆</button></div></div>}
         {todayW.exercises.length>0&&<div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'14px'}}><div style={{fontSize:'12px',color:theme.text3,letterSpacing:'0.1em',fontWeight:700,textTransform:'uppercase',marginBottom:'10px'}}>📋 SESIUNE AZI</div>{todayW.exercises.map((ex,i)=>{const mg=MUSCLE_GROUPS.find(g=>g.id===ex.group);return(<div key={i} style={{marginBottom:'10px',padding:'10px 12px',background:theme.surface,borderRadius:'10px',borderLeft:`3px solid ${mg?.color||'#f97316'}`}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}><span style={{fontSize:'14px',fontWeight:700,color:theme.text}}>{ex.name}</span><span style={{fontSize:'11px',color:theme.text4}}>{ex.time}</span></div><div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>{ex.sets.map((s,j)=><span key={j} style={{fontSize:'13px',color:theme.text3,background:theme.surface,padding:'3px 8px',borderRadius:'6px'}}>{s.kg}kg×{s.reps}</span>)}<span style={{fontSize:'12px',color:theme.text3,marginLeft:'auto'}}>Vol: {ex.volume}kg</span></div></div>);})}</div>}
       </>}
       {mode==='cardio'&&<>
@@ -796,7 +613,7 @@ function WorkoutTab({workouts,setWorkouts,onSendToCoach,theme=THEMES.dark}){
           <div><div style={{fontSize:'11px',color:theme.text3,letterSpacing:'0.1em',marginBottom:'8px',fontWeight:700}}>DURATĂ (min)</div><div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'8px'}}>{[15,20,30,45,60,90].map(min=><button key={min} onClick={()=>setCD(String(min))} style={{padding:'8px 16px',borderRadius:'10px',border:`1.5px solid ${cardioDur===String(min)?'#10b981':theme.softBorder}`,background:cardioDur===String(min)?'rgba(16,185,129,0.12)':theme.surface,color:cardioDur===String(min)?'#10b981':theme.text3,fontSize:'14px',fontWeight:700,cursor:'pointer'}}>{min}</button>)}</div><input type="number" value={cardioDur} onChange={e=>setCD(e.target.value)} placeholder="manual..." style={{width:'100%',background:theme.surface2,border:`1.5px solid ${theme.border}`,borderRadius:'10px',padding:'10px 14px',color:theme.text,fontSize:'16px',outline:'none',fontFamily:"'Inter',sans-serif"}}/></div>
           <div><div style={{fontSize:'11px',color:theme.text3,letterSpacing:'0.1em',marginBottom:'8px',fontWeight:700}}>INTENSITATE</div><div style={{display:'flex',gap:'8px'}}>{['ușoară','moderată','intensă'].map(int=><button key={int} onClick={()=>setCI(int)} style={{flex:1,padding:'10px',borderRadius:'10px',border:`1.5px solid ${cardioInt===int?'#10b981':theme.softBorder}`,background:cardioInt===int?'rgba(16,185,129,0.12)':theme.surface,color:cardioInt===int?'#10b981':theme.text3,fontSize:'13px',fontWeight:700,cursor:'pointer',transition:'all 0.15s'}}>{int}</button>)}</div></div>
           {cardioDur&&parseInt(cardioDur)>0&&<div style={{background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'12px',padding:'12px',textAlign:'center'}}><div style={{fontSize:'12px',color:theme.text3,marginBottom:'4px'}}>ESTIMAT ARS</div><div style={{fontSize:'28px',fontWeight:900,color:'#10b981',fontFamily:"'Barlow Condensed',sans-serif"}}>{calcBurned(CARDIO_TYPES.find(c=>c.id===cardioType).met,parseInt(cardioDur))} kcal</div></div>}
-          <button onClick={saveCardio} disabled={!cardioDur||parseInt(cardioDur)<=0} style={{padding:'14px',background:cardioDur&&parseInt(cardioDur)>0?'linear-gradient(135deg,#10b981,#059669)':theme.surface2,border:'none',borderRadius:'12px',color:cardioDur&&parseInt(cardioDur)>0?'#fff':'#334155',fontSize:'15px',fontWeight:800,cursor:cardioDur&&parseInt(cardioDur)>0?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s'}}>▸ SALVEAZĂ CARDIO</button>
+          <button onClick={saveCardio} disabled={!cardioDur||parseInt(cardioDur)<=0} style={{padding:'14px',background:cardioDur&&parseInt(cardioDur)>0?'linear-gradient(135deg,#10b981,#059669)':theme.surface2,border:'none',borderRadius:'12px',color:cardioDur&&parseInt(cardioDur)>0?'#fff':'#334155',fontSize:'15px',fontWeight:800,cursor:cardioDur&&parseInt(cardioDur)>0?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s'}}>◆ SALVEAZĂ CARDIO</button>
         </div>
         {(todayW.cardio||[]).length>0&&<div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'14px'}}><div style={{fontSize:'12px',color:theme.text3,letterSpacing:'0.1em',fontWeight:700,textTransform:'uppercase',marginBottom:'10px'}}>📋 CARDIO AZI</div>{(todayW.cardio||[]).map((c,i)=><div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 12px',background:theme.surface,borderRadius:'10px',marginBottom:'6px',borderLeft:'3px solid #10b981'}}><span style={{fontSize:'16px'}}>{c.icon}</span><div style={{flex:1,marginLeft:'10px'}}><div style={{fontSize:'14px',fontWeight:700,color:theme.text}}>{c.name}</div><div style={{fontSize:'12px',color:theme.text3}}>{c.duration} min · {c.intensity}</div></div><div style={{textAlign:'right'}}><div style={{fontSize:'16px',fontWeight:800,color:'#10b981'}}>{c.kcal} kcal</div><div style={{fontSize:'11px',color:theme.text4}}>{c.time}</div></div></div>)}</div>}
       </>}
@@ -806,7 +623,7 @@ function WorkoutTab({workouts,setWorkouts,onSendToCoach,theme=THEMES.dark}){
   );
 }
 
-// ─── STATS TAB ────────────────────────────────────────────────────
+// ─── STATS TAB ────────────────────────────────────────────────────────────────
 function StatsTab({stats,workouts,onSendToCoach,setStats,theme=THEMES.dark}){
   const [sel,setSel]=useState(todayKey());
   const prep=(key,filter,valFn)=>Object.entries(stats[key]||{}).filter(filter).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([k,v])=>{const[,m,d]=k.split('-');return{date:`${d}/${m}`,value:valFn(v)};});
@@ -825,7 +642,7 @@ function StatsTab({stats,workouts,onSendToCoach,setStats,theme=THEMES.dark}){
   return(
     <div style={{flex:1,overflowY:'auto',padding:'14px',maxWidth:'800px',margin:'0 auto',width:'100%',display:'flex',flexDirection:'column',gap:'14px'}}>
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px'}}>
-        {[{l:'CURENT',v:latestW??'–',u:'kg',c:'#f97316'},{l:'PIERDUT',v:lost!==null?(parseFloat(lost)>0?`-${lost}`:`+${Math.abs(lost)}`):'–',u:'kg',c:'#4ade80'},{l:'LOG',v:Object.keys(stats.daily||{}).length,u:'zile',c:'#3b82f6'},{l:'STREAK',v:streak,u:'🔥',c:'#fbbf24'}].map(x=><StatCard key={x.l} label={x.l} value={x.v} unit={x.u} color={x.c} theme={theme}/>)}
+        {[{l:'CURENT',v:latestW??'—',u:'kg',c:'#f97316'},{l:'PIERDUT',v:lost!==null?(parseFloat(lost)>0?`-${lost}`:`+${Math.abs(lost)}`):'—',u:'kg',c:'#4ade80'},{l:'LOG',v:Object.keys(stats.daily||{}).length,u:'zile',c:'#3b82f6'},{l:'STREAK',v:streak,u:'🔥',c:'#fbbf24'}].map(x=><StatCard key={x.l} label={x.l} value={x.v} unit={x.u} color={x.c} theme={theme}/>)}
       </div>
       <WaterTracker stats={stats} setStats={setStats} theme={theme}/>
       <CalendarPicker selectedDate={sel} onSelect={setSel} stats={stats} workouts={workouts} theme={theme}/>
@@ -836,7 +653,7 @@ function StatsTab({stats,workouts,onSendToCoach,setStats,theme=THEMES.dark}){
           {selDaily?.calories&&<MetricBadge label="CALORII" value={selDaily.calories} color="#3b82f6" theme={theme}/>}
           {selDaily?.protein&&<MetricBadge label="PROTEINE" value={`${selDaily.protein}g`} color="#8b5cf6" theme={theme}/>}
         </div>
-        {selWorkout?.exercises?.length>0&&<div style={{marginTop:'8px'}}><div style={{fontSize:'11px',color:theme.text3,marginBottom:'6px',fontWeight:700}}>EXERCIȚII</div>{selWorkout.exercises.map((ex,i)=><div key={i} style={{fontSize:'13px',color:theme.text2,marginBottom:'4px'}}>▸ {ex.name} — {ex.sets.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}</div>)}</div>}
+        {selWorkout?.exercises?.length>0&&<div style={{marginTop:'8px'}}><div style={{fontSize:'11px',color:theme.text3,marginBottom:'6px',fontWeight:700}}>EXERCIȚII</div>{selWorkout.exercises.map((ex,i)=><div key={i} style={{fontSize:'13px',color:theme.text2,marginBottom:'4px'}}>◆ {ex.name} — {ex.sets.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}</div>)}</div>}
         {selWorkout?.cardio?.length>0&&<div style={{marginTop:'8px'}}><div style={{fontSize:'11px',color:theme.text3,marginBottom:'6px',fontWeight:700}}>CARDIO</div>{selWorkout.cardio.map((c,i)=><div key={i} style={{fontSize:'13px',color:theme.text2,marginBottom:'4px'}}>{c.icon} {c.name} {c.duration}min — {c.kcal} kcal</div>)}</div>}
       </div>}
       <MuscleVolumeChart workouts={workouts} theme={theme}/>
@@ -856,7 +673,7 @@ function StatsTab({stats,workouts,onSendToCoach,setStats,theme=THEMES.dark}){
   );
 }
 
-// ─── MAIN APP ─────────────────────────────────────────────────────
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App(){
   const session=loadSession();
   const [messages,setMessages]=useState(()=>session.messages||[]);
@@ -889,23 +706,9 @@ export default function App(){
       const key=todayKey();
       const ns=loadStats();
       if(d.type==='weight'&&typeof d.value==='number')ns.weight[key]=d.value;
-      if(d.type==='daily'){
-        if(!ns.daily[key])ns.daily[key]={};
-        if(typeof d.calories==='number')ns.daily[key].calories=d.calories;
-        if(typeof d.protein==='number')ns.daily[key].protein=d.protein;
-      }
-      if(d.type==='hrv'){
-        const hd=ls(KEYS.hrv,{});if(!hd[key])hd[key]={};
-        if(typeof d.energy==='number')hd[key].energy=d.energy;
-        if(typeof d.libido==='number')hd[key].libido=d.libido;
-        lsSet(KEYS.hrv,hd);
-      }
-      if(d.type==='sleep'){
-        const hd=ls(KEYS.hrv,{});if(!hd[key])hd[key]={};
-        if(typeof d.hours==='number')hd[key].sleep=d.hours;
-        if(typeof d.quality==='number')hd[key].sleepQuality=d.quality;
-        lsSet(KEYS.hrv,hd);
-      }
+      if(d.type==='daily'){if(!ns.daily[key])ns.daily[key]={};if(typeof d.calories==='number')ns.daily[key].calories=d.calories;if(typeof d.protein==='number')ns.daily[key].protein=d.protein;}
+      if(d.type==='hrv'){const hd=ls(KEYS.hrv,{});if(!hd[key])hd[key]={};if(typeof d.energy==='number')hd[key].energy=d.energy;if(typeof d.libido==='number')hd[key].libido=d.libido;lsSet(KEYS.hrv,hd);}
+      if(d.type==='sleep'){const hd=ls(KEYS.hrv,{});if(!hd[key])hd[key]={};if(typeof d.hours==='number')hd[key].sleep=d.hours;if(typeof d.quality==='number')hd[key].sleepQuality=d.quality;lsSet(KEYS.hrv,hd);}
       saveStats(ns);setStats({...ns});
     }catch{}
   },[]);
@@ -1028,8 +831,8 @@ export default function App(){
 
       <div className="tab-bar">
         <button className={`tab-btn ${tab==='coach'?'active':''}`} onClick={()=>setTab('coach')}>🤖 Coach</button>
-        <button className={`tab-btn ${tab==='workout'?'active':''}`} onClick={()=>setTab('workout')}>🏋️ Workout</button>
-        <button className={`tab-btn ${tab==='stats'?'active':''}`} onClick={()=>setTab('stats')}>📊 Stats</button>
+        <button className={`tab-btn ${tab==='workout'?'active':''}`} onClick={()=>setTab('workout')}>🏋 Workout</button>
+        <button className={`tab-btn ${tab==='stats'?'active':''}`} onClick={()=>setTab('stats')}>📈 Stats</button>
       </div>
 
       {tab==='coach'&&(<>
@@ -1037,22 +840,22 @@ export default function App(){
         <div className="qbar">
           {QUICK_COMMANDS.map(q=><button key={q.cmd} className="qbtn pr" onClick={()=>sendMessage(q.cmd)}>{q.icon} {q.label}</button>)}
           <div className="sep"/>
-          <button className="qbtn gn" onClick={()=>setPicker(true)}>🍽️ Masă</button>
+          <button className="qbtn gn" onClick={()=>setPicker(true)}>🍽 Masă</button>
           <div className="sep"/>
-          {[{icon:'😴',prefix:'Somn: '},{icon:'⚖️',prefix:'Greutate: '},{icon:'🏋️',prefix:'Forță: '},{icon:'⚡',prefix:'Energie: '}].map(q=><button key={q.prefix} className="qbtn" onClick={()=>{setInput(q.prefix);textareaRef.current?.focus();}}>{q.icon} {q.prefix.replace(':','').trim()}</button>)}
+          {[{icon:'😴',prefix:'Somn: '},{icon:'⚖️',prefix:'Greutate: '},{icon:'🏋',prefix:'Forță: '},{icon:'⚡',prefix:'Energie: '}].map(q=><button key={q.prefix} className="qbtn" onClick={()=>{setInput(q.prefix);textareaRef.current?.focus();}}>{q.icon} {q.prefix.replace(':','').trim()}</button>)}
         </div>
         <div className="msgs-wrap">
           <div className="msgs">
             {messages.length===0&&<div className="empty"><div className="eicon">🔥</div><div className="etitle">96 kg → 88 kg</div><div className="esub">Selectează tipul zilei și apasă <strong style={{color:'#fb923c'}}>Start zi</strong>.</div><div className="hchips"><span className="hchip">⚡ Antrenament</span><span className="hchip">🔥 Zi activă</span><span className="hchip">🌙 Repaus</span></div></div>}
-            {messages.map((m,i)=><div key={i} className={m.role==='user'?'mu':'ma'}><div className={`mlbl ${m.role==='user'?'lu':'la'}`}>{m.role==='user'?'▸ MIHAI':'◆ AI COACH'}</div>{m.role==='assistant'?<div>{renderMarkdown(m.content,theme)}</div>:<div style={{color:theme.text,fontSize:'16px',lineHeight:'1.5'}}>{m.display||m.content}</div>}</div>)}
+            {messages.map((m,i)=><div key={i} className={m.role==='user'?'mu':'ma'}><div className={`mlbl ${m.role==='user'?'lu':'la'}`}>{m.role==='user'?'◆ MIHAI':'⚡ AI COACH'}</div>{m.role==='assistant'?<div>{renderMarkdown(m.content,theme)}</div>:<div style={{color:theme.text,fontSize:'16px',lineHeight:'1.5'}}>{m.display||m.content}</div>}</div>)}
             {loading&&<div className="ldots"><div className="dot"/><div className="dot"/><div className="dot"/></div>}
             <div ref={messagesEndRef}/>
           </div>
         </div>
         <div className="inpwrap">
           <div className="inpinner">
-            <button className="fbtn" onClick={()=>setPicker(true)}>🍽️</button>
-            <textarea ref={textareaRef} value={input} onChange={e=>{setInput(e.target.value);e.target.style.height='48px';e.target.style.height=Math.min(e.target.scrollHeight,140)+'px';}} onKeyDown={handleKey} placeholder="Scrie liber sau apasă 🍽️..." disabled={loading} rows={1}/>
+            <button className="fbtn" onClick={()=>setPicker(true)}>🍽</button>
+            <textarea ref={textareaRef} value={input} onChange={e=>{setInput(e.target.value);e.target.style.height='48px';e.target.style.height=Math.min(e.target.scrollHeight,140)+'px';}} onKeyDown={handleKey} placeholder="Scrie liber sau apasă 🍽..." disabled={loading} rows={1}/>
             <button className="sbtn" onClick={()=>sendMessage(input)} disabled={loading||!input.trim()}>↑</button>
           </div>
         </div>

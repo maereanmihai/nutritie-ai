@@ -1,0 +1,32 @@
+{
+  "crons": [
+    {
+      "path": "/api/notify?type=suplimente_dim",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/notify?type=mic_dejun",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/notify?type=motivational",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/notify?type=pranz",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/notify?type=cina",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/notify?type=suplimente_seara",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/notify?type=noapte_buna",
+      "schedule": "0 20 * * *"
+    }
+  ]
+}

@@ -1,10 +1,38 @@
 <!doctype html>
-<html lang="en">
+<html lang="ro">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>nutritie-ai</title>
+    <meta name="theme-color" content="#080b14" />
+    <title>Mihai Performance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet" />
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "23f0b65c-0747-467c-878b-69b0d7431dd9",
+          safari_web_id: "web.onesignal.auto.13dd012d-81c7-44d8-8660-15690626d9c4",
+          notifyButton: {
+            enable: false,
+          },
+          welcomeNotification: {
+            title: "Mihai Performance 🔥",
+            message: "Notificările sunt activate! Let's go!",
+          },
+        });
+      });
+    </script>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      body { margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+      input[type=range] { cursor: pointer; }
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

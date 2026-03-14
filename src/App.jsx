@@ -472,48 +472,79 @@ function ExportPanel({stats, workouts, theme=THEMES.dark}) {
 // ─── BARCODE SCANNER ─────────────────────────────────────────────────────────
 function BarcodeScanner({onResult,theme=THEMES.dark}){
   const videoRef=useRef(null);
-  const [status,setStatus]=useState('idle'); // idle | scanning | loading | found | error
+  const canvasRef=useRef(null);
+  const [status,setStatus]=useState('idle');
   const [product,setProduct]=useState(null);
   const [qty,setQty]=useState('100');
   const [errorMsg,setErrorMsg]=useState('');
   const streamRef=useRef(null);
-  const scannerRef=useRef(null);
+  const rafRef=useRef(null);
+  const activeRef=useRef(false);
 
   const stopCamera=()=>{
+    activeRef.current=false;
+    if(rafRef.current){cancelAnimationFrame(rafRef.current);rafRef.current=null;}
     if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
-    if(scannerRef.current){try{scannerRef.current.stop();}catch{}scannerRef.current=null;}
   };
 
   useEffect(()=>()=>stopCamera(),[]);
 
   const startScan=async()=>{
     setStatus('scanning');setProduct(null);setErrorMsg('');
+    activeRef.current=true;
     try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
       streamRef.current=stream;
       if(videoRef.current){videoRef.current.srcObject=stream;await videoRef.current.play();}
 
-      // Use BarcodeDetector if available (Chrome Android)
-      if('BarcodeDetector' in window){
-        const detector=new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
-        const scan=async()=>{
-          if(!videoRef.current||status==='idle')return;
-          try{
-            const barcodes=await detector.detect(videoRef.current);
-            if(barcodes.length>0){
-              stopCamera();
-              await lookupBarcode(barcodes[0].rawValue);
-            } else {
-              scannerRef.current=requestAnimationFrame(scan);
-            }
-          }catch{scannerRef.current=requestAnimationFrame(scan);}
-        };
-        scannerRef.current=requestAnimationFrame(scan);
-      } else {
-        // Fallback: use ZXing via CDN
-        setErrorMsg('Browserul tău nu suportă scanarea automată. Introdu codul manual.');
-        setStatus('manual');
+      // Load ZXing from CDN dynamically
+      if(!window.ZXing){
+        await new Promise((resolve,reject)=>{
+          const s=document.createElement('script');
+          s.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';
+          s.onload=resolve;s.onerror=reject;
+          document.head.appendChild(s);
+        });
       }
+
+      const hints=new window.ZXing.Map();
+      hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS,[
+        window.ZXing.BarcodeFormat.EAN_13,
+        window.ZXing.BarcodeFormat.EAN_8,
+        window.ZXing.BarcodeFormat.UPC_A,
+        window.ZXing.BarcodeFormat.UPC_E,
+        window.ZXing.BarcodeFormat.CODE_128,
+      ]);
+      hints.set(window.ZXing.DecodeHintType.TRY_HARDER,true);
+      const reader=new window.ZXing.MultiFormatReader();
+      reader.setHints(hints);
+
+      const canvas=canvasRef.current;
+      const ctx=canvas.getContext('2d');
+
+      const tick=()=>{
+        if(!activeRef.current||!videoRef.current)return;
+        const v=videoRef.current;
+        if(v.readyState===v.HAVE_ENOUGH_DATA){
+          canvas.width=v.videoWidth;
+          canvas.height=v.videoHeight;
+          ctx.drawImage(v,0,0,canvas.width,canvas.height);
+          try{
+            const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+            const luminance=new window.ZXing.RGBLuminanceSource(imgData.data,canvas.width,canvas.height);
+            const binary=new window.ZXing.BinaryBitmap(new window.ZXing.HybridBinarizer(luminance));
+            const result=reader.decode(binary);
+            if(result){
+              stopCamera();
+              lookupBarcode(result.getText());
+              return;
+            }
+          }catch{}
+        }
+        rafRef.current=requestAnimationFrame(tick);
+      };
+      rafRef.current=requestAnimationFrame(tick);
+
     }catch(e){
       setErrorMsg('Nu s-a putut accesa camera. Verifică permisiunile.');
       setStatus('error');
@@ -584,6 +615,7 @@ function BarcodeScanner({onResult,theme=THEMES.dark}){
       {/* scanning */}
       {status==='scanning'&&(
         <div style={{textAlign:'center'}}>
+          <canvas ref={canvasRef} style={{display:'none'}}/>
           <div style={{position:'relative',borderRadius:'16px',overflow:'hidden',marginBottom:'12px',background:'#000'}}>
             <video ref={videoRef} style={{width:'100%',maxHeight:'280px',objectFit:'cover',display:'block'}} playsInline muted/>
             {/* aim overlay */}

@@ -615,6 +615,11 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
   const [activeTab,setActiveTab]=useState('alimente');
   const [templates,setTemplates]=useState(ls(KEYS.templates,DEFAULT_TEMPLATES));
   const [newTplName,setNewTplName]=useState('');
+  const [searchQuery,setSearchQuery]=useState('');
+  const [searchResults,setSearchResults]=useState([]);
+  const [searchLoading,setSearchLoading]=useState(false);
+  const [searchSelected,setSearchSelected]=useState(null);
+  const [searchQty,setSearchQty]=useState('100');
   const filtered=cat==='all'?FOODS:FOODS.filter(f=>f.cat===cat);
   const setQty=(id,val)=>setQuantities(q=>({...q,[id]:val}));
   const totals=Object.entries(quantities).reduce((acc,[id,qty])=>{if(!qty||isNaN(qty)||qty<=0)return acc;const food=FOODS.find(f=>f.id===id);if(!food)return acc;const m=calcMacros(food,parseFloat(qty));return{kcal:acc.kcal+m.kcal,p:acc.p+m.p,c:acc.c+m.c,fat:acc.fat+m.fat};},{kcal:0,p:0,c:0,fat:0});
@@ -623,6 +628,33 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
   const sendTemplate=tpl=>{const items=tpl.items.map(i=>{const food=FOODS.find(f=>f.id===i.id);return food?`${food.name} ${i.qty}${food.unit}`:null;}).filter(Boolean);onSend(`Masă: ${items.join(', ')} (${tpl.name})`);onClose();};
   const saveAsTpl=()=>{if(!newTplName.trim()||!hasItems)return;const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>({id,qty:parseFloat(q)}));const upd=[...templates,{id:`tpl_${Date.now()}`,name:newTplName,icon:'⭐',items}];setTemplates(upd);lsSet(KEYS.templates,upd);setNewTplName('');};
   const delTpl=id=>{const upd=templates.filter(t=>t.id!==id);setTemplates(upd);lsSet(KEYS.templates,upd);};
+
+  const searchFood=async()=>{
+    if(!searchQuery.trim())return;
+    setSearchLoading(true);setSearchResults([]);setSearchSelected(null);
+    try{
+      const res=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(searchQuery)}&search_simple=1&action=process&json=1&page_size=10&fields=product_name,brands,nutriments,image_front_small_url`);
+      const data=await res.json();
+      const products=(data.products||[]).filter(p=>p.product_name&&p.nutriments?.['energy-kcal_100g']).map(p=>({
+        name:p.product_name,brand:p.brands||'',
+        kcal:Math.round(p.nutriments['energy-kcal_100g']||0),
+        p:Math.round((p.nutriments.proteins_100g||0)*10)/10,
+        c:Math.round((p.nutriments.carbohydrates_100g||0)*10)/10,
+        f:Math.round((p.nutriments.fat_100g||0)*10)/10,
+        img:p.image_front_small_url||null,
+      }));
+      setSearchResults(products);
+    }catch{setSearchResults([]);}
+    setSearchLoading(false);
+  };
+
+  const addSearchProduct=()=>{
+    if(!searchSelected)return;
+    const q=parseFloat(searchQty)||100,f=q/100;
+    const name=`${searchSelected.name}${searchSelected.brand?` (${searchSelected.brand})`:''} ${q}g`;
+    onSend(`Masă: ${name} — ${Math.round(searchSelected.kcal*f)} kcal, P:${Math.round(searchSelected.p*f*10)/10}g, C:${Math.round(searchSelected.c*f*10)/10}g, G:${Math.round(searchSelected.f*f*10)/10}g`);
+    onClose();
+  };
 
   const handleBarcodeResult=(product,qty)=>{
     const qf=qty/100;
@@ -640,10 +672,49 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
             <button onClick={onClose} style={{background:theme.surface2,border:'none',borderRadius:'10px',color:theme.text3,padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>✕</button>
           </div>
           <div style={{display:'flex',borderBottom:`1px solid ${theme.border}`}}>
-            {[{id:'scanare',label:'📷 Scanare'},{id:'alimente',label:'🍙 Alimente'},{id:'templates',label:'⭐ Templates'}].map(t=><button key={t.id} onClick={()=>setActiveTab(t.id)} style={{flex:1,padding:'8px',fontSize:'12px',fontWeight:700,cursor:'pointer',border:'none',background:'transparent',color:activeTab===t.id?'#f97316':theme.text3,borderBottom:`2px solid ${activeTab===t.id?'#f97316':'transparent'}`,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.04em'}}>{t.label}</button>)}
+            {[{id:'scanare',label:'📷'},{id:'cautare',label:'🔍'},{id:'alimente',label:'🍙'},{id:'templates',label:'⭐'}].map(t=><button key={t.id} onClick={()=>setActiveTab(t.id)} style={{flex:1,padding:'8px',fontSize:'16px',fontWeight:700,cursor:'pointer',border:'none',background:'transparent',color:activeTab===t.id?'#f97316':theme.text3,borderBottom:`2px solid ${activeTab===t.id?'#f97316':'transparent'}`}}>{t.label}</button>)}
           </div>
         </div>
         {activeTab==='scanare'&&<BarcodeScanner onResult={handleBarcodeResult} theme={theme}/>}
+        {activeTab==='cautare'&&(
+          <div style={{flex:1,overflowY:'auto',padding:'14px 16px',display:'flex',flexDirection:'column',gap:'12px'}}>
+            <div style={{display:'flex',gap:'8px'}}>
+              <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchFood()} placeholder="ex: iaurt Danone, pâine Vel Pitar..." style={{flex:1,background:theme.surface2,border:`1.5px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px 14px',color:theme.text,fontSize:'15px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+              <button onClick={searchFood} disabled={searchLoading||!searchQuery.trim()} style={{padding:'10px 16px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",fontSize:'15px'}}>
+                {searchLoading?'⟳':'🔍'}
+              </button>
+            </div>
+            {searchLoading&&<div style={{textAlign:'center',padding:'20px',color:theme.text3}}>Se caută...</div>}
+            {!searchLoading&&searchResults.length===0&&searchQuery&&<div style={{textAlign:'center',padding:'20px',color:theme.text3,fontSize:'13px'}}>Niciun rezultat. Încearcă alt termen.</div>}
+            {searchResults.map((p,i)=>(
+              <div key={i} onClick={()=>setSearchSelected(p===searchSelected?null:p)} style={{padding:'10px 12px',background:searchSelected===p?'rgba(249,115,22,0.08)':theme.surface,border:`1.5px solid ${searchSelected===p?'rgba(249,115,22,0.4)':theme.border}`,borderRadius:'12px',cursor:'pointer',transition:'all 0.15s'}}>
+                <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
+                  {p.img&&<img src={p.img} alt="" style={{width:'40px',height:'40px',objectFit:'contain',borderRadius:'6px',background:'#fff',flexShrink:0}}/>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:'14px',fontWeight:600,color:searchSelected===p?'#f97316':theme.text2,lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.name}</div>
+                    {p.brand&&<div style={{fontSize:'11px',color:theme.text3}}>{p.brand}</div>}
+                    <div style={{display:'flex',gap:'8px',marginTop:'3px'}}>
+                      {[{l:'kcal',v:p.kcal,c:'#f97316'},{l:'P',v:`${p.p}g`,c:'#8b5cf6'},{l:'C',v:`${p.c}g`,c:'#3b82f6'},{l:'G',v:`${p.f}g`,c:'#10b981'}].map(x=><span key={x.l} style={{fontSize:'11px',fontWeight:700,color:x.c}}>{x.v}{x.l==='kcal'?` ${x.l}`:''}</span>)}
+                      <span style={{fontSize:'10px',color:theme.text4}}>/ 100g</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {searchSelected&&(
+              <div style={{borderTop:`1px solid ${theme.border}`,paddingTop:'12px'}}>
+                <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'8px'}}>CANTITATE (g)</div>
+                <div style={{display:'flex',gap:'6px',marginBottom:'8px',flexWrap:'wrap'}}>
+                  {[30,50,100,150,200,250,300].map(q=><button key={q} onClick={()=>setSearchQty(String(q))} style={{padding:'6px 10px',borderRadius:'8px',border:`1.5px solid ${searchQty===String(q)?'#f97316':theme.softBorder}`,background:searchQty===String(q)?'rgba(249,115,22,0.12)':theme.surface,color:searchQty===String(q)?'#f97316':theme.text3,fontSize:'13px',fontWeight:700,cursor:'pointer'}}>{q}</button>)}
+                </div>
+                <input type="number" value={searchQty} onChange={e=>setSearchQty(e.target.value)} style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px',color:theme.text,fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif",marginBottom:'10px'}}/>
+                <button onClick={addSearchProduct} style={{width:'100%',padding:'14px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'15px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',textTransform:'uppercase'}}>
+                  ◆ ADAUGĂ ({Math.round(searchSelected.kcal*(parseFloat(searchQty)||100)/100)} kcal)
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         {activeTab==='alimente'&&<>
           <div style={{display:'flex',gap:'6px',padding:'10px 16px',overflowX:'auto',flexShrink:0}}>
             {FOOD_CATS.map(c=><button key={c.id} onClick={()=>setCat(c.id)} style={{padding:'6px 14px',borderRadius:'100px',fontSize:'12px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Inter',sans-serif",borderColor:cat===c.id?'#f97316':theme.softBorder,background:cat===c.id?'rgba(249,115,22,0.12)':'transparent',color:cat===c.id?'#f97316':theme.text3}}>{c.label}</button>)}

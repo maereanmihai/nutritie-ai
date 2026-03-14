@@ -104,9 +104,9 @@ Răspunzi concis, tehnic și structurat. Folosești emoji-uri relevante pentru l
 9. LDL monitorizat indirect prin aport de grăsimi saturate și fibre solubile zilnic`;
 
 const DAY_TYPES = [
-  { val: "antrenament", label: "ZI ANTR.", color: "#4ade80", desc: "2.150–2.250 kcal · Carbs 140–180g" },
-  { val: "normal", label: "ZI NORM.", color: "#60a5fa", desc: "1.900–2.000 kcal · Carbs 110–140g" },
-  { val: "repaus", label: "ZI REPAUS", color: "#f59e0b", desc: "1.700–1.800 kcal · Carbs 80–110g" },
+  { val: "antrenament", label: "ANTRENAMENT", labelShort: "ANTR", icon: "⚡", gradient: "linear-gradient(135deg,#f97316,#ef4444)", color: "#f97316", glow: "rgba(249,115,22,0.4)", desc: "2.150–2.250 kcal · Carbs 140–180g" },
+  { val: "normal", label: "ZI ACTIVĂ", labelShort: "ACTIV", icon: "🔥", gradient: "linear-gradient(135deg,#3b82f6,#6366f1)", color: "#3b82f6", glow: "rgba(59,130,246,0.4)", desc: "1.900–2.000 kcal · Carbs 110–140g" },
+  { val: "repaus", label: "REPAUS", labelShort: "REPAUS", icon: "🌙", gradient: "linear-gradient(135deg,#8b5cf6,#ec4899)", color: "#8b5cf6", glow: "rgba(139,92,246,0.4)", desc: "1.700–1.800 kcal · Carbs 80–110g" },
 ];
 
 const QUICK_COMMANDS = [
@@ -121,137 +121,61 @@ const QUICK_LOG = [
   { label: "Somn", icon: "😴", prefix: "Somn: " },
   { label: "Greutate", icon: "⚖️", prefix: "Greutate: " },
   { label: "Forță", icon: "🏋️", prefix: "Forță: " },
-  { label: "Energie/Libido", icon: "⚡", prefix: "Energie: " },
+  { label: "Energie", icon: "⚡", prefix: "Energie: " },
 ];
+
+function inlineFormat(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#f1f5f9;font-weight:700">$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em style="color:#94a3b8">$1</em>')
+    .replace(/`(.+?)`/g, '<code style="background:rgba(249,115,22,0.15);padding:2px 6px;border-radius:4px;font-size:13px;color:#fb923c;font-family:monospace">$1</code>');
+}
 
 function renderMarkdown(text) {
   const lines = text.split('\n');
   const result = [];
   let i = 0;
-
   while (i < lines.length) {
     const line = lines[i];
-
-    // Table detection
     if (line.trim().startsWith('|') && i + 1 < lines.length && lines[i + 1].trim().match(/^\|[\s\-|]+\|$/)) {
       const tableLines = [];
-      while (i < lines.length && lines[i].trim().startsWith('|')) {
-        tableLines.push(lines[i]);
-        i++;
-      }
+      while (i < lines.length && lines[i].trim().startsWith('|')) { tableLines.push(lines[i]); i++; }
       const headers = tableLines[0].split('|').filter(c => c.trim() !== '').map(c => c.trim());
-      const rows = tableLines.slice(2).map(row =>
-        row.split('|').filter(c => c.trim() !== '').map(c => c.trim())
-      );
+      const rows = tableLines.slice(2).map(row => row.split('|').filter(c => c.trim() !== '').map(c => c.trim()));
       result.push(
-        <table key={i} style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0', fontSize: '14px' }}>
-          <thead>
-            <tr>{headers.map((h, j) => (
-              <th key={j} style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid #1e2530', color: '#9ca3af', fontFamily: 'Space Mono, monospace', fontWeight: 700, letterSpacing: '0.05em' }}
-                dangerouslySetInnerHTML={{ __html: inlineFormat(h) }} />
-            ))}</tr>
-          </thead>
-          <tbody>
-            {rows.map((row, ri) => (
-              <tr key={ri} style={{ borderBottom: '1px solid #111827' }}>
-                {row.map((cell, ci) => (
-                  <td key={ci} style={{ padding: '5px 10px', color: '#d1d5db' }}
-                    dangerouslySetInnerHTML={{ __html: inlineFormat(cell) }} />
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div key={i} style={{ overflowX: 'auto', margin: '12px 0' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+            <thead><tr>{headers.map((h, j) => <th key={j} style={{ textAlign: 'left', padding: '8px 12px', background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#64748b', fontWeight: 700, fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase' }} dangerouslySetInnerHTML={{ __html: inlineFormat(h) }} />)}</tr></thead>
+            <tbody>{rows.map((row, ri) => <tr key={ri} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{row.map((cell, ci) => <td key={ci} style={{ padding: '8px 12px', color: '#e2e8f0', fontSize: '14px' }} dangerouslySetInnerHTML={{ __html: inlineFormat(cell) }} />)}</tr>)}</tbody>
+          </table>
+        </div>
       );
       continue;
     }
-
-    // Headings
-    if (line.startsWith('### ')) {
-      result.push(<h3 key={i} style={{ color: '#9ca3af', fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', margin: '14px 0 6px', fontFamily: 'Space Mono, monospace' }}>{line.slice(4)}</h3>);
-      i++; continue;
-    }
-    if (line.startsWith('## ')) {
-      result.push(<h2 key={i} style={{ color: '#6b7280', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', margin: '16px 0 8px', fontFamily: 'Space Mono, monospace' }}>{line.slice(3)}</h2>);
-      i++; continue;
-    }
-    if (line.startsWith('# ')) {
-      result.push(<h1 key={i} style={{ color: '#4ade80', fontSize: '13px', letterSpacing: '0.15em', textTransform: 'uppercase', margin: '16px 0 8px', fontFamily: 'Space Mono, monospace' }}>{line.slice(2)}</h1>);
-      i++; continue;
-    }
-
-    // Horizontal rule
-    if (line.trim().match(/^---+$/)) {
-      result.push(<hr key={i} style={{ border: 'none', borderTop: '1px solid #1e2530', margin: '12px 0' }} />);
-      i++; continue;
-    }
-
-    // Lists
+    if (line.startsWith('### ')) { result.push(<h3 key={i} style={{ color: '#64748b', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', margin: '16px 0 8px', fontWeight: 700 }}>{line.slice(4)}</h3>); i++; continue; }
+    if (line.startsWith('## ')) { result.push(<h2 key={i} style={{ color: '#475569', fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', margin: '18px 0 8px', fontWeight: 700 }}>{line.slice(3)}</h2>); i++; continue; }
+    if (line.startsWith('# ')) { result.push(<h1 key={i} style={{ fontSize: '17px', fontWeight: 800, margin: '16px 0 10px', background: 'linear-gradient(90deg,#f97316,#ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{line.slice(2)}</h1>); i++; continue; }
+    if (line.trim().match(/^---+$/)) { result.push(<hr key={i} style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.07)', margin: '14px 0' }} />); i++; continue; }
     if (line.match(/^[\-\*] /)) {
       const items = [];
-      while (i < lines.length && lines[i].match(/^[\-\*] /)) {
-        items.push(lines[i].slice(2));
-        i++;
-      }
-      result.push(
-        <ul key={i} style={{ margin: '6px 0', paddingLeft: '16px', listStyle: 'none' }}>
-          {items.map((item, j) => (
-            <li key={j} style={{ color: '#d1d5db', marginBottom: '3px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-              <span style={{ color: '#4ade80', flexShrink: 0 }}>▸</span>
-              <span dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
-            </li>
-          ))}
-        </ul>
-      );
+      while (i < lines.length && lines[i].match(/^[\-\*] /)) { items.push(lines[i].slice(2)); i++; }
+      result.push(<ul key={i} style={{ margin: '8px 0', paddingLeft: 0, listStyle: 'none' }}>{items.map((item, j) => <li key={j} style={{ color: '#cbd5e1', marginBottom: '6px', display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '15px', lineHeight: '1.55' }}><span style={{ background: 'linear-gradient(135deg,#f97316,#ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', flexShrink: 0, fontWeight: 800, marginTop: '1px' }}>▸</span><span dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} /></li>)}</ul>);
       continue;
     }
-
-    // Numbered lists
     if (line.match(/^\d+\. /)) {
       const items = [];
-      while (i < lines.length && lines[i].match(/^\d+\. /)) {
-        items.push(lines[i].replace(/^\d+\. /, ''));
-        i++;
-      }
-      result.push(
-        <ol key={i} style={{ margin: '6px 0', paddingLeft: '20px' }}>
-          {items.map((item, j) => (
-            <li key={j} style={{ color: '#d1d5db', marginBottom: '3px' }}
-              dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
-          ))}
-        </ol>
-      );
+      while (i < lines.length && lines[i].match(/^\d+\. /)) { items.push(lines[i].replace(/^\d+\. /, '')); i++; }
+      result.push(<ol key={i} style={{ margin: '8px 0', paddingLeft: '20px' }}>{items.map((item, j) => <li key={j} style={{ color: '#cbd5e1', marginBottom: '5px', fontSize: '15px', lineHeight: '1.55' }} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />)}</ol>);
       continue;
     }
-
-    // Empty line
-    if (line.trim() === '') {
-      result.push(<div key={i} style={{ height: '6px' }} />);
-      i++; continue;
-    }
-
-    // Regular paragraph
-    result.push(
-      <p key={i} style={{ color: '#d1d5db', lineHeight: '1.7', margin: '3px 0', fontSize: '15px' }}
-        dangerouslySetInnerHTML={{ __html: inlineFormat(line) }} />
-    );
+    if (line.trim() === '') { result.push(<div key={i} style={{ height: '8px' }} />); i++; continue; }
+    result.push(<p key={i} style={{ color: '#cbd5e1', lineHeight: '1.7', margin: '3px 0', fontSize: '15px' }} dangerouslySetInnerHTML={{ __html: inlineFormat(line) }} />);
     i++;
   }
-
   return result;
 }
 
-function inlineFormat(text) {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#e8e0d0">$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em style="color:#9ca3af">$1</em>')
-    .replace(/`(.+?)`/g, '<code style="background:#1e2530;padding:1px 5px;border-radius:3px;font-size:11px;color:#4ade80">$1</code>')
-    .replace(/⚠️/g, '<span style="color:#f59e0b">⚠️</span>')
-    .replace(/✅/g, '<span style="color:#4ade80">✅</span>')
-    .replace(/❌/g, '<span style="color:#ef4444">❌</span>');
-}
-
-const STORAGE_KEY = 'nutritie_mihai_v2';
+const STORAGE_KEY = 'nutritie_mihai_v3';
 
 function loadSession() {
   try {
@@ -265,11 +189,7 @@ function loadSession() {
 }
 
 function saveSession(messages, dayType) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      messages, dayType, date: new Date().toDateString()
-    }));
-  } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ messages, dayType, date: new Date().toDateString() })); } catch {}
 }
 
 export default function App() {
@@ -281,50 +201,28 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
-
   const currentDay = DAY_TYPES.find(d => d.val === dayType);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
+  useEffect(() => { saveSession(messages, dayType); }, [messages, dayType]);
 
-  useEffect(() => {
-    saveSession(messages, dayType);
-  }, [messages, dayType]);
-
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2000);
-  };
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const sendMessage = useCallback(async (text) => {
     if (!text.trim() || loading) return;
-
-    const dayLabel = DAY_TYPES.find(d => d.val === dayType)?.label || '';
-    const contextPrefix = `[Context: ${dayLabel} — ${currentDay?.desc}]\n`;
+    const contextPrefix = `[Context: ${currentDay?.label} — ${currentDay?.desc}]\n`;
     const fullText = contextPrefix + text;
-
     const userMsg = { role: "user", content: text, display: text };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
     setLoading(true);
-
     try {
-      const apiMessages = newMessages.map(m => ({
-        role: m.role,
-        content: m.role === 'user' ? (m === userMsg ? fullText : m.content) : m.content
-      }));
-
+      const apiMessages = newMessages.map(m => ({ role: m.role, content: m.role === 'user' ? (m === userMsg ? fullText : m.content) : m.content }));
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: apiMessages,
-        }),
+        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: SYSTEM_PROMPT, messages: apiMessages }),
       });
       const data = await res.json();
       const reply = data.content?.[0]?.text || "Eroare la răspuns.";
@@ -335,432 +233,156 @@ export default function App() {
     setLoading(false);
   }, [messages, loading, dayType, currentDay]);
 
-  const handleKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage(input);
-    }
-  };
-
-  const clearHistory = () => {
-    setMessages([]);
-    localStorage.removeItem(STORAGE_KEY);
-    showToast("Istoric șters");
-  };
+  const handleKey = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } };
+  const clearHistory = () => { setMessages([]); localStorage.removeItem(STORAGE_KEY); showToast("Istoric șters"); };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#0a0c0f",
-      fontFamily: "'IBM Plex Mono', 'Courier New', monospace",
-      color: "#e8e0d0",
-      display: "flex",
-      flexDirection: "column",
-    }}>
+    <div style={{ minHeight: "100vh", background: "#080b14", fontFamily: "'Inter','SF Pro Display',-apple-system,sans-serif", color: "#e2e8f0", display: "flex", flexDirection: "column" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@700;800;900&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #0a0c0f; }
-        ::-webkit-scrollbar-thumb { background: #2a3040; border-radius: 2px; }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 
-        .header {
-          border-bottom: 1px solid #1e2530;
-          padding: 12px 20px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: #0d1017;
-          position: sticky;
-          top: 0;
-          z-index: 10;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-
-        .logo {
-          font-family: 'Space Mono', monospace;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.15em;
-          color: #4ade80;
-          text-transform: uppercase;
-          white-space: nowrap;
-        }
-        .logo span { color: #6b7280; font-weight: 400; }
-
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-
-        .day-selector { display: flex; gap: 4px; }
-
-        .day-btn {
-          padding: 5px 10px;
-          background: transparent;
-          border: 1px solid #1e2530;
-          border-radius: 3px;
-          color: #6b7280;
-          font-family: 'Space Mono', monospace;
-          font-size: 9px;
-          font-weight: 700;
-          cursor: pointer;
-          letter-spacing: 0.08em;
-          transition: all 0.15s;
-          white-space: nowrap;
-        }
-        .day-btn:hover { border-color: #374151; color: #9ca3af; }
-        .day-btn.active-antr { border-color: #4ade80; color: #4ade80; background: rgba(74,222,128,0.08); }
-        .day-btn.active-norm { border-color: #60a5fa; color: #60a5fa; background: rgba(96,165,250,0.08); }
-        .day-btn.active-repaus { border-color: #f59e0b; color: #f59e0b; background: rgba(245,158,11,0.08); }
-
-        .clear-btn {
-          padding: 5px 10px;
-          background: transparent;
-          border: 1px solid #1e2530;
-          border-radius: 3px;
-          color: #6b7280;
-          font-family: 'Space Mono', monospace;
-          font-size: 9px;
-          cursor: pointer;
-          transition: all 0.15s;
-          letter-spacing: 0.05em;
-        }
-        .clear-btn:hover { border-color: #ef4444; color: #ef4444; }
-
-        .day-info {
-          font-size: 12px;
-          color: #4b5563;
-          letter-spacing: 0.05em;
-          padding: 8px 16px;
-          background: #0d1017;
-          border-bottom: 1px solid #111827;
-          display: flex;
-          gap: 16px;
-          align-items: center;
-        }
-        .day-info-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-
-        .quick-bar {
-          display: flex;
-          gap: 6px;
-          padding: 8px 16px;
-          background: #0d1017;
-          border-bottom: 1px solid #111827;
-          overflow-x: auto;
-          flex-wrap: nowrap;
-          align-items: center;
-        }
+        .header { padding: 0 16px; background: rgba(8,11,20,0.96); backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 20; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .header-top { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; gap: 10px; flex-wrap: wrap; }
+        .logo { font-family: 'Barlow Condensed',sans-serif; font-size: 20px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; background: linear-gradient(90deg,#f97316,#ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
+        .logo-sub { font-size: 10px; color: #475569; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 500; margin-top: 2px; }
+        .day-pills { display: flex; gap: 5px; }
+        .day-pill { padding: 6px 11px; border-radius: 100px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; border: 1.5px solid rgba(255,255,255,0.07); background: transparent; color: #475569; transition: all 0.2s; white-space: nowrap; font-family: 'Barlow Condensed',sans-serif; font-size: 13px; }
+        .day-pill:hover { border-color: rgba(255,255,255,0.18); color: #94a3b8; }
+        .day-pill.active { border-color: transparent; color: #fff; }
+        .status-bar { display: flex; align-items: center; gap: 8px; padding: 8px 0 10px; overflow-x: auto; }
+        .status-bar::-webkit-scrollbar { height: 0; }
+        .status-badge { display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+        .quick-bar { display: flex; gap: 6px; padding: 10px 16px; background: rgba(8,11,20,0.8); border-bottom: 1px solid rgba(255,255,255,0.05); overflow-x: auto; align-items: center; }
         .quick-bar::-webkit-scrollbar { height: 0; }
-
-        .q-btn {
-          padding: 5px 10px;
-          background: #111827;
-          border: 1px solid #1e2530;
-          border-radius: 3px;
-          color: #9ca3af;
-          font-family: 'IBM Plex Mono', monospace;
-          font-size: 13px;
-          cursor: pointer;
-          white-space: nowrap;
-          transition: all 0.15s;
-          flex-shrink: 0;
-        }
-        .q-btn:hover { background: #1e2530; color: #e8e0d0; transform: translateY(-1px); }
-        .q-btn.log { color: #6b7280; }
-        .q-btn.log:hover { color: #9ca3af; }
-
-        .divider { width: 1px; height: 18px; background: #1e2530; flex-shrink: 0; margin: 0 2px; }
-
-        .messages {
-          max-width: 860px;
-          width: 100%;
-          margin: 0 auto;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          flex: 1;
-        }
-
-        .msg-user {
-          background: #0f1419;
-          border: 1px solid #1e2530;
-          border-left: 3px solid #374151;
-          border-radius: 0 4px 4px 0;
-          padding: 10px 14px;
-        }
-
-        .msg-assistant {
-          background: #0d1017;
-          border: 1px solid #111827;
-          border-left: 3px solid #4ade80;
-          border-radius: 0 4px 4px 0;
-          padding: 12px 16px;
-        }
-
-        .msg-label {
-          font-family: 'Space Mono', monospace;
-          font-size: 9px;
-          font-weight: 700;
-          letter-spacing: 0.15em;
-          margin-bottom: 8px;
-        }
-        .label-user { color: #374151; }
-        .label-assistant { color: #4ade80; }
-
-        .loading-dots {
-          display: flex;
-          gap: 6px;
-          padding: 14px 18px;
-          align-self: flex-start;
-        }
-        .dot {
-          width: 6px; height: 6px;
-          background: #4ade80;
-          border-radius: 50%;
-          animation: pulse 1.2s ease-in-out infinite;
-        }
-        .dot:nth-child(2) { animation-delay: 0.2s; }
-        .dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.2; transform: scale(0.8); }
-          50% { opacity: 1; transform: scale(1.1); }
-        }
-
-        .full-input-area {
-          border-top: 1px solid #1e2530;
-          background: #0d1017;
-          padding-bottom: env(safe-area-inset-bottom);
-          position: sticky;
-          bottom: 0;
-        }
-        .input-area {
-          padding: 12px 16px;
-          display: flex;
-          gap: 10px;
-          max-width: 860px;
-          width: 100%;
-          margin: 0 auto;
-          align-items: flex-end;
-        }
-        .input-wrap { flex: 1; }
-
-        textarea {
-          width: 100%;
-          background: #0f1419;
-          border: 1px solid #1e2530;
-          border-radius: 4px;
-          padding: 10px 14px;
-          color: #e8e0d0;
-          font-family: 'IBM Plex Mono', monospace;
-          font-size: 16px;
-          resize: none;
-          outline: none;
-          min-height: 48px;
-          max-height: 140px;
-          transition: border-color 0.15s;
-          line-height: 1.5;
-        }
-        textarea:focus { border-color: #374151; }
-        textarea::placeholder { color: #374151; }
-
-        .send-btn {
-          padding: 10px 18px;
-          background: #4ade80;
-          color: #0a0c0f;
-          border: none;
-          border-radius: 4px;
-          font-family: 'Space Mono', monospace;
-          font-size: 12px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.15s;
-          letter-spacing: 0.05em;
-          height: 44px;
-          white-space: nowrap;
-        }
-        .send-btn:hover:not(:disabled) { background: #86efac; transform: translateY(-1px); }
-        .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-        .empty-state {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          color: #374151;
-          text-align: center;
-          padding: 40px;
-        }
-        .empty-icon { font-size: 36px; opacity: 0.4; }
-        .empty-title {
-          font-family: 'Space Mono', monospace;
-          font-size: 13px;
-          color: #4b5563;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-        }
-        .empty-sub { font-size: 12px; color: #374151; line-height: 1.6; }
-
-        .hint { font-size: 10px; color: #374151; margin-top: 4px; letter-spacing: 0.05em; }
-
-        .session-badge {
-          font-size: 10px;
-          color: #4b5563;
-          padding: 2px 8px;
-          border: 1px solid #1e2530;
-          border-radius: 2px;
-        }
-
-        .toast {
-          position: fixed;
-          bottom: 80px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #1e2530;
-          color: #9ca3af;
-          font-family: 'Space Mono', monospace;
-          font-size: 11px;
-          padding: 8px 16px;
-          border-radius: 4px;
-          border: 1px solid #374151;
-          z-index: 100;
-          animation: fadeIn 0.2s ease;
-          letter-spacing: 0.05em;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .q-btn { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.15s; flex-shrink: 0; font-family: 'Inter',sans-serif; }
+        .q-btn:hover { background: rgba(255,255,255,0.08); color: #e2e8f0; transform: translateY(-1px); border-color: rgba(255,255,255,0.14); }
+        .q-btn:active { transform: translateY(0); }
+        .q-btn.primary { background: rgba(249,115,22,0.1); border-color: rgba(249,115,22,0.25); color: #fb923c; }
+        .q-btn.primary:hover { background: rgba(249,115,22,0.18); border-color: rgba(249,115,22,0.45); box-shadow: 0 4px 15px rgba(249,115,22,0.18); }
+        .sep { width: 1px; height: 20px; background: rgba(255,255,255,0.07); flex-shrink: 0; margin: 0 2px; }
+        .messages-wrap { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .messages { max-width: 800px; width: 100%; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+        .msg-user { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px 16px 4px 16px; padding: 12px 16px; align-self: flex-end; max-width: 88%; }
+        .msg-assistant { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px 16px 16px 16px; padding: 14px 18px; position: relative; overflow: hidden; }
+        .msg-assistant::before { content:''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg,#f97316,#ef4444); }
+        .msg-label { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 8px; }
+        .label-user { color: #334155; }
+        .label-assistant { background: linear-gradient(90deg,#f97316,#ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .loading-bubble { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px 16px 16px 16px; padding: 16px 20px; display: flex; align-items: center; gap: 6px; }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg,#f97316,#ef4444); animation: bounce 1.2s ease-in-out infinite; }
+        .dot:nth-child(2) { animation-delay: 0.15s; }
+        .dot:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes bounce { 0%,100% { transform: translateY(0) scale(0.8); opacity: 0.4; } 50% { transform: translateY(-5px) scale(1); opacity: 1; } }
+        .input-wrap { border-top: 1px solid rgba(255,255,255,0.05); background: rgba(8,11,20,0.96); backdrop-filter: blur(20px); padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); position: sticky; bottom: 0; }
+        .input-inner { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end; }
+        .textarea-wrap { flex: 1; }
+        textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 12px 16px; color: #e2e8f0; font-family: 'Inter',sans-serif; font-size: 16px; resize: none; outline: none; min-height: 50px; max-height: 150px; transition: border-color 0.2s, box-shadow 0.2s; line-height: 1.5; }
+        textarea:focus { border-color: rgba(249,115,22,0.35); box-shadow: 0 0 0 3px rgba(249,115,22,0.07); }
+        textarea::placeholder { color: #334155; }
+        .send-btn { width: 50px; height: 50px; background: linear-gradient(135deg,#f97316,#ef4444); border: none; border-radius: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; box-shadow: 0 4px 15px rgba(249,115,22,0.3); font-size: 22px; color: white; font-weight: 700; }
+        .send-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(249,115,22,0.4); }
+        .send-btn:active:not(:disabled) { transform: translateY(0); }
+        .send-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+        .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 40px 24px; text-align: center; }
+        .empty-icon { font-size: 60px; animation: pulse-icon 2.5s ease-in-out infinite; }
+        @keyframes pulse-icon { 0%,100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(249,115,22,0.3)); } 50% { transform: scale(1.06); filter: drop-shadow(0 0 35px rgba(249,115,22,0.6)); } }
+        .empty-title { font-family: 'Barlow Condensed',sans-serif; font-size: 24px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; background: linear-gradient(90deg,#f97316,#ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .empty-sub { font-size: 14px; color: #475569; line-height: 1.6; max-width: 280px; }
+        .hint-chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+        .hint-chip { padding: 6px 14px; background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.18); border-radius: 100px; font-size: 12px; color: #fb923c; font-weight: 600; }
+        .clr-btn { padding: 5px 10px; background: transparent; border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; color: #475569; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Inter',sans-serif; }
+        .clr-btn:hover { border-color: rgba(239,68,68,0.35); color: #ef4444; }
+        .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(15,20,35,0.96); color: #e2e8f0; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); z-index: 100; animation: slideUp 0.3s ease; white-space: nowrap; box-shadow: 0 8px 30px rgba(0,0,0,0.5); backdrop-filter: blur(20px); }
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
       `}</style>
 
       {/* Header */}
       <div className="header">
-        <div className="logo">
-          NUTRIȚIE<span> / </span>MIHAI<span> — AI</span>
+        <div className="header-top">
+          <div>
+            <div className="logo">MIHAI PERFORMANCE</div>
+            <div className="logo-sub">AI Nutrition Coach</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {messages.length > 0 && <button className="clr-btn" onClick={clearHistory}>CLR</button>}
+            <div className="day-pills">
+              {DAY_TYPES.map(d => (
+                <button key={d.val} className={`day-pill ${dayType === d.val ? 'active' : ''}`}
+                  style={dayType === d.val ? { background: d.gradient, boxShadow: `0 0 18px ${d.glow}` } : {}}
+                  onClick={() => { setDayType(d.val); showToast(`${d.icon} ${d.label}`); }}>
+                  {d.icon} {d.labelShort}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="header-right">
-          {messages.length > 0 && (
-            <div className="session-badge">{messages.length / 2 | 0} schimburi azi</div>
-          )}
-          <div className="day-selector">
-            {DAY_TYPES.map(d => (
-              <button
-                key={d.val}
-                className={`day-btn ${dayType === d.val ? `active-${d.val === 'antrenament' ? 'antr' : d.val === 'normal' ? 'norm' : 'repaus'}` : ''}`}
-                onClick={() => { setDayType(d.val); showToast(d.label + ' activat'); }}
-              >
-                {d.label}
-              </button>
-            ))}
+        <div className="status-bar">
+          <div className="status-badge" style={{ background: `${currentDay?.color}18`, border: `1px solid ${currentDay?.color}35`, color: currentDay?.color }}>
+            <span>{currentDay?.icon}</span>
+            <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: '13px', letterSpacing: '0.05em' }}>{currentDay?.label}</span>
+            <span style={{ opacity: 0.5 }}>·</span>
+            <span style={{ opacity: 0.8, fontSize: '12px' }}>{currentDay?.desc}</span>
+          </div>
+          <div className="status-badge" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#475569' }}>
+            📅 {new Date().toLocaleDateString('ro-RO', { weekday: 'short', day: 'numeric', month: 'short' })}
           </div>
           {messages.length > 0 && (
-            <button className="clear-btn" onClick={clearHistory}>CLR</button>
+            <div className="status-badge" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#475569' }}>
+              💬 {Math.floor(messages.length / 2)} mesaje
+            </div>
           )}
         </div>
-      </div>
-
-      {/* Day info bar */}
-      <div className="day-info">
-        <div className="day-info-dot" style={{ background: currentDay?.color }} />
-        <span style={{ color: currentDay?.color, fontWeight: 600 }}>{currentDay?.label}</span>
-        <span>{currentDay?.desc}</span>
-        <span style={{ marginLeft: 'auto' }}>
-          {new Date().toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </span>
       </div>
 
       {/* Quick Bar */}
       <div className="quick-bar">
-        {QUICK_COMMANDS.map(q => (
-          <button key={q.cmd} className="q-btn" onClick={() => sendMessage(q.cmd)}>
-            {q.icon} {q.label}
-          </button>
-        ))}
-        <div className="divider" />
-        {QUICK_LOG.map(q => (
-          <button key={q.prefix} className="q-btn log" onClick={() => {
-            setInput(q.prefix);
-            textareaRef.current?.focus();
-          }}>
-            {q.icon} {q.label}
-          </button>
-        ))}
+        {QUICK_COMMANDS.map(q => <button key={q.cmd} className="q-btn primary" onClick={() => sendMessage(q.cmd)}>{q.icon} {q.label}</button>)}
+        <div className="sep" />
+        {QUICK_LOG.map(q => <button key={q.prefix} className="q-btn" onClick={() => { setInput(q.prefix); textareaRef.current?.focus(); }}>{q.icon} {q.label}</button>)}
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      <div className="messages-wrap">
         <div className="messages">
           {messages.length === 0 && (
             <div className="empty-state">
-              <div className="empty-icon">🎯</div>
-              <div className="empty-title">Protocol activ — 96 kg → 88–90 kg</div>
-              <div className="empty-sub">
-                Apasă <strong style={{ color: "#4ade80" }}>Start zi</strong> pentru a iniția protocolul zilnic<br />
-                sau introdu o masă, activitate sau marker direct.
+              <div className="empty-icon">🔥</div>
+              <div className="empty-title">96 kg → 88 kg</div>
+              <div className="empty-sub">Selectează tipul zilei și apasă <strong style={{ color: '#fb923c' }}>Start zi</strong> pentru protocolul complet.</div>
+              <div className="hint-chips">
+                <span className="hint-chip">⚡ Antrenament</span>
+                <span className="hint-chip">🔥 Zi activă</span>
+                <span className="hint-chip">🌙 Repaus</span>
               </div>
             </div>
           )}
-
           {messages.map((m, i) => (
             <div key={i} className={m.role === "user" ? "msg-user" : "msg-assistant"}>
               <div className={`msg-label ${m.role === "user" ? "label-user" : "label-assistant"}`}>
-                {m.role === "user" ? "▸ MIHAI" : "◆ ASISTENT"}
+                {m.role === "user" ? "▸ MIHAI" : "◆ AI COACH"}
               </div>
-              {m.role === "assistant" ? (
-                <div>{renderMarkdown(m.content)}</div>
-              ) : (
-                <div style={{ color: '#d1d5db', fontSize: '16px', lineHeight: '1.6' }}>{m.display || m.content}</div>
-              )}
+              {m.role === "assistant"
+                ? <div>{renderMarkdown(m.content)}</div>
+                : <div style={{ color: '#cbd5e1', fontSize: '16px', lineHeight: '1.5' }}>{m.display || m.content}</div>}
             </div>
           ))}
-
-          {loading && (
-            <div className="msg-assistant" style={{ padding: '14px 16px' }}>
-              <div className="msg-label label-assistant">◆ ASISTENT</div>
-              <div className="loading-dots" style={{ padding: 0 }}>
-                <div className="dot" /><div className="dot" /><div className="dot" />
-              </div>
-            </div>
-          )}
-
+          {loading && <div className="loading-bubble"><div className="dot" /><div className="dot" /><div className="dot" /></div>}
           <div ref={messagesEndRef} />
         </div>
+      </div>
 
-        {/* Input */}
-        <div className="full-input-area">
-          <div className="input-area">
-            <div className="input-wrap">
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={e => {
-                  setInput(e.target.value);
-                  e.target.style.height = "44px";
-                  e.target.style.height = Math.min(e.target.scrollHeight, 140) + "px";
-                }}
-                onKeyDown={handleKey}
-                placeholder="Masă: 3 ouă, 100g piept pui, 30g ovăz..."
-                disabled={loading}
-                rows={1}
-              />
-              <div className="hint">Enter → trimite &nbsp;·&nbsp; Shift+Enter → linie nouă</div>
-            </div>
-            <button
-              className="send-btn"
-              onClick={() => sendMessage(input)}
-              disabled={loading || !input.trim()}
-            >
-              SEND →
-            </button>
+      {/* Input */}
+      <div className="input-wrap">
+        <div className="input-inner">
+          <div className="textarea-wrap">
+            <textarea ref={textareaRef} value={input}
+              onChange={e => { setInput(e.target.value); e.target.style.height = "50px"; e.target.style.height = Math.min(e.target.scrollHeight, 150) + "px"; }}
+              onKeyDown={handleKey} placeholder="Masă: 3 ouă, 100g piept pui..." disabled={loading} rows={1} />
           </div>
+          <button className="send-btn" onClick={() => sendMessage(input)} disabled={loading || !input.trim()}>↑</button>
         </div>
       </div>
 

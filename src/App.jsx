@@ -485,6 +485,139 @@ function CalendarPicker({selectedDate,onSelect,stats,workouts}){
   return(<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px'}}><button onClick={()=>setViewDate(new Date(year,month-1,1))} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',color:'#94a3b8',padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>‹</button><span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'17px',color:'#e2e8f0'}}>{RO_MONTHS[month]} {year}</span><button onClick={()=>setViewDate(new Date(year,month+1,1))} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',color:'#94a3b8',padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>›</button></div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'3px',marginBottom:'6px'}}>{RO_DAYS.map(d=><div key={d} style={{textAlign:'center',fontSize:'11px',fontWeight:700,color:'#334155',padding:'3px 0'}}>{d}</div>)}</div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'3px'}}>{cells.map((day,idx)=><div key={idx} onClick={()=>{if(!day)return;onSelect(`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`);}} style={{textAlign:'center',padding:'7px 2px',borderRadius:'9px',fontSize:'14px',fontWeight:600,cursor:day?'pointer':'default',background:isSel(day)?'linear-gradient(135deg,#f97316,#ef4444)':isToday(day)?'rgba(249,115,22,0.1)':hasData(day)?'rgba(255,255,255,0.04)':'transparent',color:isSel(day)?'#fff':isToday(day)?'#f97316':day?'#94a3b8':'transparent',border:isToday(day)&&!isSel(day)?'1px solid rgba(249,115,22,0.3)':'1px solid transparent',position:'relative',transition:'all 0.15s'}}>{day||''}{day&&hasData(day)&&!isSel(day)&&<div style={{position:'absolute',bottom:'2px',left:'50%',transform:'translateX(-50%)',width:'3px',height:'3px',borderRadius:'50%',background:hasWorkout(day)?'#8b5cf6':'#f97316'}}/>}</div>)}</div></div>);
 }
 
+const PATTERN_KEY = 'mp_patterns_v1';
+
+function buildPatternPayload(stats, workouts) {
+  const weight = Object.entries(stats.weight||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-14);
+  const daily  = Object.entries(stats.daily||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-14);
+  const days   = Object.entries(workouts.days||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-14);
+  return { weight, daily, workoutDays: days };
+}
+
+function PatternPanel({stats, workouts}) {
+  const [report, setReport]   = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [lastRun, setLastRun] = useState(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PATTERN_KEY);
+      if (saved) {
+        const d = JSON.parse(saved);
+        setReport(d.report);
+        setLastRun(d.date);
+        // Auto-trigger if 7 days passed since last run
+        const daysSince = (Date.now() - new Date(d.date).getTime()) / (1000*60*60*24);
+        if (daysSince >= 7) checkAndAutoRun();
+      } else {
+        checkAndAutoRun();
+      }
+    } catch {}
+  }, []);
+
+  function checkAndAutoRun() {
+    const logDays = Object.keys(stats.daily||{}).length;
+    if (logDays >= 7) runAnalysis(true);
+  }
+
+  async function runAnalysis(silent=false) {
+    const logDays = Object.keys(stats.daily||{}).length;
+    if (logDays < 3) return;
+    if (!silent) setExpanded(true);
+    setLoading(true);
+    const payload = buildPatternPayload(stats, workouts);
+    const prompt = `Analizează datele de tracking ale lui Mihai din ultimele 14 zile și identifică patternuri și corelații concrete.
+
+DATE DISPONIBILE:
+Greutate (dată: kg): ${JSON.stringify(payload.weight)}
+Nutriție zilnică (dată: {calories, protein}): ${JSON.stringify(payload.daily)}
+Antrenamente (dată: {exercises, cardio}): ${JSON.stringify(payload.workoutDays)}
+
+PROFIL: Bărbat 45 ani, 188cm, ~96kg → țintă 88-90kg, 2× fullbody + 3× split/săptămână.
+Macro țintă: antrenament 2150-2250kcal/165-180g prot, activ 1900-2000kcal/160-175g, repaus 1700-1800kcal/155-170g.
+
+Furnizează o analiză structurată cu:
+1. **TREND GREUTATE** — evoluție, rată de schimbare, prognoză
+2. **CONSISTENȚĂ NUTRIȚIE** — zile sub/peste țintă, media caloriilor și proteinelor
+3. **CORELAȚII IDENTIFICATE** — patternuri între variabile (ex: zile antrenament vs calorii, consistență proteine vs zile, etc.)
+4. **PUNCTE SLABE** — ce lipsește sau e inconsistent
+5. **RECOMANDĂRI CONCRETE** — maxim 3 acțiuni prioritare pentru săptămâna următoare
+
+Fii direct, tehnic, fără introduceri inutile. Răspunde în română.`;
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1500,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || 'Eroare la analiză.';
+      const now = new Date().toISOString();
+      setReport(text);
+      setLastRun(now);
+      setExpanded(true);
+      localStorage.setItem(PATTERN_KEY, JSON.stringify({report: text, date: now}));
+    } catch { setReport('⚠️ Eroare de conexiune.'); }
+    setLoading(false);
+  }
+
+  const logDays = Object.keys(stats.daily||{}).length;
+  const canRun  = logDays >= 3;
+  const lastRunLabel = lastRun ? new Date(lastRun).toLocaleDateString('ro-RO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : null;
+
+  return (
+    <div style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'16px',overflow:'hidden'}}>
+      {/* Header */}
+      <div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExpanded(e=>!e)}>
+        <div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',background:'linear-gradient(90deg,#8b5cf6,#ec4899)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.05em'}}>🧠 PATTERN DETECTION</div>
+          <div style={{fontSize:'11px',color:'#475569',marginTop:'2px'}}>
+            {lastRunLabel ? `Ultima analiză: ${lastRunLabel}` : canRun ? 'Date suficiente pentru analiză' : `Necesare min. 3 zile de log (${logDays}/3)`}
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+          {canRun && (
+            <button onClick={e=>{e.stopPropagation();runAnalysis();}} disabled={loading} style={{padding:'7px 14px',background:loading?'rgba(139,92,246,0.1)':'linear-gradient(135deg,#8b5cf6,#ec4899)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',opacity:loading?0.6:1,boxShadow:loading?'none':'0 4px 15px rgba(139,92,246,0.3)',transition:'all 0.2s'}}>
+              {loading ? '⏳ ANALIZEZ...' : '▸ ANALIZEAZĂ'}
+            </button>
+          )}
+          <span style={{color:'#475569',fontSize:'18px'}}>{expanded?'↑':'↓'}</span>
+        </div>
+      </div>
+
+      {/* Report */}
+      {expanded && (
+        <div style={{borderTop:'1px solid rgba(139,92,246,0.15)',padding:'16px'}}>
+          {loading && (
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'12px',padding:'20px'}}>
+              <div style={{display:'flex',gap:'6px'}}>
+                {[0,1,2].map(i=><div key={i} style={{width:'8px',height:'8px',borderRadius:'50%',background:'linear-gradient(135deg,#8b5cf6,#ec4899)',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}
+              </div>
+              <div style={{fontSize:'13px',color:'#64748b'}}>Analizez {logDays} zile de date...</div>
+            </div>
+          )}
+          {!loading && report && (
+            <div style={{fontSize:'14px',lineHeight:'1.7',color:'#cbd5e1'}}>
+              {renderMarkdown(report)}
+            </div>
+          )}
+          {!loading && !report && !canRun && (
+            <div style={{textAlign:'center',color:'#334155',fontSize:'13px',padding:'16px'}}>
+              Loghează cel puțin 3 zile de nutriție pentru a activa analiza de patternuri.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StatsTab({stats,workouts}){
   const [sel,setSel]=useState(todayKey());
   const prep=(key,filter,valFn)=>Object.entries(stats[key]||{}).filter(filter).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([k,v])=>{const[,m,d]=k.split('-');return{date:`${d}/${m}`,value:valFn(v)};});
@@ -514,6 +647,7 @@ function StatsTab({stats,workouts}){
     {calData.length>1&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}><LineChart data={calData} color="#3b82f6" label="Calorii" unit=" kcal" target="1900–2250"/></div>}
     {protData.length>1&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}><LineChart data={protData} color="#8b5cf6" label="Proteine" unit="g" target="160–180"/></div>}
     {weightData.length>0&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'13px',letterSpacing:'0.1em',color:'#64748b',textTransform:'uppercase',marginBottom:'10px'}}>📋 Jurnal Greutate</div><div style={{display:'flex',flexDirection:'column',gap:'5px'}}>{[...weightData].reverse().map((d,i,arr)=><div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',background:'rgba(255,255,255,0.02)',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.04)'}}><span style={{fontSize:'13px',color:'#64748b'}}>{d.date}</span><span style={{fontSize:'16px',fontWeight:700,color:'#f97316'}}>{d.value} kg</span>{arr[i+1]&&<span style={{fontSize:'12px',fontWeight:600,color:d.value<arr[i+1].value?'#4ade80':'#ef4444'}}>{d.value<arr[i+1].value?'↓':'↑'}{Math.abs(d.value-arr[i+1].value).toFixed(1)}</span>}</div>)}</div></div>}
+    <PatternPanel stats={stats} workouts={workouts}/>
     <div style={{height:'16px'}}/>
   </div>);
 }

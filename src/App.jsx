@@ -831,22 +831,525 @@ function WeeklyReport({stats,workouts,theme=THEMES.dark}){
   return(<div style={{background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.18)',borderRadius:'16px',overflow:'hidden'}}><div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExpanded(e=>!e)}><div><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',color:'#10b981',letterSpacing:'0.05em'}}>📅 RAPORT SĂPTĂMÂNAL</div><div style={{fontSize:'11px',color:theme.text3,marginTop:'2px'}}>{report?.date?new Date(report.date).toLocaleDateString('ro-RO',{weekday:'long',day:'numeric',month:'short'}):'Auto-generat luni'}</div></div><div style={{display:'flex',gap:'8px'}}><button onClick={e=>{e.stopPropagation();run();}} disabled={loading} style={{padding:'7px 14px',background:'rgba(16,185,129,0.15)',border:'1px solid rgba(16,185,129,0.3)',borderRadius:'10px',color:'#10b981',fontSize:'13px',fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:"'Barlow Condensed',sans-serif",opacity:loading?0.6:1}}>{loading?'⟳':'◆'}</button><span style={{color:theme.text3,fontSize:'18px'}}>{expanded?'↑':'↓'}</span></div></div>{expanded&&<div style={{borderTop:'1px solid rgba(16,185,129,0.12)',padding:'16px'}}>{loading&&<div style={{display:'flex',justifyContent:'center',gap:'6px',padding:'16px'}}>{[0,1,2].map(i=><div key={i} style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div>}{!loading&&report&&<div>{renderMarkdown(report.text,theme)}</div>}</div>}</div>);
 }
 
-// ─── WORKOUT TAB ──────────────────────────────────────────────────────────────
+// ─── SUPPLEMENT REMINDER ─────────────────────────────────────────────────────
+const SUPLIMENTE_DEFAULT = [
+  {id:'creatina',   name:'Creatină',        emoji:'💊', ora:'08:00', zile:[1,2,3,4,5,6,7]},
+  {id:'omega3',     name:'Omega-3',         emoji:'🐟', ora:'13:00', zile:[1,2,3,4,5,6,7]},
+  {id:'d3',         name:'Vitamina D3',     emoji:'☀️', ora:'08:00', zile:[1,2,3,4,5,6,7]},
+  {id:'mg',         name:'Mg Bisglicinat',  emoji:'🌙', ora:'21:00', zile:[1,2,3,4,5,6,7]},
+  {id:'zinc',       name:'Zinc',            emoji:'⚡', ora:'08:00', zile:[1,2,3,4,5,6,7]},
+  {id:'coq10',      name:'CoQ10',           emoji:'❤️', ora:'08:00', zile:[1,2,3,4,5,6,7]},
+  {id:'citrul',     name:'Citrulină malat', emoji:'🏋', ora:'17:00', zile:[1,3,5]},
+  {id:'carnitina',  name:'L-Carnitină',     emoji:'🔥', ora:'07:30', zile:[1,2,3,4,5,6,7]},
+];
+
+function SupplementTracker({theme=THEMES.dark}){
+  const todayKey2=todayKey();
+  const [suplimente,setSuplimente]=useState(()=>ls('mp_suplimente_v1',SUPLIMENTE_DEFAULT));
+  const [taken,setTaken]=useState(()=>ls('mp_supl_taken_v1',{}));
+  const todayTaken=taken[todayKey2]||{};
+  const todayDow=new Date().getDay()||7; // 1=luni...7=duminică
+
+  const toggleTaken=(id)=>{
+    const newTaken={...taken};
+    if(!newTaken[todayKey2])newTaken[todayKey2]={};
+    newTaken[todayKey2][id]=!newTaken[todayKey2][id];
+    setTaken(newTaken);
+    lsSet('mp_supl_taken_v1',newTaken);
+  };
+
+  const todaySupl=suplimente.filter(s=>s.zile.includes(todayDow));
+  const takenCount=todaySupl.filter(s=>todayTaken[s.id]).length;
+  const pct=todaySupl.length?Math.round((takenCount/todaySupl.length)*100):0;
+
+  // Grupează pe ore
+  const byOra={};
+  todaySupl.forEach(s=>{if(!byOra[s.ora])byOra[s.ora]=[];byOra[s.ora].push(s);});
+  const sortedOre=Object.keys(byOra).sort();
+
+  return(
+    <div style={{background:'rgba(139,92,246,0.05)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'16px',padding:'14px'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#8b5cf6',letterSpacing:'0.05em'}}>💊 SUPLIMENTE AZI</div>
+        <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+          <span style={{fontSize:'13px',fontWeight:700,color:pct===100?'#4ade80':'#8b5cf6'}}>{takenCount}/{todaySupl.length}</span>
+          <div style={{width:'60px',height:'6px',background:'rgba(139,92,246,0.2)',borderRadius:'3px',overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${pct}%`,background:pct===100?'#4ade80':'#8b5cf6',borderRadius:'3px',transition:'width 0.3s'}}/>
+          </div>
+        </div>
+      </div>
+      {sortedOre.map(ora=>(
+        <div key={ora} style={{marginBottom:'10px'}}>
+          <div style={{fontSize:'11px',color:'#8b5cf6',fontWeight:700,marginBottom:'6px',letterSpacing:'0.08em'}}>⏰ {ora}</div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:'6px'}}>
+            {byOra[ora].map(s=>(
+              <button key={s.id} onClick={()=>toggleTaken(s.id)}
+                style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 12px',borderRadius:'100px',
+                  border:`1.5px solid ${todayTaken[s.id]?'#4ade80':'rgba(139,92,246,0.3)'}`,
+                  background:todayTaken[s.id]?'rgba(74,222,128,0.12)':'transparent',
+                  color:todayTaken[s.id]?'#4ade80':'#8b5cf6',
+                  fontSize:'13px',fontWeight:600,cursor:'pointer',transition:'all 0.15s'}}>
+                <span>{s.emoji}</span>
+                <span>{s.name}</span>
+                {todayTaken[s.id]&&<span>✓</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      {pct===100&&<div style={{textAlign:'center',padding:'8px',background:'rgba(74,222,128,0.1)',borderRadius:'10px',color:'#4ade80',fontWeight:700,fontSize:'13px'}}>✅ Toate suplimentele luate azi!</div>}
+    </div>
+  );
+}
+
+// ─── WORKOUT PLAN ─────────────────────────────────────────────────────────────
+const PLAN_DEFAULT = {
+  name: 'Plan 5 zile Split',
+  zile: [
+    {zi:'Luni',    focus:'Piept + Triceps', exercitii:['bench','incline','flyes','skullcr','tricepext']},
+    {zi:'Marți',   focus:'Spate + Biceps',  exercitii:['deadlift','rows','pulldown','curl','hammer']},
+    {zi:'Miercuri',focus:'Cardio + Core',   exercitii:[]},
+    {zi:'Joi',     focus:'Umeri + Triceps', exercitii:['ohpress','laterals','frontrise','dipstric','tricepext']},
+    {zi:'Vineri',  focus:'Picioare',        exercitii:['squat','legpress','rdl','legcurl','calf']},
+    {zi:'Sâmbătă', focus:'Fullbody',        exercitii:['bench','rows','squat','ohpress','curl']},
+    {zi:'Duminică',focus:'Repaus',          exercitii:[]},
+  ]
+};
+
+function WorkoutPlan({theme=THEMES.dark}){
+  const [plan]=useState(()=>ls('mp_workout_plan_v1',PLAN_DEFAULT));
+  const todayDow=(new Date().getDay()+6)%7; // 0=luni...6=duminica
+  const allEx=Object.values(EXERCISES).flat();
+
+  return(
+    <div style={{background:'rgba(59,130,246,0.05)',border:'1px solid rgba(59,130,246,0.2)',borderRadius:'16px',padding:'14px'}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#3b82f6',letterSpacing:'0.05em',marginBottom:'12px'}}>📅 PLAN SĂPTĂMÂNAL — {plan.name}</div>
+      <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+        {plan.zile.map((z,i)=>{
+          const isToday=i===todayDow;
+          const exNames=z.exercitii.map(id=>allEx.find(e=>e.id===id)?.name).filter(Boolean);
+          return(
+            <div key={i} style={{padding:'10px 14px',borderRadius:'12px',
+              background:isToday?'rgba(59,130,246,0.1)':theme.surface,
+              border:`1.5px solid ${isToday?'#3b82f6':theme.border}`,
+              transition:'all 0.15s'}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:exNames.length?'6px':'0'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                  {isToday&&<span style={{fontSize:'10px',padding:'2px 6px',background:'#3b82f6',color:'#fff',borderRadius:'4px',fontWeight:700}}>AZI</span>}
+                  <span style={{fontWeight:700,color:isToday?'#3b82f6':theme.text,fontSize:'14px'}}>{z.zi}</span>
+                </div>
+                <span style={{fontSize:'12px',color:z.focus==='Repaus'?theme.text3:'#3b82f6',fontWeight:600}}>{z.focus}</span>
+              </div>
+              {exNames.length>0&&(
+                <div style={{fontSize:'12px',color:theme.text3,lineHeight:1.6}}>
+                  {exNames.join(' · ')}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── GUIDED WORKOUT TIMER ─────────────────────────────────────────────────────
+function GuidedTimer({theme=THEMES.dark}){
+  const [phase,setPhase]=useState('idle'); // idle | work | rest | done
+  const [currentSet,setCurrentSet]=useState(1);
+  const [totalSets,setTotalSets]=useState(4);
+  const [workTime,setWorkTime]=useState(45);
+  const [restTime,setRestTime]=useState(90);
+  const [remaining,setRemaining]=useState(0);
+  const intervalRef=useRef(null);
+
+  const pct=phase==='work'?Math.round((remaining/workTime)*100):phase==='rest'?Math.round((remaining/restTime)*100):100;
+  const color=phase==='work'?'#f97316':phase==='rest'?'#10b981':'#3b82f6';
+
+  useEffect(()=>{
+    if((phase==='work'||phase==='rest')&&remaining>0){
+      intervalRef.current=setInterval(()=>setRemaining(r=>r-1),1000);
+    } else if(remaining===0&&phase==='work'){
+      clearInterval(intervalRef.current);
+      if(currentSet<totalSets){setPhase('rest');setRemaining(restTime);if(navigator.vibrate)navigator.vibrate([100,50,100]);}
+      else{setPhase('done');if(navigator.vibrate)navigator.vibrate([200,100,200,100,200]);}
+    } else if(remaining===0&&phase==='rest'){
+      clearInterval(intervalRef.current);
+      setCurrentSet(s=>s+1);setPhase('work');setRemaining(workTime);
+      if(navigator.vibrate)navigator.vibrate([300]);
+    }
+    return()=>clearInterval(intervalRef.current);
+  },[phase,remaining]);
+
+  const start=()=>{setPhase('work');setRemaining(workTime);setCurrentSet(1);};
+  const stop=()=>{clearInterval(intervalRef.current);setPhase('idle');setRemaining(0);setCurrentSet(1);};
+  const skip=()=>{clearInterval(intervalRef.current);setRemaining(0);};
+
+  return(
+    <div style={{background:'rgba(249,115,22,0.05)',border:'1px solid rgba(249,115,22,0.2)',borderRadius:'16px',padding:'14px'}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#f97316',letterSpacing:'0.05em',marginBottom:'12px'}}>⏱ TIMER ANTRENAMENT GHIDAT</div>
+
+      {phase==='idle'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px'}}>
+            {[{l:'SETURI',v:totalSets,sv:setTotalSets,min:1,max:10},{l:'LUCRU (s)',v:workTime,sv:setWorkTime,min:10,max:120,step:5},{l:'REPAUS (s)',v:restTime,sv:setRestTime,min:15,max:300,step:15}].map(({l,v,sv,min,max,step=1})=>(
+              <div key={l} style={{textAlign:'center'}}>
+                <div style={{fontSize:'10px',color:theme.text3,fontWeight:700,marginBottom:'4px'}}>{l}</div>
+                <input type="number" value={v} min={min} max={max} step={step}
+                  onChange={e=>sv(Math.max(min,Math.min(max,parseInt(e.target.value)||min)))}
+                  style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'8px',padding:'8px',color:theme.text,fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+              </div>
+            ))}
+          </div>
+          <button onClick={start} style={{padding:'14px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'12px',color:'#fff',fontSize:'15px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 4px 15px rgba(249,115,22,0.3)'}}>
+            ▶ START ANTRENAMENT
+          </button>
+        </div>
+      )}
+
+      {(phase==='work'||phase==='rest')&&(
+        <div style={{textAlign:'center'}}>
+          <div style={{marginBottom:'8px',fontSize:'13px',fontWeight:700,color:theme.text3}}>
+            SET {currentSet} / {totalSets} — {phase==='work'?'🏋 LUCREAZĂ':'💚 ODIHNĂ'}
+          </div>
+          <div style={{position:'relative',width:'140px',height:'140px',margin:'0 auto 16px'}}>
+            <svg viewBox="0 0 140 140" style={{width:'140px',height:'140px',transform:'rotate(-90deg)'}}>
+              <circle cx="70" cy="70" r="62" fill="none" stroke={theme.surface2} strokeWidth="10"/>
+              <circle cx="70" cy="70" r="62" fill="none" stroke={color} strokeWidth="10"
+                strokeDasharray={`${2*Math.PI*62}`}
+                strokeDashoffset={`${2*Math.PI*62*(1-pct/100)}`}
+                strokeLinecap="round" style={{transition:'stroke-dashoffset 1s linear,stroke 0.3s'}}/>
+            </svg>
+            <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+              <span style={{fontSize:'42px',fontWeight:900,color,fontFamily:"'Barlow Condensed',sans-serif"}}>{remaining}</span>
+              <span style={{fontSize:'12px',color:theme.text3}}>sec</span>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:'8px',justifyContent:'center'}}>
+            <button onClick={skip} style={{padding:'10px 20px',background:'rgba(59,130,246,0.1)',border:'1px solid rgba(59,130,246,0.3)',borderRadius:'100px',color:'#3b82f6',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>⏭ Skip</button>
+            <button onClick={stop} style={{padding:'10px 20px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'100px',color:'#ef4444',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>✕ Stop</button>
+          </div>
+        </div>
+      )}
+
+      {phase==='done'&&(
+        <div style={{textAlign:'center',padding:'16px'}}>
+          <div style={{fontSize:'48px',marginBottom:'8px'}}>🏆</div>
+          <div style={{fontSize:'18px',fontWeight:800,color:'#4ade80',fontFamily:"'Barlow Condensed',sans-serif",marginBottom:'4px'}}>ANTRENAMENT COMPLET!</div>
+          <div style={{fontSize:'13px',color:theme.text3,marginBottom:'16px'}}>{totalSets} seturi × {workTime}s lucru</div>
+          <button onClick={stop} style={{padding:'10px 24px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>◆ DIN NOU</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MEAL PLAN AI ─────────────────────────────────────────────────────────────
+function MealPlanAI({dayType,theme=THEMES.dark}){
+  const [plan,setPlan]=useState(()=>ls('mp_meal_plan_v1',null));
+  const [loading,setLoading]=useState(false);
+  const [expanded,setExpanded]=useState(false);
+
+  const currentDay=DAY_TYPES.find(d=>d.val===dayType);
+
+  const generate=async()=>{
+    setLoading(true);setExpanded(true);
+    try{
+      const prompt=`Generează un plan alimentar complet pentru O ZI de tip "${currentDay?.label}" pentru Mihai (45 ani, 188cm, 96kg, obiectiv slăbit+masă musculară).
+Target: ${currentDay?.calTarget} kcal, ${currentDay?.protTarget}g proteine.
+Include: Mic dejun, Gustare 1, Prânz, Gustare 2, Cină.
+Pentru fiecare masă: alimente specifice cu gramaje, kcal și macros.
+Folosește alimente din lista: ouă, piept pui, pește, brânză vaci, iaurt, ovăz, orez, cartofi dulci, legume, ulei măsline.
+Format: tabel markdown cu coloana Masă | Alimente | Kcal | P | C | G.
+La final: total zinic.`;
+      const text=await callCoach([{role:'user',content:prompt}],1200);
+      const newPlan={text,date:new Date().toISOString(),dayType};
+      setPlan(newPlan);lsSet('mp_meal_plan_v1',newPlan);
+    }catch{setPlan({text:'⚠️ Eroare la generare.',date:new Date().toISOString(),dayType});}
+    setLoading(false);
+  };
+
+  return(
+    <div style={{background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'16px',overflow:'hidden'}}>
+      <div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExpanded(e=>!e)}>
+        <div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',color:'#10b981',letterSpacing:'0.05em'}}>🥗 PLAN ALIMENTAR AI</div>
+          <div style={{fontSize:'11px',color:theme.text3,marginTop:'2px'}}>{plan?.date?`Generat: ${new Date(plan.date).toLocaleDateString('ro-RO',{day:'numeric',month:'short'})} (${plan.dayType})`:'Generează un plan personalizat'}</div>
+        </div>
+        <div style={{display:'flex',gap:'8px'}}>
+          <button onClick={e=>{e.stopPropagation();generate();}} disabled={loading}
+            style={{padding:'7px 14px',background:'linear-gradient(135deg,#10b981,#059669)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:"'Barlow Condensed',sans-serif",opacity:loading?0.6:1}}>
+            {loading?'⟳':'◆ GENEREAZĂ'}
+          </button>
+          <span style={{color:theme.text3,fontSize:'18px'}}>{expanded?'↑':'↓'}</span>
+        </div>
+      </div>
+      {expanded&&<div style={{borderTop:'1px solid rgba(16,185,129,0.15)',padding:'16px'}}>
+        {loading&&<div style={{display:'flex',justifyContent:'center',gap:'6px',padding:'16px'}}>{[0,1,2].map(i=><div key={i} style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div>}
+        {!loading&&plan&&<div>{renderMarkdown(plan.text,THEMES.dark)}</div>}
+        {!loading&&!plan&&<div style={{textAlign:'center',color:theme.text3,fontSize:'13px',padding:'16px'}}>Apasă GENEREAZĂ pentru un plan alimentar personalizat pentru ziua de azi.</div>}
+      </div>}
+    </div>
+  );
+}
+
+// ─── PHOTO FOOD ANALYSIS ──────────────────────────────────────────────────────
+function PhotoFoodAnalysis({onSendToCoach,theme=THEMES.dark}){
+  const [status,setStatus]=useState('idle'); // idle | analyzing | done | error
+  const [result,setResult]=useState(null);
+  const inputRef=useRef(null);
+
+  const analyze=async(file)=>{
+    if(!file)return;
+    setStatus('analyzing');setResult(null);
+    try{
+      const base64=await new Promise((res,rej)=>{
+        const r=new FileReader();
+        r.onload=()=>res(r.result.split(',')[1]);
+        r.onerror=rej;
+        r.readAsDataURL(file);
+      });
+      const response=await fetch('/api/chat',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:800,
+          messages:[{
+            role:'user',
+            content:[
+              {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:base64}},
+              {type:'text',text:'Analizează această masă/farfurie. Identifică alimentele vizibile și estimează:\n1. Fiecare aliment cu gramajul estimat\n2. Caloriile totale estimate\n3. Macros estimate: Proteine, Carbohidrați, Grăsimi\nFii specific și realist. Răspunde în română cu un tabel markdown.'}
+            ]
+          }]
+        })
+      });
+      const data=await response.json();
+      const text=data.content?.[0]?.text||'Nu am putut analiza imaginea.';
+      setResult(text);setStatus('done');
+      onSendToCoach(`📸 Analiză poză masă:\n${text}`);
+    }catch{setStatus('error');setResult('Eroare la analiză. Încearcă din nou.');}
+  };
+
+  return(
+    <div style={{background:'rgba(236,72,153,0.05)',border:'1px solid rgba(236,72,153,0.2)',borderRadius:'16px',padding:'14px'}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#ec4899',letterSpacing:'0.05em',marginBottom:'12px'}}>📸 ANALIZĂ POZĂ MASĂ</div>
+
+      {status==='idle'&&(
+        <div style={{textAlign:'center',padding:'16px 0'}}>
+          <div style={{fontSize:'48px',marginBottom:'8px'}}>📷</div>
+          <div style={{fontSize:'14px',color:theme.text2,marginBottom:'6px',fontWeight:600}}>Fă o poză la farfurie</div>
+          <div style={{fontSize:'12px',color:theme.text3,marginBottom:'16px'}}>AI estimează caloriile și macros automat</div>
+          <button onClick={()=>inputRef.current?.click()}
+            style={{padding:'12px 28px',background:'linear-gradient(135deg,#ec4899,#8b5cf6)',border:'none',borderRadius:'12px',color:'#fff',fontSize:'15px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",boxShadow:'0 4px 15px rgba(236,72,153,0.3)'}}>
+            📷 ALEGE POZA
+          </button>
+          <input ref={inputRef} type="file" accept="image/*" capture="environment" style={{display:'none'}}
+            onChange={e=>e.target.files?.[0]&&analyze(e.target.files[0])}/>
+        </div>
+      )}
+
+      {status==='analyzing'&&(
+        <div style={{textAlign:'center',padding:'24px'}}>
+          <div style={{display:'flex',justifyContent:'center',gap:'6px',marginBottom:'12px'}}>{[0,1,2].map(i=><div key={i} style={{width:'10px',height:'10px',borderRadius:'50%',background:'#ec4899',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div>
+          <div style={{fontSize:'13px',color:theme.text3}}>AI analizează poza...</div>
+        </div>
+      )}
+
+      {(status==='done'||status==='error')&&result&&(
+        <div>
+          <div style={{marginBottom:'12px'}}>{renderMarkdown(result,theme)}</div>
+          <button onClick={()=>{setStatus('idle');setResult(null);inputRef.current?.click();}}
+            style={{width:'100%',padding:'10px',background:'linear-gradient(135deg,#ec4899,#8b5cf6)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>
+            📷 ANALIZEAZĂ ALTĂ POZĂ
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── BODY MEASUREMENTS TRACKER ───────────────────────────────────────────────
+function BodyMeasurements({theme=THEMES.dark}){
+  const [records,setRecords]=useState(()=>ls('mp_body_meas_v1',[]));
+  const [form,setForm]=useState({date:todayKey(),greutate:'',talie:'',biceps:'',piept:''});
+  const [showForm,setShowForm]=useState(false);
+
+  const save=()=>{
+    if(!form.date)return;
+    const existing=records.find(r=>r.date===form.date);
+    let updated;
+    if(existing){updated=records.map(r=>r.date===form.date?{...r,...form}:r);}
+    else{updated=[...records,{...form,id:Date.now()}];}
+    updated.sort((a,b)=>a.date.localeCompare(b.date));
+    setRecords(updated);lsSet('mp_body_meas_v1',updated);
+    setShowForm(false);
+    setForm({date:todayKey(),greutate:'',talie:'',biceps:'',piept:''});
+  };
+
+  const del=(id)=>{const u=records.filter(r=>r.id!==id);setRecords(u);lsSet('mp_body_meas_v1',u);};
+  const makeChartData=(field)=>records.filter(r=>r[field]).map(r=>({date:r.date.slice(5),value:parseFloat(r[field])}));
+
+  const METRICS=[
+    {key:'greutate',label:'Greutate',unit:'kg',color:'#f97316'},
+    {key:'talie',   label:'Talie',   unit:'cm',color:'#3b82f6'},
+    {key:'biceps',  label:'Biceps',  unit:'cm',color:'#8b5cf6'},
+    {key:'piept',   label:'Piept',   unit:'cm',color:'#10b981'},
+  ];
+
+  const latest=records[records.length-1]||{};
+  const prev=records[records.length-2]||{};
+
+  return(
+    <div style={{background:'rgba(249,115,22,0.05)',border:'1px solid rgba(249,115,22,0.2)',borderRadius:'16px',padding:'14px'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#f97316',letterSpacing:'0.05em'}}>📏 MĂSURĂTORI CORPORALE</div>
+        <button onClick={()=>setShowForm(s=>!s)} style={{padding:'6px 14px',background:'rgba(249,115,22,0.1)',border:'1px solid rgba(249,115,22,0.3)',borderRadius:'10px',color:'#f97316',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>
+          {showForm?'✕':'+ ADAUGĂ'}
+        </button>
+      </div>
+
+      {records.length>0&&(
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'14px'}}>
+          {METRICS.map(({key,label,unit,color})=>{
+            const val=latest[key];const prevVal=prev[key];
+            const diff=val&&prevVal?parseFloat(val)-parseFloat(prevVal):null;
+            return(
+              <div key={key} style={{background:`${color}12`,border:`1px solid ${color}30`,borderRadius:'12px',padding:'10px',textAlign:'center'}}>
+                <div style={{fontSize:'10px',color:theme.text3,marginBottom:'3px',textTransform:'uppercase',fontWeight:700}}>{label}</div>
+                <div style={{fontSize:'18px',fontWeight:900,color,fontFamily:"'Barlow Condensed',sans-serif"}}>{val||'—'}</div>
+                <div style={{fontSize:'10px',color:theme.text4}}>{val?unit:''}</div>
+                {diff!==null&&<div style={{fontSize:'11px',fontWeight:700,color:key==='greutate'||key==='talie'?(diff<0?'#4ade80':'#ef4444'):(diff>0?'#4ade80':'#ef4444')}}>{diff>0?'+':''}{diff.toFixed(1)}</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {showForm&&(
+        <div style={{background:theme.surface,borderRadius:'12px',padding:'14px',marginBottom:'14px',display:'flex',flexDirection:'column',gap:'10px'}}>
+          <div>
+            <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,marginBottom:'4px'}}>DATA</div>
+            <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'8px',padding:'8px 10px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+            {METRICS.map(({key,label,unit,color})=>(
+              <div key={key}>
+                <div style={{fontSize:'11px',fontWeight:700,marginBottom:'4px',color}}>{label} ({unit})</div>
+                <input type="number" step="0.1" value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}
+                  placeholder={key==='greutate'?'96.5':key==='talie'?'88':key==='biceps'?'40':'105'}
+                  style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'8px',padding:'8px 10px',color:theme.text,fontSize:'15px',outline:'none',fontFamily:"'Inter',sans-serif",textAlign:'center'}}/>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+            <button onClick={()=>setShowForm(false)} style={{padding:'10px',background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'10px',color:theme.text3,fontSize:'14px',fontWeight:600,cursor:'pointer'}}>Anulează</button>
+            <button onClick={save} style={{padding:'10px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>SALVEAZĂ ◆</button>
+          </div>
+        </div>
+      )}
+
+      {records.length>1&&(
+        <div style={{display:'flex',flexDirection:'column',gap:'12px',marginBottom:'14px'}}>
+          {METRICS.map(({key,label,unit,color})=>{const data=makeChartData(key);return data.length>1?(<div key={key} style={{...panel(theme),padding:'12px'}}><LineChart data={data} color={color} label={label} unit={` ${unit}`} theme={theme}/></div>):null;})}
+        </div>
+      )}
+
+      {records.length>0&&(
+        <div style={{overflowX:'auto'}}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13px'}}>
+            <thead><tr>{['Data','Greutate','Talie','Biceps','Piept',''].map((h,i)=>(<th key={i} style={{padding:'6px 8px',borderBottom:`1px solid ${theme.border}`,color:theme.text3,fontWeight:700,fontSize:'11px',textAlign:i===0?'left':'center'}}>{h}</th>))}</tr></thead>
+            <tbody>{[...records].reverse().map(r=>(<tr key={r.id} style={{borderBottom:`1px solid ${theme.border}`}}><td style={{padding:'8px',color:theme.text3}}>{r.date.slice(5)}</td>{['greutate','talie','biceps','piept'].map(k=>(<td key={k} style={{padding:'8px',textAlign:'center',fontWeight:600,color:theme.text}}>{r[k]||'—'}</td>))}<td style={{padding:'8px',textAlign:'center'}}><button onClick={()=>del(r.id)} style={{background:'none',border:'none',color:theme.text4,cursor:'pointer',fontSize:'14px'}}>×</button></td></tr>))}</tbody>
+          </table>
+        </div>
+      )}
+
+      {records.length===0&&!showForm&&(
+        <div style={{textAlign:'center',padding:'20px',color:theme.text3,fontSize:'13px'}}>
+          <div style={{fontSize:'32px',marginBottom:'8px'}}>📏</div>
+          <div style={{fontWeight:600,color:theme.text2,marginBottom:'4px'}}>Nicio măsurătoare</div>
+          <div>Adaugă prima înregistrare pentru a urmări evoluția</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function WorkoutTab({workouts,setWorkouts,onSendToCoach,theme=THEMES.dark}){
   const [mode,setMode]=useState('gym'),[selGroup,setSelGroup]=useState('piept'),[selEx,setSelEx]=useState(null),[sets,setSets]=useState([]);
   const [cardioType,setCT]=useState('mers'),[cardioDur,setCD]=useState(''),[cardioInt,setCI]=useState('moderată');
   const key=todayKey(),todayW=workouts.days[key]||{exercises:[],cardio:[]};
+  const [progressAlert,setProgressAlert]=useState(null);
   const addSet=()=>setSets(s=>[...s,{kg:'',reps:''}]);
   const updSet=(i,f,v)=>setSets(s=>s.map((set,idx)=>idx===i?{...set,[f]:v}:set));
   const rmSet=i=>setSets(s=>s.filter((_,idx)=>idx!==i));
   const getPR=exId=>{const all=Object.values(workouts.days).flatMap(d=>(d.exercises||[]).filter(e=>e.id===exId).flatMap(e=>e.sets));if(!all.length)return null;return Math.max(...all.map(s=>parseFloat(s.kg)));};
-  const saveEx=()=>{if(!selEx||!sets.length)return;const valid=sets.filter(s=>s.kg&&s.reps&&parseFloat(s.kg)>0&&parseInt(s.reps)>0);if(!valid.length)return;const ex=EXERCISES[selGroup].find(e=>e.id===selEx);const vol=valid.reduce((a,s)=>a+parseFloat(s.kg)*parseInt(s.reps),0);const entry={id:selEx,name:ex.name,group:selGroup,sets:valid,volume:Math.round(vol),time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};const nw={...workouts};if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};nw.days[key].exercises=[...nw.days[key].exercises,entry];const allEx=Object.values(nw.days).flatMap(d=>d.exercises||[]).filter(e=>e.id===selEx);const maxPrev=Math.max(0,...allEx.slice(0,-1).map(e=>Math.max(...e.sets.map(s=>parseFloat(s.kg)))));const maxNew=Math.max(...valid.map(s=>parseFloat(s.kg)));const isPR=maxNew>maxPrev;saveWorkouts(nw);setWorkouts({...nw});setSets([]);setSelEx(null);onSendToCoach(`Forță: ${ex.name} — ${valid.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}${isPR?' 🏅 RECORD PERSONAL':''}`);};
-  const saveCardio=()=>{if(!cardioDur||parseInt(cardioDur)<=0)return;const ct=CARDIO_TYPES.find(c=>c.id===cardioType);const kcal=calcBurned(ct.met,parseInt(cardioDur));const entry={id:cardioType,name:ct.name,icon:ct.icon,duration:parseInt(cardioDur),intensity:cardioInt,kcal,time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};const nw={...workouts};if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};nw.days[key].cardio=[...(nw.days[key].cardio||[]),entry];saveWorkouts(nw);setWorkouts({...nw});setCD('');onSendToCoach(`Activitate: ${ct.name} ${cardioDur} min (${cardioInt}) — ~${kcal} kcal arse`);};
+
+  const getProgressAdvice=(exId,newSets,allDays)=>{
+    // Găsește ultimele 2 sesiuni ale acestui exercițiu (exclude azi)
+    const prevSessions=Object.entries(allDays)
+      .filter(([date])=>date!==todayKey())
+      .sort(([a],[b])=>b.localeCompare(a))
+      .flatMap(([,day])=>(day.exercises||[]).filter(e=>e.id===exId))
+      .slice(0,2);
+    if(prevSessions.length<1)return null;
+    const lastSession=prevSessions[0];
+    const maxKgLast=Math.max(...lastSession.sets.map(s=>parseFloat(s.kg)||0));
+    const maxRepsLast=Math.max(...lastSession.sets.map(s=>parseInt(s.reps)||0));
+    const totalRepsLast=lastSession.sets.reduce((a,s)=>a+parseInt(s.reps||0),0);
+    const maxKgNew=Math.max(...newSets.map(s=>parseFloat(s.kg)||0));
+    const totalRepsNew=newSets.reduce((a,s)=>a+parseInt(s.reps||0),0);
+    // PR nou
+    const allPR=getPR(exId)||0;
+    if(maxKgNew>allPR)return{type:'pr',msg:`🏅 RECORD PERSONAL! ${maxKgNew}kg — cel mai greu până acum!`,color:'#fbbf24'};
+    // Același volum de 2 ori → crește greutatea
+    if(prevSessions.length>=2){
+      const prev2=prevSessions[1];
+      const maxKgPrev2=Math.max(...prev2.sets.map(s=>parseFloat(s.kg)||0));
+      if(maxKgLast===maxKgNew&&maxKgPrev2===maxKgNew&&totalRepsNew>=totalRepsLast){
+        const increment=maxKgNew>=50?5:2.5;
+        return{type:'increase',msg:`⬆️ Gata pentru progres! Încearcă ${maxKgNew+increment}kg data viitoare.`,color:'#10b981'};
+      }
+    }
+    // Mai puțin decât ultima dată → recuperare
+    if(maxKgNew<maxKgLast)return{type:'decrease',msg:`💤 Sub nivelul anterior (${maxKgLast}kg). Verifică recuperarea și somnul.`,color:'#f59e0b'};
+    // Progres față de ultima dată
+    if(maxKgNew>maxKgLast)return{type:'progress',msg:`💪 Progres față de ultima sesiune! +${(maxKgNew-maxKgLast).toFixed(1)}kg`,color:'#10b981'};
+    return null;
+  };
+
+  const saveEx=()=>{
+    if(!selEx||!sets.length)return;
+    const valid=sets.filter(s=>s.kg&&s.reps&&parseFloat(s.kg)>0&&parseInt(s.reps)>0);
+    if(!valid.length)return;
+    const ex=EXERCISES[selGroup].find(e=>e.id===selEx);
+    const vol=valid.reduce((a,s)=>a+parseFloat(s.kg)*parseInt(s.reps),0);
+    const entry={id:selEx,name:ex.name,group:selGroup,sets:valid,volume:Math.round(vol),time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};
+    const nw={...workouts};
+    if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};
+    nw.days[key].exercises=[...nw.days[key].exercises,entry];
+    const allEx=Object.values(nw.days).flatMap(d=>d.exercises||[]).filter(e=>e.id===selEx);
+    const maxPrev=Math.max(0,...allEx.slice(0,-1).map(e=>Math.max(...e.sets.map(s=>parseFloat(s.kg)))));
+    const maxNew=Math.max(...valid.map(s=>parseFloat(s.kg)));
+    const isPR=maxNew>maxPrev;
+    // Analiză volum progresiv
+    const advice=getProgressAdvice(selEx,valid,nw.days);
+    if(advice){setProgressAlert(advice);setTimeout(()=>setProgressAlert(null),5000);}
+    saveWorkouts(nw);setWorkouts({...nw});setSets([]);setSelEx(null);
+    onSendToCoach(`Forță: ${ex.name} — ${valid.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}${isPR?' 🏅 RECORD PERSONAL':''}`);
+  };
   const totalVol=todayW.exercises.reduce((a,e)=>a+e.volume,0);const totalCard=(todayW.cardio||[]).reduce((a,c)=>a+c.kcal,0);
   return(
     <div style={{flex:1,overflowY:'auto',padding:'14px',maxWidth:'800px',margin:'0 auto',width:'100%',display:'flex',flexDirection:'column',gap:'14px'}}>
       {(todayW.exercises.length>0||(todayW.cardio||[]).length>0)&&<div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px'}}>{[{l:'EXERCIȚII',v:todayW.exercises.length,c:'#f97316'},{l:'VOLUM',v:`${(totalVol/1000).toFixed(1)}t`,c:'#8b5cf6'},{l:'CARDIO',v:`${totalCard}kcal`,c:'#10b981'}].map(x=><StatCard key={x.l} label={x.l} value={x.v} color={x.c} theme={theme}/>)}</div>}
+      {progressAlert&&(
+        <div style={{padding:'12px 16px',background:`${progressAlert.color}15`,border:`1px solid ${progressAlert.color}40`,borderRadius:'12px',fontSize:'14px',fontWeight:700,color:progressAlert.color,animation:'fadeIn 0.3s ease',textAlign:'center'}}>
+          {progressAlert.msg}
+        </div>
+      )}
       <RestTimer theme={theme}/>
+      <GuidedTimer theme={theme}/>
+      <WorkoutPlan theme={theme}/>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>{[{id:'gym',label:'🏋 Sală',c:'#f97316'},{id:'cardio',label:'🏃 Cardio',c:'#10b981'}].map(m=><button key={m.id} onClick={()=>setMode(m.id)} style={{padding:'12px',borderRadius:'12px',border:`2px solid ${mode===m.id?m.c:theme.border}`,background:mode===m.id?`${m.c}15`:'transparent',color:mode===m.id?m.c:theme.text3,fontSize:'15px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s'}}>{m.label}</button>)}</div>
       {mode==='gym'&&<>
         <div style={{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'2px'}}>{MUSCLE_GROUPS.map(g=><button key={g.id} onClick={()=>{setSelGroup(g.id);setSelEx(null);setSets([]);}} style={{padding:'8px 14px',borderRadius:'100px',fontSize:'13px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s',flexShrink:0,borderColor:selGroup===g.id?g.color:theme.softBorder,background:selGroup===g.id?`${g.color}18`:'transparent',color:selGroup===g.id?g.color:theme.text3}}>{g.icon} {g.label}</button>)}</div>
@@ -903,6 +1406,8 @@ function StatsTab({stats,workouts,onSendToCoach,setStats,theme=THEMES.dark}){
         {selWorkout?.exercises?.length>0&&<div style={{marginTop:'8px'}}><div style={{fontSize:'11px',color:theme.text3,marginBottom:'6px',fontWeight:700}}>EXERCIȚII</div>{selWorkout.exercises.map((ex,i)=><div key={i} style={{fontSize:'13px',color:theme.text2,marginBottom:'4px'}}>◆ {ex.name} — {ex.sets.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}</div>)}</div>}
         {selWorkout?.cardio?.length>0&&<div style={{marginTop:'8px'}}><div style={{fontSize:'11px',color:theme.text3,marginBottom:'6px',fontWeight:700}}>CARDIO</div>{selWorkout.cardio.map((c,i)=><div key={i} style={{fontSize:'13px',color:theme.text2,marginBottom:'4px'}}>{c.icon} {c.name} {c.duration}min — {c.kcal} kcal</div>)}</div>}
       </div>}
+      <BodyMeasurements theme={theme}/>
+      <SupplementTracker theme={theme}/>
       <MuscleVolumeChart workouts={workouts} theme={theme}/>
       <WellbeingTracker onSendToCoach={onSendToCoach} theme={theme}/>
       {weightData.length>1&&<div style={{...panel(theme),padding:'16px'}}><LineChart data={weightData} color="#f97316" label="Greutate" unit=" kg" target="88–90" theme={theme}/></div>}
@@ -912,6 +1417,7 @@ function StatsTab({stats,workouts,onSendToCoach,setStats,theme=THEMES.dark}){
       {libidoData.length>1&&<div style={{...panel(theme),padding:'16px'}}><LineChart data={libidoData} color="#ec4899" label="Libido" unit="/10" theme={theme}/></div>}
       {weightData.length>0&&<div style={{...panel(theme),padding:'14px'}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'13px',letterSpacing:'0.1em',color:theme.text3,textTransform:'uppercase',marginBottom:'10px'}}>📋 Jurnal Greutate</div><div style={{display:'flex',flexDirection:'column',gap:'5px'}}>{[...weightData].reverse().map((d,i,arr)=><div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',background:theme.surface,borderRadius:'10px',border:`1px solid ${theme.border}`}}><span style={{fontSize:'13px',color:theme.text3}}>{d.date}</span><span style={{fontSize:'16px',fontWeight:700,color:'#f97316'}}>{d.value} kg</span>{arr[i+1]&&<span style={{fontSize:'12px',fontWeight:600,color:d.value<arr[i+1].value?'#4ade80':'#ef4444'}}>{d.value<arr[i+1].value?'↓':'↑'}{Math.abs(d.value-arr[i+1].value).toFixed(1)}</span>}</div>)}</div></div>}
       <BloodAnalysis theme={theme}/>
+      <PhotoFoodAnalysis onSendToCoach={onSendToCoach} theme={theme}/>
       <ExportPanel stats={stats} workouts={workouts} theme={theme}/>
       <WeeklyReport stats={stats} workouts={workouts} theme={theme}/>
       <PatternPanel stats={stats} workouts={workouts} theme={theme}/>
@@ -932,6 +1438,7 @@ export default function App(){
   const [stats,   setStats]   =useState(()=>loadStats());
   const [workouts,setWorkouts]=useState(()=>loadWorkouts());
   const [picker,  setPicker]  =useState(false);
+  const [showMealPlan,setShowMealPlan]=useState(false);
   const [darkMode,setDarkMode]=useState(()=>ls(KEYS.theme,true));
   const messagesEndRef=useRef(null),textareaRef=useRef(null),messagesRef=useRef(messages);
   useEffect(()=>{messagesRef.current=messages;},[messages]);
@@ -1084,12 +1591,12 @@ export default function App(){
 
       {tab==='coach'&&(<>
         <MacroBar stats={stats} dayType={dayType} theme={theme}/>
+        {showMealPlan&&<div style={{padding:'0 16px 8px'}}><MealPlanAI dayType={dayType} theme={theme}/></div>}
         <div className="qbar">
           {QUICK_COMMANDS.map(q=><button key={q.cmd} className="qbtn pr" onClick={()=>sendMessage(q.cmd)}>{q.icon} {q.label}</button>)}
           <div className="sep"/>
           <button className="qbtn gn" onClick={()=>setPicker(true)}>🍽 Masă</button>
-          <div className="sep"/>
-          {[{icon:'😴',prefix:'Somn: '},{icon:'⚖️',prefix:'Greutate: '},{icon:'🏋',prefix:'Forță: '},{icon:'⚡',prefix:'Energie: '}].map(q=><button key={q.prefix} className="qbtn" onClick={()=>{setInput(q.prefix);textareaRef.current?.focus();}}>{q.icon} {q.prefix.replace(':','').trim()}</button>)}
+          <button className="qbtn" style={{background:'rgba(16,185,129,0.08)',borderColor:'rgba(16,185,129,0.25)',color:'#10b981'}} onClick={()=>setShowMealPlan(p=>!p)}>🥗 Plan</button>
         </div>
         <div className="msgs-wrap">
           <div className="msgs">

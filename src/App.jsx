@@ -103,18 +103,22 @@ async function callCoach(messages, maxTokens=1200, system=SYSTEM_PROMPT){
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const THEMES = {
   dark: {
-    bg: '#080b14', bg2: '#0d1220', bg3: '#111827',
-    surface: 'rgba(255,255,255,0.03)', surface2: 'rgba(255,255,255,0.06)', surface3: 'rgba(255,255,255,0.09)',
-    border: 'rgba(255,255,255,0.07)', softBorder: 'rgba(255,255,255,0.15)',
-    text: '#e2e8f0', text2: '#94a3b8', text3: '#475569', text4: '#334155',
+    bg: '#060810', bg2: '#0a0d18', bg3: '#0f1222',
+    surface: 'rgba(255,255,255,0.04)', surface2: 'rgba(255,255,255,0.07)', surface3: 'rgba(255,255,255,0.11)',
+    border: 'rgba(255,200,100,0.08)', softBorder: 'rgba(255,200,100,0.18)',
+    text: '#f0ece4', text2: '#a09070', text3: '#5a5040', text4: '#302820',
     accent: '#f97316',
+    gold: '#d4a847',
+    goldGlow: 'rgba(212,168,71,0.3)',
   },
   light: {
-    bg: '#f1f5f9', bg2: '#ffffff', bg3: '#e2e8f0',
+    bg: '#f5f0e8', bg2: '#ffffff', bg3: '#ede8df',
     surface: 'rgba(0,0,0,0.03)', surface2: 'rgba(0,0,0,0.06)', surface3: 'rgba(0,0,0,0.09)',
     border: 'rgba(0,0,0,0.08)', softBorder: 'rgba(0,0,0,0.15)',
-    text: '#0f172a', text2: '#475569', text3: '#64748b', text4: '#94a3b8',
+    text: '#1a1208', text2: '#4a3c28', text3: '#7a6a50', text4: '#a09070',
     accent: '#ea580c',
+    gold: '#b8860b',
+    goldGlow: 'rgba(184,134,11,0.3)',
   },
 };
 
@@ -1531,41 +1535,46 @@ export default function App(){
         .ma::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#f97316,#ef4444);}
         .mlbl{font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:7px;}
         .lu{color:#334155;}.la{background:linear-gradient(90deg,#f97316,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-        .ldots{background:${darkMode?'rgba(255,255,255,0.02)':'rgba(0,0,0,0.02)'};border:1px solid ${borderC};border-radius:4px 16px 16px 16px;padding:14px 18px;display:flex;align-items:center;gap:6px;}
-        .dot{width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ef4444);animation:bnc 1.2s ease-in-out infinite;}
+        .ldots{background:${darkMode?'rgba(255,255,255,0.02)':'rgba(0,0,0,0.02)'};border:1px solid ${darkMode?'rgba(212,168,71,0.08)':borderC};border-radius:4px 16px 16px 16px;padding:14px 18px;display:flex;align-items:center;gap:6px;}
+        .dot{width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,#d4a847,#f97316);animation:bnc 1.2s ease-in-out infinite;}
         .dot:nth-child(2){animation-delay:0.15s;}.dot:nth-child(3){animation-delay:0.3s;}
         @keyframes bnc{0%,100%{transform:translateY(0) scale(0.8);opacity:0.4;}50%{transform:translateY(-5px) scale(1);opacity:1;}}
-        .inpwrap{border-top:1px solid ${borderC};background:${bgHdr};padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));flex-shrink:0;}
+        .inpwrap{border-top:1px solid ${darkMode?'rgba(212,168,71,0.1)':borderC};background:${darkMode?'rgba(6,8,16,0.97)':bgHdr};padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));flex-shrink:0;}
         .inpinner{max-width:800px;margin:0 auto;display:flex;gap:8px;align-items:flex-end;}
-        textarea{flex:1;background:${darkMode?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'};border:1.5px solid ${borderC};border-radius:14px;padding:11px 15px;color:${textC};font-family:'Inter',sans-serif;font-size:16px;resize:none;outline:none;min-height:48px;max-height:140px;transition:border-color 0.2s,box-shadow 0.2s;line-height:1.5;}
-        textarea:focus{border-color:rgba(249,115,22,0.35);box-shadow:0 0 0 3px rgba(249,115,22,0.07);}
-        textarea::placeholder{color:#334155;}
-        .fbtn{width:48px;height:48px;background:rgba(74,222,128,0.1);border:1.5px solid rgba(74,222,128,0.25);border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;flex-shrink:0;transition:all 0.2s;}
-        .fbtn:hover{background:rgba(74,222,128,0.2);transform:translateY(-2px);}
-        .sbtn{width:48px;height:48px;background:linear-gradient(135deg,#f97316,#ef4444);border:none;border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;flex-shrink:0;box-shadow:0 4px 15px rgba(249,115,22,0.3);font-size:22px;color:white;font-weight:700;}
-        .sbtn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 25px rgba(249,115,22,0.4);}
+        textarea{flex:1;background:${darkMode?'rgba(212,168,71,0.04)':'rgba(0,0,0,0.05)'};border:1.5px solid ${darkMode?'rgba(212,168,71,0.12)':borderC};border-radius:14px;padding:11px 15px;color:${textC};font-family:'Inter',sans-serif;font-size:16px;resize:none;outline:none;min-height:48px;max-height:140px;transition:border-color 0.2s,box-shadow 0.2s;line-height:1.5;}
+        textarea:focus{border-color:${darkMode?'rgba(212,168,71,0.4)':'rgba(249,115,22,0.35)'};box-shadow:0 0 0 3px ${darkMode?'rgba(212,168,71,0.07)':'rgba(249,115,22,0.07)'};}
+        textarea::placeholder{color:${darkMode?'rgba(160,144,112,0.4)':'#a09070'};}
+        .fbtn{width:48px;height:48px;background:${darkMode?'rgba(212,168,71,0.08)':'rgba(74,222,128,0.1)'};border:1.5px solid ${darkMode?'rgba(212,168,71,0.2)':'rgba(74,222,128,0.25)'};border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;flex-shrink:0;transition:all 0.2s;}
+        .fbtn:hover{background:${darkMode?'rgba(212,168,71,0.15)':'rgba(74,222,128,0.2)'};transform:translateY(-2px);}
+        .sbtn{width:48px;height:48px;background:linear-gradient(135deg,#d4a847,#f97316);border:none;border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;flex-shrink:0;box-shadow:0 4px 15px rgba(212,168,71,0.35);font-size:22px;color:white;font-weight:700;}
+        .sbtn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 25px rgba(212,168,71,0.45);}
         .sbtn:disabled{opacity:0.3;cursor:not-allowed;box-shadow:none;}
         .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 24px;text-align:center;}
         .eicon{font-size:56px;animation:pls 2.5s ease-in-out infinite;}
-        @keyframes pls{0%,100%{transform:scale(1);filter:drop-shadow(0 0 20px rgba(249,115,22,0.3));}50%{transform:scale(1.06);filter:drop-shadow(0 0 35px rgba(249,115,22,0.6));}}
-        .etitle{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;background:linear-gradient(90deg,#f97316,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-        .esub{font-size:14px;color:#475569;line-height:1.6;max-width:280px;}
+        @keyframes pls{0%,100%{transform:scale(1);filter:drop-shadow(0 0 20px rgba(212,168,71,0.4));}50%{transform:scale(1.06);filter:drop-shadow(0 0 40px rgba(212,168,71,0.7));}}
+        .etitle{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;background:linear-gradient(90deg,#d4a847,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .esub{font-size:14px;color:${darkMode?'rgba(160,144,112,0.7)':'#7a6a50'};line-height:1.6;max-width:280px;}
         .hchips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px;}
-        .hchip{padding:5px 12px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.18);border-radius:100px;font-size:12px;color:#fb923c;font-weight:600;}
-        .clrbtn{padding:4px 9px;background:transparent;border:1px solid ${borderC};border-radius:8px;color:#475569;font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s;}
+        .hchip{padding:5px 12px;background:rgba(212,168,71,0.08);border:1px solid rgba(212,168,71,0.2);border-radius:100px;font-size:12px;color:#d4a847;font-weight:600;}
+        .clrbtn{padding:4px 9px;background:transparent;border:1px solid ${darkMode?'rgba(212,168,71,0.15)':borderC};border-radius:8px;color:${darkMode?'rgba(212,168,71,0.4)':'#7a6a50'};font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s;}
         .clrbtn:hover{border-color:rgba(239,68,68,0.35);color:#ef4444;}
-        .theme-btn{padding:4px 9px;background:transparent;border:1px solid ${borderC};border-radius:8px;color:#475569;font-size:14px;cursor:pointer;transition:all 0.15s;}
-        .theme-btn:hover{border-color:rgba(249,115,22,0.35);color:#f97316;}
-        .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:${darkMode?'rgba(15,20,35,0.97)':'rgba(255,255,255,0.97)'};color:${textC};font-size:13px;font-weight:600;padding:10px 20px;border-radius:100px;border:1px solid ${borderC};z-index:100;animation:su 0.3s ease;white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,0.2);}
+        .theme-btn{padding:4px 9px;background:transparent;border:1px solid ${darkMode?'rgba(212,168,71,0.15)':borderC};border-radius:8px;color:${darkMode?'rgba(212,168,71,0.5)':'#7a6a50'};font-size:14px;cursor:pointer;transition:all 0.15s;}
+        .theme-btn:hover{border-color:rgba(212,168,71,0.4);color:#d4a847;}
+        .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:${darkMode?'rgba(10,13,24,0.98)':'rgba(255,255,255,0.97)'};color:${textC};font-size:13px;font-weight:600;padding:10px 20px;border-radius:100px;border:1px solid ${darkMode?'rgba(212,168,71,0.2)':borderC};z-index:100;animation:su 0.3s ease;white-space:nowrap;box-shadow:0 8px 30px ${darkMode?'rgba(212,168,71,0.15)':'rgba(0,0,0,0.15)'};}
         @keyframes su{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
         input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
         input[type=number]{-moz-appearance:textfield;}
-        select option{background:${darkMode?'#0d1220':'#fff'};color:${textC};}
+        select option{background:${darkMode?'#0a0d18':'#fff'};color:${textC};}
+        @keyframes shimmer{0%{background-position:0% center;}100%{background-position:200% center;}}
+        @keyframes tabIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
       `}</style>
 
       <div className="hdr">
         <div className="hdr-top">
-          <div><div className="logo">MIHAI PERFORMANCE</div><div className="logo-sub">AI Nutrition & Fitness Coach</div></div>
+          <div>
+            <div className="logo" style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'20px',fontWeight:900,letterSpacing:'0.08em',textTransform:'uppercase',background:'linear-gradient(90deg,#d4a847,#f97316,#d4a847)',backgroundSize:'200% auto',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',animation:'shimmer 4s linear infinite'}}>MIHAI PERFORMANCE</div>
+            <div className="logo-sub" style={{fontSize:'9px',color:darkMode?'rgba(212,168,71,0.5)':'#7a6a50',letterSpacing:'0.2em',textTransform:'uppercase',fontWeight:600,marginTop:'2px'}}>AI Nutrition & Fitness Coach</div>
+          </div>
           <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
             <StreakBadge stats={stats}/>
             <button className="theme-btn" onClick={()=>setDarkMode(d=>!d)}>{darkMode?'☀️':'🌙'}</button>
@@ -1579,14 +1588,14 @@ export default function App(){
           <div className="sbadge" style={{background:`${currentDay?.color}18`,border:`1px solid ${currentDay?.color}35`,color:currentDay?.color}}>
             <span>{currentDay?.icon}</span><span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'13px'}}>{currentDay?.label}</span><span style={{opacity:0.5}}>·</span><span style={{opacity:0.8,fontSize:'12px'}}>{currentDay?.desc}</span>
           </div>
-          <div className="sbadge" style={{background:darkMode?theme.surface:'rgba(0,0,0,0.04)',border:`1px solid ${borderC}`,color:theme.text3}}>📅 {new Date().toLocaleDateString('ro-RO',{weekday:'short',day:'numeric',month:'short'})}</div>
+          <div className="sbadge" style={{background:darkMode?'rgba(212,168,71,0.05)':'rgba(0,0,0,0.04)',border:`1px solid ${darkMode?'rgba(212,168,71,0.1)':borderC}`,color:darkMode?'rgba(160,144,112,0.7)':theme.text3}}>📅 {new Date().toLocaleDateString('ro-RO',{weekday:'short',day:'numeric',month:'short'})}</div>
         </div>
       </div>
 
-      <div className="tab-bar">
-        <button className={`tab-btn ${tab==='coach'?'active':''}`} onClick={()=>setTab('coach')}>🤖 Coach</button>
-        <button className={`tab-btn ${tab==='workout'?'active':''}`} onClick={()=>setTab('workout')}>🏋 Workout</button>
-        <button className={`tab-btn ${tab==='stats'?'active':''}`} onClick={()=>setTab('stats')}>📈 Stats</button>
+      <div className="tab-bar" style={{borderBottom:`1px solid ${darkMode?'rgba(212,168,71,0.1)':borderC}`,background:darkMode?'rgba(6,8,16,0.95)':bgHdr}}>
+        <button className={`tab-btn ${tab==='coach'?'active':''}`} onClick={()=>setTab('coach')} style={{color:tab==='coach'?(darkMode?'#d4a847':'#b8860b'):darkMode?'rgba(160,144,112,0.5)':'#7a6a50',borderBottomColor:tab==='coach'?(darkMode?'#d4a847':'#b8860b'):'transparent'}}>🤖 Coach</button>
+        <button className={`tab-btn ${tab==='workout'?'active':''}`} onClick={()=>setTab('workout')} style={{color:tab==='workout'?(darkMode?'#d4a847':'#b8860b'):darkMode?'rgba(160,144,112,0.5)':'#7a6a50',borderBottomColor:tab==='workout'?(darkMode?'#d4a847':'#b8860b'):'transparent'}}>🏋 Workout</button>
+        <button className={`tab-btn ${tab==='stats'?'active':''}`} onClick={()=>setTab('stats')} style={{color:tab==='stats'?(darkMode?'#d4a847':'#b8860b'):darkMode?'rgba(160,144,112,0.5)':'#7a6a50',borderBottomColor:tab==='stats'?(darkMode?'#d4a847':'#b8860b'):'transparent'}}>📈 Stats</button>
       </div>
 
       {tab==='coach'&&(<>
@@ -1615,8 +1624,8 @@ export default function App(){
         </div>
       </>)}
 
-      {tab==='workout'&&<div style={{flex:1,overflowY:'auto',minHeight:0}}><WorkoutTab workouts={workouts} setWorkouts={setWorkouts} onSendToCoach={sendMessage} theme={theme}/></div>}
-      {tab==='stats'&&<div style={{flex:1,overflowY:'auto',minHeight:0}}><StatsTab stats={stats} workouts={workouts} onSendToCoach={sendMessage} setStats={setStats} theme={theme}/></div>}
+      {tab==='workout'&&<div style={{flex:1,overflowY:'auto',minHeight:0,animation:'tabIn 0.25s ease'}}><WorkoutTab workouts={workouts} setWorkouts={setWorkouts} onSendToCoach={sendMessage} theme={theme}/></div>}
+      {tab==='stats'&&<div style={{flex:1,overflowY:'auto',minHeight:0,animation:'tabIn 0.25s ease'}}><StatsTab stats={stats} workouts={workouts} onSendToCoach={sendMessage} setStats={setStats} theme={theme}/></div>}
 
       {picker&&<FoodPicker onSend={sendMessage} onClose={()=>setPicker(false)} theme={theme}/>}
       {toast&&<div className="toast">{toast}</div>}

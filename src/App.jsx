@@ -163,39 +163,39 @@ const CARDIO_TYPES = [
 
 const FOODS = [
   // ─── PROTEINE ───
-  { id:'ou',         name:'Ou întreg',        emoji:'🥚', unit:'buc', unitG:55,  kcal:155, p:13,  c:1.1, f:11,  cat:'proteine' },
-  { id:'albus',      name:'Albuș lichid',     emoji:'🥛', unit:'ml',  unitG:1,   kcal:52,  p:11,  c:0.7, f:0.2, cat:'proteine' },
-  { id:'iaurt',      name:'Iaurt proteic 2%', emoji:'🥛', unit:'g',   unitG:1,   kcal:65,  p:9,   c:5,   f:1.5, cat:'proteine' },
-  { id:'branza',     name:'Brânză de vaci',   emoji:'🧀', unit:'g',   unitG:1,   kcal:98,  p:12,  c:3.5, f:4,   cat:'proteine' },
-  { id:'cottage',    name:'Brânză Cottage',   emoji:'🧀', unit:'g',   unitG:1,   kcal:98,  p:11,  c:3.4, f:4.3, cat:'proteine' },
-  { id:'fagaras',    name:'Brânză Făgăraș',   emoji:'🧀', unit:'g',   unitG:1,   kcal:263, p:18,  c:2,   f:21,  cat:'proteine' },
-  { id:'parmezan',   name:'Parmezan',         emoji:'🧀', unit:'g',   unitG:1,   kcal:431, p:38,  c:0,   f:29,  cat:'proteine' },
-  { id:'vita',       name:'Vită mușchi',      emoji:'🥩', unit:'g',   unitG:1,   kcal:158, p:26,  c:0,   f:6,   cat:'proteine' },
-  { id:'pui',        name:'Piept pui',        emoji:'🍗', unit:'g',   unitG:1,   kcal:165, p:31,  c:0,   f:3.6, cat:'proteine' },
-  { id:'pulpe',      name:'Pulpe pui',        emoji:'🍗', unit:'g',   unitG:1,   kcal:209, p:26,  c:0,   f:11,  cat:'proteine' },
-  { id:'pastrav',    name:'Păstrăv',          emoji:'🐟', unit:'g',   unitG:1,   kcal:148, p:21,  c:0,   f:7,   cat:'proteine' },
+  { id:'ou',         name:'Ou întreg',        emoji:'🥚', unit:'buc', unitG:55,  kcal:155, p:13,  c:1.1, f:11,  fiber:0,   cat:'proteine' },
+  { id:'albus',      name:'Albuș lichid',     emoji:'🥛', unit:'ml',  unitG:1,   kcal:52,  p:11,  c:0.7, f:0.2, fiber:0,   cat:'proteine' },
+  { id:'iaurt',      name:'Iaurt proteic 2%', emoji:'🥛', unit:'g',   unitG:1,   kcal:65,  p:9,   c:5,   f:1.5, fiber:0,   cat:'proteine' },
+  { id:'branza',     name:'Brânză de vaci',   emoji:'🧀', unit:'g',   unitG:1,   kcal:98,  p:12,  c:3.5, f:4,   fiber:0,   cat:'proteine' },
+  { id:'cottage',    name:'Brânză Cottage',   emoji:'🧀', unit:'g',   unitG:1,   kcal:98,  p:11,  c:3.4, f:4.3, fiber:0,   cat:'proteine' },
+  { id:'fagaras',    name:'Brânză Făgăraș',   emoji:'🧀', unit:'g',   unitG:1,   kcal:263, p:18,  c:2,   f:21,  fiber:0,   cat:'proteine' },
+  { id:'parmezan',   name:'Parmezan',         emoji:'🧀', unit:'g',   unitG:1,   kcal:431, p:38,  c:0,   f:29,  fiber:0,   cat:'proteine' },
+  { id:'vita',       name:'Vită mușchi',      emoji:'🥩', unit:'g',   unitG:1,   kcal:158, p:26,  c:0,   f:6,   fiber:0,   cat:'proteine' },
+  { id:'pui',        name:'Piept pui',        emoji:'🍗', unit:'g',   unitG:1,   kcal:165, p:31,  c:0,   f:3.6, fiber:0,   cat:'proteine' },
+  { id:'pulpe',      name:'Pulpe pui',        emoji:'🍗', unit:'g',   unitG:1,   kcal:209, p:26,  c:0,   f:11,  fiber:0,   cat:'proteine' },
+  { id:'pastrav',    name:'Păstrăv',          emoji:'🐟', unit:'g',   unitG:1,   kcal:148, p:21,  c:0,   f:7,   fiber:0,   cat:'proteine' },
   // ─── CARBS ───
-  { id:'cartof_d',   name:'Cartof dulce',     emoji:'🍠', unit:'g',   unitG:1,   kcal:86,  p:1.6, c:20,  f:0.1, cat:'carbs' },
-  { id:'cartof',     name:'Cartof',           emoji:'🥔', unit:'g',   unitG:1,   kcal:77,  p:2,   c:17,  f:0.1, cat:'carbs' },
-  { id:'ovaz',       name:'Ovăz',             emoji:'🌾', unit:'g',   unitG:1,   kcal:389, p:17,  c:66,  f:7,   cat:'carbs' },
-  { id:'orez',       name:'Orez fiert',       emoji:'🍚', unit:'g',   unitG:1,   kcal:130, p:2.7, c:28,  f:0.3, cat:'carbs' },
-  { id:'banana',     name:'Banană',           emoji:'🍌', unit:'buc', unitG:120, kcal:89,  p:1.1, c:23,  f:0.3, cat:'carbs' },
-  { id:'mar',        name:'Măr',              emoji:'🍎', unit:'buc', unitG:150, kcal:52,  p:0.3, c:14,  f:0.2, cat:'carbs' },
-  { id:'para',       name:'Pară',             emoji:'🍐', unit:'buc', unitG:160, kcal:57,  p:0.4, c:15,  f:0.1, cat:'carbs' },
-  { id:'paine_n',    name:'Pâine neagră',     emoji:'🍞', unit:'felie', unitG:30, kcal:65,  p:2.5, c:12,  f:0.8, cat:'carbs' },
+  { id:'cartof_d',   name:'Cartof dulce',     emoji:'🍠', unit:'g',   unitG:1,   kcal:86,  p:1.6, c:20,  f:0.1, fiber:3,   cat:'carbs' },
+  { id:'cartof',     name:'Cartof',           emoji:'🥔', unit:'g',   unitG:1,   kcal:77,  p:2,   c:17,  f:0.1, fiber:2.2, cat:'carbs' },
+  { id:'ovaz',       name:'Ovăz',             emoji:'🌾', unit:'g',   unitG:1,   kcal:389, p:17,  c:66,  f:7,   fiber:10,  cat:'carbs' },
+  { id:'orez',       name:'Orez fiert',       emoji:'🍚', unit:'g',   unitG:1,   kcal:130, p:2.7, c:28,  f:0.3, fiber:0.4, cat:'carbs' },
+  { id:'banana',     name:'Banană',           emoji:'🍌', unit:'buc', unitG:120, kcal:89,  p:1.1, c:23,  f:0.3, fiber:2.6, cat:'carbs' },
+  { id:'mar',        name:'Măr',              emoji:'🍎', unit:'buc', unitG:150, kcal:52,  p:0.3, c:14,  f:0.2, fiber:2.4, cat:'carbs' },
+  { id:'para',       name:'Pară',             emoji:'🍐', unit:'buc', unitG:160, kcal:57,  p:0.4, c:15,  f:0.1, fiber:3.1, cat:'carbs' },
+  { id:'paine_n',    name:'Pâine neagră',     emoji:'🍞', unit:'felie', unitG:30, kcal:65,  p:2.5, c:12,  f:0.8, fiber:1.9, cat:'carbs' },
   // ─── LEGUME ───
-  { id:'ciuperci',   name:'Ciuperci',         emoji:'🍄', unit:'g',   unitG:1,   kcal:22,  p:3.1, c:3.3, f:0.3, cat:'legume' },
-  { id:'sfecla',     name:'Sfeclă roșie',     emoji:'🟣', unit:'g',   unitG:1,   kcal:43,  p:1.6, c:9.6, f:0.2, cat:'legume' },
-  { id:'varza',      name:'Varză',            emoji:'🥬', unit:'g',   unitG:1,   kcal:25,  p:1.3, c:5.8, f:0.1, cat:'legume' },
-  { id:'varzam',     name:'Varză murată',     emoji:'🥬', unit:'g',   unitG:1,   kcal:19,  p:0.9, c:4.3, f:0.1, cat:'legume' },
-  { id:'ardei_k',    name:'Ardei Kapia',      emoji:'🫑', unit:'g',   unitG:1,   kcal:31,  p:1,   c:6,   f:0.3, cat:'legume' },
-  { id:'conopida',   name:'Conopidă',         emoji:'🥦', unit:'g',   unitG:1,   kcal:25,  p:1.9, c:5,   f:0.3, cat:'legume' },
+  { id:'ciuperci',   name:'Ciuperci',         emoji:'🍄', unit:'g',   unitG:1,   kcal:22,  p:3.1, c:3.3, f:0.3, fiber:1,   cat:'legume' },
+  { id:'sfecla',     name:'Sfeclă roșie',     emoji:'🟣', unit:'g',   unitG:1,   kcal:43,  p:1.6, c:9.6, f:0.2, fiber:2.8, cat:'legume' },
+  { id:'varza',      name:'Varză',            emoji:'🥬', unit:'g',   unitG:1,   kcal:25,  p:1.3, c:5.8, f:0.1, fiber:2.5, cat:'legume' },
+  { id:'varzam',     name:'Varză murată',     emoji:'🥬', unit:'g',   unitG:1,   kcal:19,  p:0.9, c:4.3, f:0.1, fiber:2.9, cat:'legume' },
+  { id:'ardei_k',    name:'Ardei Kapia',      emoji:'🫑', unit:'g',   unitG:1,   kcal:31,  p:1,   c:6,   f:0.3, fiber:2,   cat:'legume' },
+  { id:'conopida',   name:'Conopidă',         emoji:'🥦', unit:'g',   unitG:1,   kcal:25,  p:1.9, c:5,   f:0.3, fiber:2,   cat:'legume' },
   // ─── GRĂSIMI ───
-  { id:'ulei',       name:'Ulei măsline',     emoji:'🫒', unit:'ml',  unitG:0.9, kcal:884, p:0,   c:0,   f:100, cat:'grasimi' },
-  { id:'chia',       name:'Semințe chia',     emoji:'🌱', unit:'g',   unitG:1,   kcal:486, p:17,  c:42,  f:31,  cat:'grasimi' },
-  { id:'psyllium',   name:'Psyllium',         emoji:'🌿', unit:'g',   unitG:1,   kcal:200, p:2,   c:85,  f:1,   cat:'grasimi' },
-  { id:'migdale',    name:'Migdale',          emoji:'🌰', unit:'g',   unitG:1,   kcal:579, p:21,  c:22,  f:50,  cat:'grasimi' },
-  { id:'cioc_n',     name:'Ciocolată neagră 85%', emoji:'🍫', unit:'g', unitG:1, kcal:598, p:8,   c:46,  f:43,  cat:'grasimi' },
+  { id:'ulei',       name:'Ulei măsline',     emoji:'🫒', unit:'ml',  unitG:0.9, kcal:884, p:0,   c:0,   f:100, fiber:0,   cat:'grasimi' },
+  { id:'chia',       name:'Semințe chia',     emoji:'🌱', unit:'g',   unitG:1,   kcal:486, p:17,  c:42,  f:31,  fiber:34,  cat:'grasimi' },
+  { id:'psyllium',   name:'Psyllium',         emoji:'🌿', unit:'g',   unitG:1,   kcal:200, p:2,   c:85,  f:1,   fiber:71,  cat:'grasimi' },
+  { id:'migdale',    name:'Migdale',          emoji:'🌰', unit:'g',   unitG:1,   kcal:579, p:21,  c:22,  f:50,  fiber:12,  cat:'grasimi' },
+  { id:'cioc_n',     name:'Ciocolată neagră 85%', emoji:'🍫', unit:'g', unitG:1, kcal:598, p:8,   c:46,  f:43,  fiber:11,  cat:'grasimi' },
 ];
 
 const FOOD_CATS = [
@@ -238,7 +238,7 @@ function localDateKey(date=new Date()){const y=date.getFullYear(),m=String(date.
 function todayKey(){ return localDateKey(); }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function calcMacros(food,qty){ const g=food.unit==='buc'?qty*food.unitG:food.unit==='ml'?qty*food.unitG:food.unit==='felie'?qty*food.unitG:qty,f=g/100; return{kcal:Math.round(food.kcal*f),p:Math.round(food.p*f*10)/10,c:Math.round(food.c*f*10)/10,fat:Math.round(food.f*f*10)/10}; }
+function calcMacros(food,qty){ const g=food.unit==='buc'?qty*food.unitG:food.unit==='ml'?qty*food.unitG:food.unit==='felie'?qty*food.unitG:qty,f=g/100; return{kcal:Math.round(food.kcal*f),p:Math.round(food.p*f*10)/10,c:Math.round(food.c*f*10)/10,fat:Math.round(food.f*f*10)/10,fiber:Math.round((food.fiber||0)*f*10)/10}; }
 function calcTemplateMacros(items){ return items.reduce((a,item)=>{ const food=FOODS.find(f=>f.id===item.id);if(!food)return a;const m=calcMacros(food,item.qty);return{kcal:a.kcal+m.kcal,p:a.p+m.p,c:a.c+m.c,fat:a.fat+m.fat}; },{kcal:0,p:0,c:0,fat:0}); }
 function calcBurned(met,min){ return Math.round((met*3.5*96/200)*min); }
 function calcStreak(stats){if(!stats?.daily)return 0;let streak=0;const cur=new Date();for(let i=0;i<60;i++){const k=localDateKey(cur);if(stats.daily[k])streak++;else if(i>0)break;cur.setDate(cur.getDate()-1);}return streak;}
@@ -626,9 +626,9 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
   const [recipeIngFood,setRecipeIngFood]=useState(FOODS[0].id);
   const filtered=cat==='all'?FOODS:FOODS.filter(f=>f.cat===cat);
   const setQty=(id,val)=>setQuantities(q=>({...q,[id]:val}));
-  const totals=Object.entries(quantities).reduce((acc,[id,qty])=>{if(!qty||isNaN(qty)||qty<=0)return acc;const food=FOODS.find(f=>f.id===id);if(!food)return acc;const m=calcMacros(food,parseFloat(qty));return{kcal:acc.kcal+m.kcal,p:acc.p+m.p,c:acc.c+m.c,fat:acc.fat+m.fat};},{kcal:0,p:0,c:0,fat:0});
+  const totals=Object.entries(quantities).reduce((acc,[id,qty])=>{if(!qty||isNaN(qty)||qty<=0)return acc;const food=FOODS.find(f=>f.id===id);if(!food)return acc;const m=calcMacros(food,parseFloat(qty));return{kcal:acc.kcal+m.kcal,p:acc.p+m.p,c:acc.c+m.c,fat:acc.fat+m.fat,fiber:acc.fiber+(m.fiber||0)};},{kcal:0,p:0,c:0,fat:0,fiber:0});
   const hasItems=Object.values(quantities).some(q=>q&&parseFloat(q)>0);
-  const handleSend=()=>{const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>{const food=FOODS.find(f=>f.id===id);return`${food.name} ${q}${food.unit}`;});if(!items.length)return;onSend(`Masă: ${items.join(', ')}`);onClose();};
+  const handleSend=()=>{const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>{const food=FOODS.find(f=>f.id===id);return`${food.name} ${q}${food.unit}`;});if(!items.length)return;onSend(`Masă: ${items.join(', ')} — ${totals.kcal} kcal, P:${totals.p}g, C:${totals.c}g, G:${totals.fat}g, Fibre:${totals.fiber}g`);onClose();};
   const sendTemplate=tpl=>{const items=tpl.items.map(i=>{const food=FOODS.find(f=>f.id===i.id);return food?`${food.name} ${i.qty}${food.unit}`:null;}).filter(Boolean);onSend(`Masă: ${items.join(', ')} (${tpl.name})`);onClose();};
   const saveAsTpl=()=>{if(!newTplName.trim()||!hasItems)return;const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>({id,qty:parseFloat(q)}));const upd=[...templates,{id:`tpl_${Date.now()}`,name:newTplName,icon:'⭐',items}];setTemplates(upd);lsSet(KEYS.templates,upd);setNewTplName('');};
   const delTpl=id=>{const upd=templates.filter(t=>t.id!==id);setTemplates(upd);lsSet(KEYS.templates,upd);};
@@ -778,16 +778,39 @@ function MacroBar({stats,dayType,theme=THEMES.dark}){
   const currentDay=DAY_TYPES.find(d=>d.val===dayType);
   const todayData=stats.daily?.[todayKey()]||{};
   const cal=todayData.calories||0,prot=todayData.protein||0;
+  const fiber=todayData.fiber||0;
   const calTarget=currentDay?.calTarget||2000,protTarget=currentDay?.protTarget||165;
+  // Ciclu carbs: antrenament=carbs mari, repaus=carbs mici
+  const carbsTarget=dayType==='antrenament'?220:dayType==='repaus'?130:175;
+  const carbs=todayData.carbs||0;
   const calPct=Math.min(100,Math.round((cal/calTarget)*100));
   const protPct=Math.min(100,Math.round((prot/protTarget)*100));
+  const carbsPct=Math.min(100,Math.round((carbs/carbsTarget)*100));
+  const fiberPct=Math.min(100,Math.round((fiber/30)*100));
   const calColor=calPct>105?'#ef4444':calPct>90?'#4ade80':'#3b82f6';
   const protColor=protPct>=100?'#4ade80':protPct>75?'#f97316':'#ef4444';
+  const carbsColor=carbsPct>105?'#ef4444':carbsPct>90?'#4ade80':'#f59e0b';
+  const fiberColor=fiberPct>=100?'#4ade80':fiberPct>60?'#f97316':'#8b5cf6';
   if(!cal&&!prot)return null;
+  const bars=[
+    {label:'CALORII',current:cal,target:calTarget,color:calColor,unit:''},
+    {label:'PROTEINE',current:prot,target:protTarget,color:protColor,unit:'g'},
+    {label:`CARBS ${dayType==='antrenament'?'↑':dayType==='repaus'?'↓':''}`,current:carbs,target:carbsTarget,color:carbsColor,unit:'g'},
+    {label:'FIBRE',current:fiber,target:30,color:fiberColor,unit:'g'},
+  ];
   return(
-    <div style={{background:theme.bg2,borderBottom:`1px solid ${theme.border}`,padding:'8px 16px',display:'flex',gap:'16px',alignItems:'center',flexShrink:0}}>
-      <div style={{flex:1}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}><span style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em'}}>CALORII</span><span style={{fontSize:'11px',fontWeight:700,color:calColor}}>{cal}/{calTarget}</span></div><div style={{height:'5px',background:theme.surface2,borderRadius:'3px',overflow:'hidden'}}><div style={{height:'100%',width:`${calPct}%`,background:calColor,borderRadius:'3px',transition:'width 0.5s ease'}}/></div></div>
-      <div style={{flex:1}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}><span style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em'}}>PROTEINE</span><span style={{fontSize:'11px',fontWeight:700,color:protColor}}>{prot}g/{protTarget}g</span></div><div style={{height:'5px',background:theme.surface2,borderRadius:'3px',overflow:'hidden'}}><div style={{height:'100%',width:`${protPct}%`,background:protColor,borderRadius:'3px',transition:'width 0.5s ease'}}/></div></div>
+    <div style={{background:theme.bg2,borderBottom:`1px solid ${theme.border}`,padding:'8px 16px',display:'flex',gap:'10px',alignItems:'center',flexShrink:0,flexWrap:'wrap'}}>
+      {bars.map(({label,current,target,color,unit})=>(
+        <div key={label} style={{flex:'1 1 80px',minWidth:'70px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}>
+            <span style={{fontSize:'9px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em'}}>{label}</span>
+            <span style={{fontSize:'10px',fontWeight:700,color}}>{current}{unit}/{target}{unit}</span>
+          </div>
+          <div style={{height:'4px',background:theme.surface2,borderRadius:'2px',overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${Math.min(100,Math.round((current/target)*100))}%`,background:color,borderRadius:'2px',transition:'width 0.5s ease'}}/>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1695,7 +1718,7 @@ export default function App(){
       const key=todayKey();
       const ns=loadStats();
       if(d.type==='weight'&&typeof d.value==='number')ns.weight[key]=d.value;
-      if(d.type==='daily'){if(!ns.daily[key])ns.daily[key]={};if(typeof d.calories==='number')ns.daily[key].calories=d.calories;if(typeof d.protein==='number')ns.daily[key].protein=d.protein;}
+      if(d.type==='daily'){if(!ns.daily[key])ns.daily[key]={};if(typeof d.calories==='number')ns.daily[key].calories=d.calories;if(typeof d.protein==='number')ns.daily[key].protein=d.protein;if(typeof d.carbs==='number')ns.daily[key].carbs=d.carbs;if(typeof d.fiber==='number')ns.daily[key].fiber=d.fiber;}
       if(d.type==='hrv'){const hd=ls(KEYS.hrv,{});if(!hd[key])hd[key]={};if(typeof d.energy==='number')hd[key].energy=d.energy;if(typeof d.libido==='number')hd[key].libido=d.libido;lsSet(KEYS.hrv,hd);}
       if(d.type==='sleep'){const hd=ls(KEYS.hrv,{});if(!hd[key])hd[key]={};if(typeof d.hours==='number')hd[key].sleep=d.hours;if(typeof d.quality==='number')hd[key].sleepQuality=d.quality;lsSet(KEYS.hrv,hd);}
       saveStats(ns);setStats({...ns});

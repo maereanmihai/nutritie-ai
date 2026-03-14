@@ -364,7 +364,7 @@ function WorkoutTab({workouts,setWorkouts,onSendToCoach}){
                 </div>
               ))}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginTop:'10px'}}>
-                <button onClick={addSet} style={{padding:'10px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'10px',color:'#64748b',fontSize:'14px',fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif'}}>+ Set</button>
+                <button onClick={addSet} style={{padding:'10px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'10px',color:'#64748b',fontSize:'14px',fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>+ Set</button>
                 <button onClick={saveExercise} style={{padding:'10px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 4px 15px rgba(249,115,22,0.3)'}}>SALVEAZĂ ▸</button>
               </div>
             </div>

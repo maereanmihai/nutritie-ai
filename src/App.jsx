@@ -471,80 +471,42 @@ function ExportPanel({stats, workouts, theme=THEMES.dark}) {
 
 // ─── BARCODE SCANNER ─────────────────────────────────────────────────────────
 function BarcodeScanner({onResult,theme=THEMES.dark}){
-  const videoRef=useRef(null);
-  const canvasRef=useRef(null);
+  const divRef=useRef(null);
   const [status,setStatus]=useState('idle');
   const [product,setProduct]=useState(null);
   const [qty,setQty]=useState('100');
   const [errorMsg,setErrorMsg]=useState('');
-  const streamRef=useRef(null);
-  const rafRef=useRef(null);
-  const activeRef=useRef(false);
+  const [manualCode,setManualCode]=useState('');
+  const scannerRef=useRef(null);
 
-  const stopCamera=()=>{
-    activeRef.current=false;
-    if(rafRef.current){cancelAnimationFrame(rafRef.current);rafRef.current=null;}
-    if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
+  const stopScanner=()=>{
+    if(scannerRef.current){
+      try{scannerRef.current.stop().then(()=>{scannerRef.current.clear();scannerRef.current=null;}).catch(()=>{});}catch{}
+    }
   };
 
-  useEffect(()=>()=>stopCamera(),[]);
+  useEffect(()=>()=>stopScanner(),[]);
 
   const startScan=async()=>{
     setStatus('scanning');setProduct(null);setErrorMsg('');
-    activeRef.current=true;
     try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
-      streamRef.current=stream;
-      if(videoRef.current){videoRef.current.srcObject=stream;await videoRef.current.play();}
-
-      // Load ZXing from CDN dynamically
-      if(!window.ZXing){
+      if(!window.Html5Qrcode){
         await new Promise((resolve,reject)=>{
           const s=document.createElement('script');
-          s.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';
+          s.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
           s.onload=resolve;s.onerror=reject;
           document.head.appendChild(s);
         });
       }
-
-      const hints=new window.ZXing.Map();
-      hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS,[
-        window.ZXing.BarcodeFormat.EAN_13,
-        window.ZXing.BarcodeFormat.EAN_8,
-        window.ZXing.BarcodeFormat.UPC_A,
-        window.ZXing.BarcodeFormat.UPC_E,
-        window.ZXing.BarcodeFormat.CODE_128,
-      ]);
-      hints.set(window.ZXing.DecodeHintType.TRY_HARDER,true);
-      const reader=new window.ZXing.MultiFormatReader();
-      reader.setHints(hints);
-
-      const canvas=canvasRef.current;
-      const ctx=canvas.getContext('2d');
-
-      const tick=()=>{
-        if(!activeRef.current||!videoRef.current)return;
-        const v=videoRef.current;
-        if(v.readyState===v.HAVE_ENOUGH_DATA){
-          canvas.width=v.videoWidth;
-          canvas.height=v.videoHeight;
-          ctx.drawImage(v,0,0,canvas.width,canvas.height);
-          try{
-            const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
-            const luminance=new window.ZXing.RGBLuminanceSource(imgData.data,canvas.width,canvas.height);
-            const binary=new window.ZXing.BinaryBitmap(new window.ZXing.HybridBinarizer(luminance));
-            const result=reader.decode(binary);
-            if(result){
-              stopCamera();
-              lookupBarcode(result.getText());
-              return;
-            }
-          }catch{}
-        }
-        rafRef.current=requestAnimationFrame(tick);
-      };
-      rafRef.current=requestAnimationFrame(tick);
-
+      await new Promise(r=>setTimeout(r,100));
+      const scanner=new window.Html5Qrcode('scanner-div');
+      scannerRef.current=scanner;
+      await scanner.start(
+        {facingMode:'environment'},
+        {fps:10,qrbox:{width:250,height:150},aspectRatio:1.5},
+        (decodedText)=>{stopScanner();lookupBarcode(decodedText);},
+        ()=>{}
+      );
     }catch(e){
       setErrorMsg('Nu s-a putut accesa camera. Verifică permisiunile.');
       setStatus('error');
@@ -557,43 +519,18 @@ function BarcodeScanner({onResult,theme=THEMES.dark}){
       const res=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
       const data=await res.json();
       if(data.status===1&&data.product){
-        const p=data.product;
-        const n=p.nutriments||{};
-        setProduct({
-          barcode,
-          name: p.product_name||p.product_name_ro||'Produs necunoscut',
-          brand: p.brands||'',
-          kcal: Math.round(n['energy-kcal_100g']||n['energy-kcal']||0),
-          p:    Math.round((n.proteins_100g||0)*10)/10,
-          c:    Math.round((n.carbohydrates_100g||0)*10)/10,
-          f:    Math.round((n.fat_100g||0)*10)/10,
-          fiber:Math.round((n.fiber_100g||0)*10)/10,
-          img:  p.image_front_small_url||null,
-        });
+        const p=data.product;const n=p.nutriments||{};
+        setProduct({barcode,name:p.product_name||p.product_name_ro||'Produs necunoscut',brand:p.brands||'',kcal:Math.round(n['energy-kcal_100g']||n['energy-kcal']||0),p:Math.round((n.proteins_100g||0)*10)/10,c:Math.round((n.carbohydrates_100g||0)*10)/10,f:Math.round((n.fat_100g||0)*10)/10,fiber:Math.round((n.fiber_100g||0)*10)/10,img:p.image_front_small_url||null});
         setStatus('found');
-      } else {
-        setErrorMsg(`Produsul cu codul ${barcode} nu a fost găsit în baza de date.`);
-        setStatus('error');
-      }
-    }catch{
-      setErrorMsg('Eroare de rețea. Verifică internetul și încearcă din nou.');
-      setStatus('error');
-    }
+      }else{setErrorMsg(`Produsul ${barcode} nu a fost găsit.`);setStatus('error');}
+    }catch{setErrorMsg('Eroare de rețea. Încearcă din nou.');setStatus('error');}
   };
 
-  const [manualCode,setManualCode]=useState('');
-
-  const calcScanned=()=>{
-    if(!product)return{kcal:0,p:0,c:0,f:0};
-    const q=parseFloat(qty)||100,f=q/100;
-    return{kcal:Math.round(product.kcal*f),p:Math.round(product.p*f*10)/10,c:Math.round(product.c*f*10)/10,f:Math.round(product.f*f*10)/10};
-  };
-
+  const calcScanned=()=>{if(!product)return{kcal:0,p:0,c:0,f:0};const q=parseFloat(qty)||100,f=q/100;return{kcal:Math.round(product.kcal*f),p:Math.round(product.p*f*10)/10,c:Math.round(product.c*f*10)/10,f:Math.round(product.f*f*10)/10};};
   const m=calcScanned();
 
   return(
     <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:'14px',overflowY:'auto',flex:1}}>
-      {/* idle / start */}
       {status==='idle'&&(
         <div style={{textAlign:'center',padding:'20px 0'}}>
           <div style={{fontSize:'64px',marginBottom:'12px'}}>📷</div>
@@ -612,41 +549,14 @@ function BarcodeScanner({onResult,theme=THEMES.dark}){
         </div>
       )}
 
-      {/* scanning */}
       {status==='scanning'&&(
-        <div style={{textAlign:'center'}}>
-          <canvas ref={canvasRef} style={{display:'none'}}/>
-          <div style={{position:'relative',borderRadius:'16px',overflow:'hidden',marginBottom:'12px',background:'#000'}}>
-            <video ref={videoRef} style={{width:'100%',maxHeight:'280px',objectFit:'cover',display:'block'}} playsInline muted/>
-            {/* aim overlay */}
-            <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
-              <div style={{width:'220px',height:'120px',border:'3px solid #f97316',borderRadius:'12px',boxShadow:'0 0 0 2000px rgba(0,0,0,0.4)',position:'relative'}}>
-                <div style={{position:'absolute',top:-3,left:-3,width:'24px',height:'24px',borderTop:'4px solid #f97316',borderLeft:'4px solid #f97316',borderRadius:'4px 0 0 0'}}/>
-                <div style={{position:'absolute',top:-3,right:-3,width:'24px',height:'24px',borderTop:'4px solid #f97316',borderRight:'4px solid #f97316',borderRadius:'0 4px 0 0'}}/>
-                <div style={{position:'absolute',bottom:-3,left:-3,width:'24px',height:'24px',borderBottom:'4px solid #f97316',borderLeft:'4px solid #f97316',borderRadius:'0 0 0 4px'}}/>
-                <div style={{position:'absolute',bottom:-3,right:-3,width:'24px',height:'24px',borderBottom:'4px solid #f97316',borderRight:'4px solid #f97316',borderRadius:'0 0 4px 0'}}/>
-                <div style={{position:'absolute',top:'50%',left:0,right:0,height:'2px',background:'rgba(249,115,22,0.7)',animation:'scan 2s ease-in-out infinite'}}/>
-              </div>
-            </div>
-          </div>
-          <div style={{fontSize:'13px',color:theme.text3,marginBottom:'12px'}}>Îndreaptă camera spre codul de bare</div>
-          <button onClick={()=>{stopCamera();setStatus('idle');}} style={{padding:'10px 24px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'100px',color:'#ef4444',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>✕ Anulează</button>
-          <style>{`@keyframes scan{0%,100%{top:10%;}50%{top:85%;}}`}</style>
-        </div>
-      )}
-
-      {/* manual fallback */}
-      {status==='manual'&&(
         <div>
-          <div style={{padding:'12px',background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:'10px',fontSize:'13px',color:'#f59e0b',marginBottom:'14px'}}>⚠️ {errorMsg}</div>
-          <div style={{display:'flex',gap:'8px'}}>
-            <input value={manualCode} onChange={e=>setManualCode(e.target.value)} placeholder="Cod de bare (13 cifre)" type="number" style={{flex:1,background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px 12px',color:theme.text,fontSize:'15px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
-            <button onClick={()=>manualCode&&lookupBarcode(manualCode)} disabled={!manualCode} style={{padding:'10px 16px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>Caută</button>
-          </div>
+          <div id="scanner-div" style={{width:'100%',borderRadius:'16px',overflow:'hidden',marginBottom:'12px'}}/>
+          <style>{`#scanner-div video{border-radius:16px;} #scanner-div img{display:none;}`}</style>
+          <button onClick={()=>{stopScanner();setStatus('idle');}} style={{width:'100%',padding:'10px 24px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'100px',color:'#ef4444',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>✕ Anulează</button>
         </div>
       )}
 
-      {/* loading */}
       {status==='loading'&&(
         <div style={{textAlign:'center',padding:'32px'}}>
           <div style={{display:'flex',justifyContent:'center',gap:'6px',marginBottom:'12px'}}>{[0,1,2].map(i=><div key={i} style={{width:'10px',height:'10px',borderRadius:'50%',background:'#f97316',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div>
@@ -654,7 +564,6 @@ function BarcodeScanner({onResult,theme=THEMES.dark}){
         </div>
       )}
 
-      {/* error */}
       {status==='error'&&(
         <div style={{textAlign:'center',padding:'20px'}}>
           <div style={{fontSize:'40px',marginBottom:'10px'}}>😕</div>
@@ -667,7 +576,6 @@ function BarcodeScanner({onResult,theme=THEMES.dark}){
         </div>
       )}
 
-      {/* found */}
       {status==='found'&&product&&(
         <div>
           <div style={{display:'flex',gap:'12px',alignItems:'flex-start',padding:'14px',background:theme.surface,borderRadius:'14px',border:`1px solid ${theme.border}`,marginBottom:'14px'}}>
@@ -681,7 +589,6 @@ function BarcodeScanner({onResult,theme=THEMES.dark}){
               </div>
             </div>
           </div>
-
           <div style={{marginBottom:'14px'}}>
             <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em',marginBottom:'8px'}}>CANTITATE (g)</div>
             <div style={{display:'flex',gap:'6px',marginBottom:'8px',flexWrap:'wrap'}}>
@@ -689,11 +596,9 @@ function BarcodeScanner({onResult,theme=THEMES.dark}){
             </div>
             <input type="number" value={qty} onChange={e=>setQty(e.target.value)} style={{width:'100%',background:theme.surface2,border:`1px solid ${theme.softBorder}`,borderRadius:'10px',padding:'10px',color:theme.text,fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
           </div>
-
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'14px'}}>
             {[{l:'KCAL',v:m.kcal,c:'#f97316'},{l:'PROT',v:`${m.p}g`,c:'#8b5cf6'},{l:'CARBS',v:`${m.c}g`,c:'#3b82f6'},{l:'GRĂS',v:`${m.f}g`,c:'#10b981'}].map(x=><div key={x.l} style={{background:`${x.c}12`,border:`1px solid ${x.c}30`,borderRadius:'10px',padding:'8px',textAlign:'center'}}><div style={{fontSize:'9px',color:theme.text3,marginBottom:'2px'}}>{x.l}</div><div style={{fontSize:'16px',fontWeight:800,color:x.c}}>{x.v}</div></div>)}
           </div>
-
           <button onClick={()=>onResult(product,parseFloat(qty)||100)} style={{width:'100%',padding:'14px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'15px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',textTransform:'uppercase',boxShadow:'0 4px 20px rgba(249,115,22,0.3)'}}>
             ◆ ADAUGĂ ({m.kcal} kcal)
           </button>

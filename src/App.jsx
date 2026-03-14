@@ -256,7 +256,7 @@ const STORAGE_KEY = 'nutritie_mihai_v2';
 function loadSession() {
   try {
     const today = new Date().toDateString();
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { messages: [], dayType: 'normal', date: today };
     const data = JSON.parse(raw);
     if (data.date !== today) return { messages: [], dayType: 'normal', date: today };
@@ -266,7 +266,7 @@ function loadSession() {
 
 function saveSession(messages, dayType) {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
       messages, dayType, date: new Date().toDateString()
     }));
   } catch {}
@@ -344,7 +344,7 @@ export default function App() {
 
   const clearHistory = () => {
     setMessages([]);
-    sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY);
     showToast("Istoric șters");
   };
 

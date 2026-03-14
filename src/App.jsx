@@ -35,75 +35,39 @@ L-Carnitină, Mg bisglicinat, Zinc, Vitamax, CoQ10, D3, Omega-3, Boron, Centrum 
 3. Somn <6h = alertă testosteron
 4. LDL monitorizat prin grăsimi saturate + fibre solubile`;
 
-// ─── Exercise Database ────────────────────────────────────────────
+// ─── Constants & Data ─────────────────────────────────────────────
+const DAY_TYPES = [
+  { val:'antrenament', label:'ANTRENAMENT', labelShort:'ANTR',  icon:'⚡', gradient:'linear-gradient(135deg,#f97316,#ef4444)', color:'#f97316', glow:'rgba(249,115,22,0.4)', desc:'2.150–2.250 kcal · 165–180g prot', calTarget:2200, protTarget:172 },
+  { val:'normal',      label:'ZI ACTIVĂ',   labelShort:'ACTIV', icon:'🔥', gradient:'linear-gradient(135deg,#3b82f6,#6366f1)', color:'#3b82f6', glow:'rgba(59,130,246,0.4)',  desc:'1.900–2.000 kcal · 160–175g prot', calTarget:1950, protTarget:167 },
+  { val:'repaus',      label:'REPAUS',       labelShort:'REPAUS',icon:'🌙', gradient:'linear-gradient(135deg,#8b5cf6,#ec4899)', color:'#8b5cf6', glow:'rgba(139,92,246,0.4)',  desc:'1.700–1.800 kcal · 155–170g prot', calTarget:1750, protTarget:162 },
+];
+
 const MUSCLE_GROUPS = [
-  { id:'piept',   label:'Piept',   icon:'💪', color:'#ef4444' },
-  { id:'spate',   label:'Spate',   icon:'🔙', color:'#3b82f6' },
-  { id:'umeri',   label:'Umeri',   icon:'🏋️', color:'#8b5cf6' },
-  { id:'brate',   label:'Brațe',   icon:'💪', color:'#f59e0b' },
-  { id:'picioare',label:'Picioare',icon:'🦵', color:'#10b981' },
-  { id:'core',    label:'Core',    icon:'🎯', color:'#f97316' },
+  { id:'piept',    label:'Piept',    icon:'💪', color:'#ef4444' },
+  { id:'spate',    label:'Spate',    icon:'🔙', color:'#3b82f6' },
+  { id:'umeri',    label:'Umeri',    icon:'🏋️', color:'#8b5cf6' },
+  { id:'brate',    label:'Brațe',    icon:'💪', color:'#f59e0b' },
+  { id:'picioare', label:'Picioare', icon:'🦵', color:'#10b981' },
+  { id:'core',     label:'Core',     icon:'🎯', color:'#f97316' },
 ];
 
 const EXERCISES = {
-  piept: [
-    { id:'bench',    name:'Bench Press (halteră)',  type:'barbell' },
-    { id:'dbpress',  name:'Bench Press (gantere)',  type:'dumbbell' },
-    { id:'incline',  name:'Incline Press',          type:'barbell' },
-    { id:'flyes',    name:'Flyes (gantere)',         type:'dumbbell' },
-    { id:'cable_fly',name:'Cable Crossover',        type:'cable' },
-    { id:'dips',     name:'Dips (piept)',            type:'bodyweight' },
-  ],
-  spate: [
-    { id:'deadlift', name:'Deadlift',               type:'barbell' },
-    { id:'rows',     name:'Bent-over Rows',         type:'barbell' },
-    { id:'pulldown', name:'Lat Pulldown',           type:'cable' },
-    { id:'pullup',   name:'Pull-up',                type:'bodyweight' },
-    { id:'seated_row',name:'Seated Cable Row',     type:'cable' },
-    { id:'facepull', name:'Face Pull',              type:'cable' },
-  ],
-  umeri: [
-    { id:'ohpress',  name:'Overhead Press',         type:'barbell' },
-    { id:'dbpress_s',name:'Arnold Press',           type:'dumbbell' },
-    { id:'laterals', name:'Lateral Raises',         type:'dumbbell' },
-    { id:'frontrise',name:'Front Raises',           type:'dumbbell' },
-    { id:'shrugs',   name:'Shrugs',                 type:'barbell' },
-  ],
-  brate: [
-    { id:'curl',     name:'Bicep Curl (halteră)',   type:'barbell' },
-    { id:'dbcurl',   name:'Bicep Curl (gantere)',   type:'dumbbell' },
-    { id:'hammer',   name:'Hammer Curl',            type:'dumbbell' },
-    { id:'skullcr',  name:'Skull Crushers',         type:'barbell' },
-    { id:'tricepext',name:'Tricep Pushdown',        type:'cable' },
-    { id:'dipstric', name:'Dips (triceps)',          type:'bodyweight' },
-  ],
-  picioare: [
-    { id:'squat',    name:'Squat',                  type:'barbell' },
-    { id:'legpress', name:'Leg Press',              type:'machine' },
-    { id:'rdl',      name:'Romanian Deadlift',      type:'barbell' },
-    { id:'lunge',    name:'Lunges',                 type:'dumbbell' },
-    { id:'legcurl',  name:'Leg Curl',               type:'machine' },
-    { id:'legext',   name:'Leg Extension',          type:'machine' },
-    { id:'calf',     name:'Calf Raises',            type:'machine' },
-  ],
-  core: [
-    { id:'plank',    name:'Plank',                  type:'bodyweight' },
-    { id:'crunch',   name:'Crunch',                 type:'bodyweight' },
-    { id:'lgrise',   name:'Leg Raises',             type:'bodyweight' },
-    { id:'russian',  name:'Russian Twist',          type:'bodyweight' },
-    { id:'cabcr',    name:'Cable Crunch',           type:'cable' },
-  ],
+  piept:    [{id:'bench',name:'Bench Press (halteră)'},{id:'dbpress',name:'Bench Press (gantere)'},{id:'incline',name:'Incline Press'},{id:'flyes',name:'Flyes (gantere)'},{id:'cable_fly',name:'Cable Crossover'},{id:'dips',name:'Dips (piept)'}],
+  spate:    [{id:'deadlift',name:'Deadlift'},{id:'rows',name:'Bent-over Rows'},{id:'pulldown',name:'Lat Pulldown'},{id:'pullup',name:'Pull-up'},{id:'seated_row',name:'Seated Cable Row'},{id:'facepull',name:'Face Pull'}],
+  umeri:    [{id:'ohpress',name:'Overhead Press'},{id:'dbpress_s',name:'Arnold Press'},{id:'laterals',name:'Lateral Raises'},{id:'frontrise',name:'Front Raises'},{id:'shrugs',name:'Shrugs'}],
+  brate:    [{id:'curl',name:'Bicep Curl (halteră)'},{id:'dbcurl',name:'Bicep Curl (gantere)'},{id:'hammer',name:'Hammer Curl'},{id:'skullcr',name:'Skull Crushers'},{id:'tricepext',name:'Tricep Pushdown'},{id:'dipstric',name:'Dips (triceps)'}],
+  picioare: [{id:'squat',name:'Squat'},{id:'legpress',name:'Leg Press'},{id:'rdl',name:'Romanian Deadlift'},{id:'lunge',name:'Lunges'},{id:'legcurl',name:'Leg Curl'},{id:'legext',name:'Leg Extension'},{id:'calf',name:'Calf Raises'}],
+  core:     [{id:'plank',name:'Plank'},{id:'crunch',name:'Crunch'},{id:'lgrise',name:'Leg Raises'},{id:'russian',name:'Russian Twist'},{id:'cabcr',name:'Cable Crunch'}],
 };
 
 const CARDIO_TYPES = [
-  { id:'mers',    name:'Mers pe jos',  icon:'🚶', met:3.5, unitLabel:'min', color:'#10b981' },
-  { id:'alergare',name:'Alergare',     icon:'🏃', met:9.0, unitLabel:'min', color:'#f97316' },
-  { id:'munca',   name:'Muncă fizică', icon:'🔨', met:4.0, unitLabel:'min', color:'#f59e0b' },
-  { id:'bicicleta',name:'Bicicletă',   icon:'🚴', met:7.5, unitLabel:'min', color:'#3b82f6' },
-  { id:'inot',    name:'Înot',         icon:'🏊', met:8.0, unitLabel:'min', color:'#6366f1' },
+  { id:'mers',     name:'Mers pe jos',  icon:'🚶', met:3.5, color:'#10b981' },
+  { id:'alergare', name:'Alergare',     icon:'🏃', met:9.0, color:'#f97316' },
+  { id:'munca',    name:'Muncă fizică', icon:'🔨', met:4.0, color:'#f59e0b' },
+  { id:'bicicleta',name:'Bicicletă',    icon:'🚴', met:7.5, color:'#3b82f6' },
+  { id:'inot',     name:'Înot',         icon:'🏊', met:8.0, color:'#6366f1' },
 ];
 
-// ─── Food Database ────────────────────────────────────────────────
 const FOODS = [
   { id:'ou',       name:'Ou întreg',       emoji:'🥚', unit:'buc', unitG:55,  kcal:155, p:13,  c:1.1, f:11,  cat:'proteine' },
   { id:'albus',    name:'Albuș lichid',    emoji:'🥛', unit:'ml',  unitG:1,   kcal:52,  p:11,  c:0.7, f:0.2, cat:'proteine' },
@@ -126,51 +90,121 @@ const FOODS = [
   { id:'psyllium', name:'Psyllium',        emoji:'🌿', unit:'g',   unitG:1,   kcal:200, p:2,   c:85,  f:1,   cat:'grasimi' },
 ];
 
-const FOOD_CATS = [
-  {id:'all',label:'Toate'},{id:'proteine',label:'Proteine'},{id:'carbs',label:'Carbs'},{id:'legume',label:'Legume'},{id:'grasimi',label:'Grăsimi'},
-];
+const FOOD_CATS = [{id:'all',label:'Toate'},{id:'proteine',label:'Proteine'},{id:'carbs',label:'Carbs'},{id:'legume',label:'Legume'},{id:'grasimi',label:'Grăsimi'}];
 
-// ─── Constants ────────────────────────────────────────────────────
-const DAY_TYPES = [
-  { val:'antrenament', label:'ANTRENAMENT', labelShort:'ANTR',  icon:'⚡', gradient:'linear-gradient(135deg,#f97316,#ef4444)', color:'#f97316', glow:'rgba(249,115,22,0.4)', desc:'2.150–2.250 kcal · Carbs 140–180g' },
-  { val:'normal',      label:'ZI ACTIVĂ',   labelShort:'ACTIV', icon:'🔥', gradient:'linear-gradient(135deg,#3b82f6,#6366f1)', color:'#3b82f6', glow:'rgba(59,130,246,0.4)',  desc:'1.900–2.000 kcal · Carbs 110–140g' },
-  { val:'repaus',      label:'REPAUS',       labelShort:'REPAUS',icon:'🌙', gradient:'linear-gradient(135deg,#8b5cf6,#ec4899)', color:'#8b5cf6', glow:'rgba(139,92,246,0.4)',  desc:'1.700–1.800 kcal · Carbs 80–110g' },
-];
-
-const QUICK_COMMANDS = [
-  {label:'Start zi',icon:'🌅',cmd:'Start zi'},
-  {label:'Total zi',icon:'📊',cmd:'Total zi'},
-  {label:'Analiză săpt.',icon:'📈',cmd:'Analiză săptămână'},
+const DEFAULT_TEMPLATES = [
+  { id:'mic_dejun', name:'Mic dejun standard', icon:'🌅', items:[{id:'ou',qty:3},{id:'albus',qty:100},{id:'ovaz',qty:50}] },
+  { id:'post_antr', name:'Post-antrenament',   icon:'💪', items:[{id:'pui',qty:200},{id:'cartof_d',qty:150},{id:'branza',qty:50}] },
+  { id:'pranz',     name:'Prânz proteic',      icon:'🍽️', items:[{id:'pui',qty:180},{id:'ciuperci',qty:100},{id:'varza',qty:100},{id:'ulei',qty:10}] },
+  { id:'cina',      name:'Cină ușoară',        icon:'🌙', items:[{id:'pastrav',qty:200},{id:'varza',qty:150},{id:'sfecla',qty:80}] },
 ];
 
 const RO_DAYS   = ['Du','Lu','Ma','Mi','Jo','Vi','Sâ'];
 const RO_MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
 
-const SESSION_KEY  = 'mp_session_v5';
-const STATS_KEY    = 'mp_stats_v5';
-const WORKOUT_KEY  = 'mp_workout_v5';
+// ─── Storage keys ─────────────────────────────────────────────────
+const SESSION_KEY   = 'mp_session_v6';
+const STATS_KEY     = 'mp_stats_v6';
+const WORKOUT_KEY   = 'mp_workout_v6';
+const PATTERN_KEY   = 'mp_patterns_v1';
+const TEMPLATES_KEY = 'mp_templates_v1';
+const PHOTOS_KEY    = 'mp_photos_v1';
+const WEEKLY_KEY    = 'mp_weekly_v1';
+const NOTIF_KEY     = 'mp_notif_v1';
 
-// ─── Storage ──────────────────────────────────────────────────────
+// ─── Storage helpers ──────────────────────────────────────────────
+function ls(key, def) { try { const r=localStorage.getItem(key); return r?JSON.parse(r):def; } catch { return def; } }
+function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
 function loadSession() {
-  try {
-    const today=new Date().toDateString(), raw=localStorage.getItem(SESSION_KEY);
-    if (!raw) return {messages:[],dayType:'normal',date:today};
-    const d=JSON.parse(raw);
-    return d.date!==today ? {messages:[],dayType:'normal',date:today} : d;
-  } catch { return {messages:[],dayType:'normal',date:new Date().toDateString()}; }
+  const today=new Date().toDateString(), d=ls(SESSION_KEY,null);
+  if (!d||d.date!==today) return {messages:[],dayType:'normal',date:today};
+  return d;
 }
-function saveSession(m,dt){ try{localStorage.setItem(SESSION_KEY,JSON.stringify({messages:m,dayType:dt,date:new Date().toDateString()}));}catch{} }
-function loadStats(){ try{const r=localStorage.getItem(STATS_KEY);return r?JSON.parse(r):{weight:{},daily:{}};}catch{return{weight:{},daily:{}};} }
-function saveStats(s){ try{localStorage.setItem(STATS_KEY,JSON.stringify(s));}catch{} }
-function loadWorkouts(){ try{const r=localStorage.getItem(WORKOUT_KEY);return r?JSON.parse(r):{days:{}};}catch{return{days:{}};} }
-function saveWorkouts(w){ try{localStorage.setItem(WORKOUT_KEY,JSON.stringify(w));}catch{} }
-function todayKey(){ const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function saveSession(m,dt){ lsSet(SESSION_KEY,{messages:m,dayType:dt,date:new Date().toDateString()}); }
+function loadStats()    { return ls(STATS_KEY,   {weight:{},daily:{}}); }
+function saveStats(s)   { lsSet(STATS_KEY,s); }
+function loadWorkouts() { return ls(WORKOUT_KEY, {days:{}}); }
+function saveWorkouts(w){ lsSet(WORKOUT_KEY,w); }
+
+function todayKey() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
 // ─── Helpers ──────────────────────────────────────────────────────
-function calcMacros(food,qty){ const g=food.unit==='buc'?qty*food.unitG:food.unit==='ml'?qty*food.unitG:qty,f=g/100;return{kcal:Math.round(food.kcal*f),p:Math.round(food.p*f*10)/10,c:Math.round(food.c*f*10)/10,fat:Math.round(food.f*f*10)/10}; }
-function calcCaloriesBurned(met,minutes,kg=96){ return Math.round((met*3.5*kg/200)*minutes); }
+function calcMacros(food,qty){ const g=food.unit==='buc'?qty*food.unitG:food.unit==='ml'?qty*food.unitG:qty,f=g/100; return{kcal:Math.round(food.kcal*f),p:Math.round(food.p*f*10)/10,c:Math.round(food.c*f*10)/10,fat:Math.round(food.f*f*10)/10}; }
+function calcTemplateMacros(items){ return items.reduce((a,item)=>{ const food=FOODS.find(f=>f.id===item.id); if(!food)return a; const m=calcMacros(food,item.qty); return{kcal:a.kcal+m.kcal,p:a.p+m.p,c:a.c+m.c,fat:a.fat+m.fat}; },{kcal:0,p:0,c:0,fat:0}); }
+function calcBurned(met,min){ return Math.round((met*3.5*96/200)*min); }
 
-// ─── Markdown ─────────────────────────────────────────────────────
+// ─── Streak Calculator ────────────────────────────────────────────
+function calcStreak(stats) {
+  const keys = Object.keys(stats.daily||{}).sort((a,b)=>b.localeCompare(a));
+  if (!keys.length) return 0;
+  const today = todayKey();
+  let streak = 0, cur = new Date(today);
+  for (let i=0; i<60; i++) {
+    const k = cur.toISOString().slice(0,10);
+    if (stats.daily[k] || (i===0)) {
+      if (stats.daily[k]) streak++;
+      else if (i===0) break;
+    } else break;
+    cur.setDate(cur.getDate()-1);
+  }
+  return streak;
+}
+
+// ─── Push Notifications ───────────────────────────────────────────
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return false;
+  const perm = await Notification.requestPermission();
+  return perm === 'granted';
+}
+
+function scheduleNotifications(enabled) {
+  lsSet(NOTIF_KEY, {enabled, setupDate: new Date().toISOString()});
+}
+
+function checkAndSendNotif(stats) {
+  const cfg = ls(NOTIF_KEY, {enabled:false});
+  if (!cfg.enabled || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const h = now.getHours();
+  const key = `notif_${todayKey()}`;
+  const sent = ls(key, {morning:false,lunch:false,evening:false});
+
+  if (h >= 7 && h < 9 && !sent.morning) {
+    new Notification('🌅 MIHAI PERFORMANCE', {body:'Start zi! Selectează tipul zilei și activează protocolul.',icon:'/icon-192.png'});
+    lsSet(key, {...sent, morning:true});
+  }
+  if (h >= 12 && h < 14 && !sent.lunch) {
+    const todayStats = stats.daily?.[todayKey()];
+    if (!todayStats?.calories) {
+      new Notification('🍽️ Ai mâncat?', {body:'Nu ai logat nicio masă azi. Înregistrează prânzul!',icon:'/icon-192.png'});
+      lsSet(key, {...sent, lunch:true});
+    }
+  }
+  if (h >= 20 && h < 22 && !sent.evening) {
+    if (!stats.weight?.[todayKey()]) {
+      new Notification('⚖️ Greutate', {body:'Nu ai logat greutatea azi. Înregistreaz-o înainte de culcare!',icon:'/icon-192.png'});
+      lsSet(key, {...sent, evening:true});
+    }
+  }
+}
+
+// ─── Weekly Report ────────────────────────────────────────────────
+async function generateWeeklyReport(stats, workouts) {
+  const keys = Array.from({length:7},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()-i); return d.toISOString().slice(0,10); }).reverse();
+  const weeklyNutrition = keys.map(k=>({date:k, ...stats.daily?.[k]})).filter(d=>d.calories);
+  const weeklyWeight = keys.map(k=>({date:k, weight:stats.weight?.[k]})).filter(d=>d.weight);
+  const weeklyWorkouts = keys.map(k=>({date:k, data:workouts.days?.[k]})).filter(d=>d.data);
+
+  const avgCal = weeklyNutrition.length ? Math.round(weeklyNutrition.reduce((a,d)=>a+d.calories,0)/weeklyNutrition.length) : 0;
+  const avgProt = weeklyNutrition.length ? Math.round(weeklyNutrition.reduce((a,d)=>a+(d.protein||0),0)/weeklyNutrition.length) : 0;
+  const totalSets = weeklyWorkouts.reduce((a,d)=>a+(d.data?.exercises?.length||0),0);
+  const weightChange = weeklyWeight.length>=2 ? (parseFloat(weeklyWeight[weeklyWeight.length-1].weight)-parseFloat(weeklyWeight[0].weight)).toFixed(1) : null;
+
+  return { period: `${keys[0]} → ${keys[6]}`, avgCal, avgProt, totalSets, weightChange, logDays: weeklyNutrition.length, workoutDays: weeklyWorkouts.length };
+}
+
+// ─── Markdown renderer ────────────────────────────────────────────
 function inlineFormat(t){ return t.replace(/\*\*(.+?)\*\*/g,'<strong style="color:#f1f5f9;font-weight:700">$1</strong>').replace(/\*(.+?)\*/g,'<em style="color:#94a3b8">$1</em>').replace(/`(.+?)`/g,'<code style="background:rgba(249,115,22,0.15);padding:2px 6px;border-radius:4px;font-size:13px;color:#fb923c;font-family:monospace">$1</code>'); }
 function renderMarkdown(text){
   const clean=text.replace(/\{"_data":.+\}$/m,'').trim(),lines=clean.split('\n'),result=[];let i=0;
@@ -189,436 +223,558 @@ function renderMarkdown(text){
   return result;
 }
 
+// ─── Running Macro Bar ────────────────────────────────────────────
+function MacroBar({stats, dayType}) {
+  const currentDay = DAY_TYPES.find(d=>d.val===dayType);
+  const todayData  = stats.daily?.[todayKey()] || {};
+  const cal  = todayData.calories || 0;
+  const prot = todayData.protein  || 0;
+  const calTarget  = currentDay?.calTarget  || 2000;
+  const protTarget = currentDay?.protTarget || 165;
+  const calPct  = Math.min(100, Math.round((cal/calTarget)*100));
+  const protPct = Math.min(100, Math.round((prot/protTarget)*100));
+  const calColor  = calPct>105?'#ef4444':calPct>90?'#4ade80':'#3b82f6';
+  const protColor = protPct>=100?'#4ade80':protPct>75?'#f97316':'#ef4444';
+
+  if (!todayData.calories && !todayData.protein) return null;
+
+  return (
+    <div style={{background:'rgba(8,11,20,0.95)',borderBottom:'1px solid rgba(255,255,255,0.06)',padding:'8px 16px',display:'flex',gap:'16px',alignItems:'center',flexShrink:0}}>
+      <div style={{flex:1}}>
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}>
+          <span style={{fontSize:'10px',color:'#64748b',fontWeight:700,letterSpacing:'0.08em'}}>CALORII</span>
+          <span style={{fontSize:'11px',fontWeight:700,color:calColor}}>{cal} / {calTarget}</span>
+        </div>
+        <div style={{height:'5px',background:'rgba(255,255,255,0.06)',borderRadius:'3px',overflow:'hidden'}}>
+          <div style={{height:'100%',width:`${calPct}%`,background:calColor,borderRadius:'3px',transition:'width 0.5s ease'}}/>
+        </div>
+      </div>
+      <div style={{flex:1}}>
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}>
+          <span style={{fontSize:'10px',color:'#64748b',fontWeight:700,letterSpacing:'0.08em'}}>PROTEINE</span>
+          <span style={{fontSize:'11px',fontWeight:700,color:protColor}}>{prot}g / {protTarget}g</span>
+        </div>
+        <div style={{height:'5px',background:'rgba(255,255,255,0.06)',borderRadius:'3px',overflow:'hidden'}}>
+          <div style={{height:'100%',width:`${protPct}%`,background:protColor,borderRadius:'3px',transition:'width 0.5s ease'}}/>
+        </div>
+      </div>
+      <div style={{fontSize:'10px',color:'#334155',whiteSpace:'nowrap'}}>{calTarget-cal>0?`-${calTarget-cal} kcal`:'+'+Math.abs(calTarget-cal)}</div>
+    </div>
+  );
+}
+
+// ─── Streak Counter ───────────────────────────────────────────────
+function StreakBadge({stats}) {
+  const streak = calcStreak(stats);
+  if (streak === 0) return null;
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:'4px',padding:'3px 10px',background:'rgba(251,191,36,0.1)',border:'1px solid rgba(251,191,36,0.25)',borderRadius:'100px',fontSize:'12px',fontWeight:700,color:'#fbbf24',whiteSpace:'nowrap'}}>
+      🔥 {streak} zile
+    </div>
+  );
+}
+
 // ─── Food Picker ──────────────────────────────────────────────────
-function FoodPicker({onSend,onClose,dayType}){
-  const [cat,setCat]=useState('all'),[quantities,setQuantities]=useState({});
-  const currentDay=DAY_TYPES.find(d=>d.val===dayType);
-  const filtered=cat==='all'?FOODS:FOODS.filter(f=>f.cat===cat);
-  const setQty=(id,val)=>setQuantities(q=>({...q,[id]:val}));
-  const totals=Object.entries(quantities).reduce((acc,[id,qty])=>{if(!qty||isNaN(qty)||qty<=0)return acc;const food=FOODS.find(f=>f.id===id);if(!food)return acc;const m=calcMacros(food,parseFloat(qty));return{kcal:acc.kcal+m.kcal,p:acc.p+m.p,c:acc.c+m.c,fat:acc.fat+m.fat};},{kcal:0,p:0,c:0,fat:0});
-  const hasItems=Object.values(quantities).some(q=>q&&parseFloat(q)>0);
-  const handleSend=()=>{const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>{const food=FOODS.find(f=>f.id===id);return`${food.name} ${q}${food.unit}`;});if(!items.length)return;onSend(`Masă: ${items.join(', ')}`);onClose();};
+function FoodPicker({onSend, onClose, dayType}) {
+  const [cat,      setCat]       = useState('all');
+  const [quantities,setQuantities]= useState({});
+  const [activeTab, setActiveTab] = useState('alimente'); // 'alimente' | 'templates'
+  const [templates, setTemplates] = useState(ls(TEMPLATES_KEY, DEFAULT_TEMPLATES));
+  const [editingTpl, setEditingTpl] = useState(null);
+  const [newTplName, setNewTplName] = useState('');
+
+  const currentDay = DAY_TYPES.find(d=>d.val===dayType);
+  const filtered   = cat==='all'?FOODS:FOODS.filter(f=>f.cat===cat);
+  const setQty     = (id,val)=>setQuantities(q=>({...q,[id]:val}));
+  const totals     = Object.entries(quantities).reduce((acc,[id,qty])=>{if(!qty||isNaN(qty)||qty<=0)return acc;const food=FOODS.find(f=>f.id===id);if(!food)return acc;const m=calcMacros(food,parseFloat(qty));return{kcal:acc.kcal+m.kcal,p:acc.p+m.p,c:acc.c+m.c,fat:acc.fat+m.fat};},{kcal:0,p:0,c:0,fat:0});
+  const hasItems   = Object.values(quantities).some(q=>q&&parseFloat(q)>0);
+
+  const handleSend = ()=>{
+    const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>{const food=FOODS.find(f=>f.id===id);return`${food.name} ${q}${food.unit}`;});
+    if(!items.length)return;
+    onSend(`Masă: ${items.join(', ')}`);
+    onClose();
+  };
+
+  const sendTemplate = (tpl)=>{
+    const items=tpl.items.map(item=>{const food=FOODS.find(f=>f.id===item.id);return food?`${food.name} ${item.qty}${food.unit}`:null;}).filter(Boolean);
+    onSend(`Masă: ${items.join(', ')} (${tpl.name})`);
+    onClose();
+  };
+
+  const saveAsTemplate = ()=>{
+    if(!newTplName.trim()||!hasItems)return;
+    const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>({id,qty:parseFloat(q)}));
+    const newTpl={id:`tpl_${Date.now()}`,name:newTplName,icon:'⭐',items};
+    const updated=[...templates,newTpl];
+    setTemplates(updated);
+    lsSet(TEMPLATES_KEY,updated);
+    setNewTplName('');
+  };
+
+  const deleteTpl = (id)=>{
+    const updated=templates.filter(t=>t.id!==id);
+    setTemplates(updated);
+    lsSet(TEMPLATES_KEY,updated);
+  };
+
   return(
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:50,display:'flex',flexDirection:'column',justifyContent:'flex-end'}} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{background:'#0d1220',borderRadius:'24px 24px 0 0',padding:'0 0 env(safe-area-inset-bottom)',maxHeight:'88vh',display:'flex',flexDirection:'column',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none'}}>
-        <div style={{padding:'14px 18px 10px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-          <div><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'18px',background:'linear-gradient(90deg,#f97316,#ef4444)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>🍽️ ADAUGĂ MASĂ</div><div style={{fontSize:'11px',color:'#475569',marginTop:'2px'}}>{currentDay?.label} · {currentDay?.desc}</div></div>
-          <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'none',borderRadius:'10px',color:'#64748b',padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>✕</button>
+      <div onClick={e=>e.stopPropagation()} style={{background:'#0d1220',borderRadius:'24px 24px 0 0',maxHeight:'90vh',display:'flex',flexDirection:'column',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none'}}>
+        {/* Header */}
+        <div style={{padding:'14px 18px 0',flexShrink:0}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'18px',background:'linear-gradient(90deg,#f97316,#ef4444)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>🍽️ ADAUGĂ MASĂ</div>
+            <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'none',borderRadius:'10px',color:'#64748b',padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>✕</button>
+          </div>
+          {/* Tab switcher */}
+          <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+            {[{id:'alimente',label:'🥗 Alimente'},{id:'templates',label:'⭐ Templates'}].map(t=>(
+              <button key={t.id} onClick={()=>setActiveTab(t.id)} style={{flex:1,padding:'8px',fontSize:'13px',fontWeight:700,cursor:'pointer',border:'none',background:'transparent',color:activeTab===t.id?'#f97316':'#475569',borderBottom:`2px solid ${activeTab===t.id?'#f97316':'transparent'}`,transition:'all 0.2s',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>{t.label}</button>
+            ))}
+          </div>
         </div>
-        <div style={{display:'flex',gap:'6px',padding:'10px 16px',overflowX:'auto',flexShrink:0}}>
-          {FOOD_CATS.map(c=><button key={c.id} onClick={()=>setCat(c.id)} style={{padding:'6px 14px',borderRadius:'100px',fontSize:'12px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Inter',sans-serif",borderColor:cat===c.id?'#f97316':'rgba(255,255,255,0.08)',background:cat===c.id?'rgba(249,115,22,0.12)':'transparent',color:cat===c.id?'#f97316':'#64748b'}}>{c.label}</button>)}
-        </div>
-        <div style={{overflowY:'auto',flex:1,padding:'0 16px'}}>
-          <table style={{width:'100%',borderCollapse:'collapse'}}>
-            <thead style={{position:'sticky',top:0,background:'#0d1220',zIndex:2}}>
-              <tr>{['ALIMENT','CANT.','MACRO'].map((h,i)=><th key={i} style={{textAlign:i===2?'right':i===1?'center':'left',padding:'8px '+(i===1?'6px':'0'),fontSize:'11px',color:'#334155',fontWeight:700,letterSpacing:'0.08em',borderBottom:'1px solid rgba(255,255,255,0.06)',width:i===1?'80px':i===2?'90px':'auto'}}>{h}</th>)}</tr>
-            </thead>
-            <tbody>
-              {filtered.map(food=>{const qty=quantities[food.id]||'';const m=qty&&parseFloat(qty)>0?calcMacros(food,parseFloat(qty)):null;const active=qty&&parseFloat(qty)>0;return(
-                <tr key={food.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)',background:active?'rgba(249,115,22,0.04)':'transparent'}}>
-                  <td style={{padding:'10px 0'}}><div style={{fontSize:'15px',fontWeight:600,color:active?'#f97316':'#94a3b8'}}>{food.emoji} {food.name}</div><div style={{fontSize:'11px',color:'#334155',marginTop:'1px'}}>{food.kcal} kcal · {food.p}g P · {food.c}g C / 100{food.unit==='buc'?'g':food.unit}</div></td>
-                  <td style={{padding:'10px 6px',textAlign:'center'}}><div style={{display:'flex',alignItems:'center',gap:'4px',justifyContent:'center'}}><input type="number" value={qty} onChange={e=>setQty(food.id,e.target.value)} placeholder="0" style={{width:'52px',background:'rgba(255,255,255,0.06)',border:`1.5px solid ${active?'rgba(249,115,22,0.4)':'rgba(255,255,255,0.08)'}`,borderRadius:'8px',padding:'6px 8px',color:'#e2e8f0',fontSize:'15px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/><span style={{fontSize:'11px',color:'#475569'}}>{food.unit}</span></div></td>
-                  <td style={{padding:'10px 0',textAlign:'right'}}>{m?<div><div style={{fontSize:'14px',fontWeight:700,color:'#f97316'}}>{m.kcal} kcal</div><div style={{fontSize:'11px',color:'#64748b'}}>{m.p}P · {m.c}C</div></div>:<div style={{fontSize:'11px',color:'#1e293b'}}>—</div>}</td>
-                </tr>
-              );})}
-            </tbody>
-          </table>
-        </div>
-        <div style={{padding:'12px 16px',borderTop:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
-          {hasItems&&<div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'10px'}}>{[{l:'KCAL',v:totals.kcal,c:'#f97316'},{l:'PROT',v:`${totals.p}g`,c:'#8b5cf6'},{l:'CARBS',v:`${totals.c}g`,c:'#3b82f6'},{l:'GR',v:`${totals.fat}g`,c:'#10b981'}].map(x=><div key={x.l} style={{background:'rgba(255,255,255,0.04)',borderRadius:'10px',padding:'8px',textAlign:'center'}}><div style={{fontSize:'10px',color:'#475569',marginBottom:'2px'}}>{x.l}</div><div style={{fontSize:'16px',fontWeight:800,color:x.c}}>{x.v}</div></div>)}</div>}
-          <button onClick={handleSend} disabled={!hasItems} style={{width:'100%',padding:'14px',background:hasItems?'linear-gradient(135deg,#f97316,#ef4444)':'rgba(255,255,255,0.06)',border:'none',borderRadius:'14px',color:hasItems?'#fff':'#334155',fontSize:'15px',fontWeight:800,cursor:hasItems?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',textTransform:'uppercase',boxShadow:hasItems?'0 4px 20px rgba(249,115,22,0.35)':'none',transition:'all 0.2s'}}>
-            {hasItems?`▸ TRIMITE MASA (${totals.kcal} kcal)`:'Introduceți cantitățile'}
-          </button>
-        </div>
+
+        {activeTab==='alimente'&&(
+          <>
+            <div style={{display:'flex',gap:'6px',padding:'10px 16px',overflowX:'auto',flexShrink:0}}>
+              {FOOD_CATS.map(c=><button key={c.id} onClick={()=>setCat(c.id)} style={{padding:'6px 14px',borderRadius:'100px',fontSize:'12px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Inter',sans-serif",borderColor:cat===c.id?'#f97316':'rgba(255,255,255,0.08)',background:cat===c.id?'rgba(249,115,22,0.12)':'transparent',color:cat===c.id?'#f97316':'#64748b'}}>{c.label}</button>)}
+            </div>
+            <div style={{overflowY:'auto',flex:1,padding:'0 16px'}}>
+              <table style={{width:'100%',borderCollapse:'collapse'}}>
+                <thead style={{position:'sticky',top:0,background:'#0d1220',zIndex:2}}>
+                  <tr>{['ALIMENT','CANT.','MACRO'].map((h,i)=><th key={i} style={{textAlign:i===2?'right':i===1?'center':'left',padding:'8px '+(i===1?'6px':'0'),fontSize:'11px',color:'#334155',fontWeight:700,letterSpacing:'0.08em',borderBottom:'1px solid rgba(255,255,255,0.06)',width:i===1?'80px':i===2?'90px':'auto'}}>{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {filtered.map(food=>{const qty=quantities[food.id]||'';const m=qty&&parseFloat(qty)>0?calcMacros(food,parseFloat(qty)):null;const active=!!(qty&&parseFloat(qty)>0);return(
+                    <tr key={food.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)',background:active?'rgba(249,115,22,0.04)':'transparent'}}>
+                      <td style={{padding:'10px 0'}}><div style={{fontSize:'15px',fontWeight:600,color:active?'#f97316':'#94a3b8'}}>{food.emoji} {food.name}</div><div style={{fontSize:'11px',color:'#334155',marginTop:'1px'}}>{food.kcal} kcal · {food.p}g P / 100{food.unit==='buc'?'g':food.unit}</div></td>
+                      <td style={{padding:'10px 6px',textAlign:'center'}}><div style={{display:'flex',alignItems:'center',gap:'4px',justifyContent:'center'}}><input type="number" value={qty} onChange={e=>setQty(food.id,e.target.value)} placeholder="0" style={{width:'52px',background:'rgba(255,255,255,0.06)',border:`1.5px solid ${active?'rgba(249,115,22,0.4)':'rgba(255,255,255,0.08)'}`,borderRadius:'8px',padding:'6px 8px',color:'#e2e8f0',fontSize:'15px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/><span style={{fontSize:'11px',color:'#475569'}}>{food.unit}</span></div></td>
+                      <td style={{padding:'10px 0',textAlign:'right'}}>{m?<div><div style={{fontSize:'14px',fontWeight:700,color:'#f97316'}}>{m.kcal} kcal</div><div style={{fontSize:'11px',color:'#64748b'}}>{m.p}P</div></div>:<div style={{fontSize:'11px',color:'#1e293b'}}>—</div>}</td>
+                    </tr>
+                  );})}
+                </tbody>
+              </table>
+            </div>
+            <div style={{padding:'12px 16px',borderTop:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
+              {hasItems&&<div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'10px'}}>{[{l:'KCAL',v:totals.kcal,c:'#f97316'},{l:'PROT',v:`${totals.p}g`,c:'#8b5cf6'},{l:'CARBS',v:`${totals.c}g`,c:'#3b82f6'},{l:'GR',v:`${totals.fat}g`,c:'#10b981'}].map(x=><div key={x.l} style={{background:'rgba(255,255,255,0.04)',borderRadius:'10px',padding:'8px',textAlign:'center'}}><div style={{fontSize:'10px',color:'#475569',marginBottom:'2px'}}>{x.l}</div><div style={{fontSize:'16px',fontWeight:800,color:x.c}}>{x.v}</div></div>)}</div>}
+              {hasItems&&(
+                <div style={{display:'flex',gap:'8px',marginBottom:'8px'}}>
+                  <input value={newTplName} onChange={e=>setNewTplName(e.target.value)} placeholder="Salvează ca template..." style={{flex:1,background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'10px',padding:'8px 12px',color:'#e2e8f0',fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+                  <button onClick={saveAsTemplate} disabled={!newTplName.trim()} style={{padding:'8px 14px',background:newTplName.trim()?'rgba(251,191,36,0.15)':'rgba(255,255,255,0.04)',border:`1px solid ${newTplName.trim()?'rgba(251,191,36,0.3)':'rgba(255,255,255,0.08)'}`,borderRadius:'10px',color:newTplName.trim()?'#fbbf24':'#334155',fontSize:'13px',fontWeight:700,cursor:newTplName.trim()?'pointer':'not-allowed'}}>⭐ Salvează</button>
+                </div>
+              )}
+              <button onClick={handleSend} disabled={!hasItems} style={{width:'100%',padding:'14px',background:hasItems?'linear-gradient(135deg,#f97316,#ef4444)':'rgba(255,255,255,0.06)',border:'none',borderRadius:'14px',color:hasItems?'#fff':'#334155',fontSize:'15px',fontWeight:800,cursor:hasItems?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',textTransform:'uppercase',boxShadow:hasItems?'0 4px 20px rgba(249,115,22,0.35)':'none',transition:'all 0.2s'}}>
+                {hasItems?`▸ TRIMITE MASA (${totals.kcal} kcal)`:'Introduceți cantitățile'}
+              </button>
+            </div>
+          </>
+        )}
+
+        {activeTab==='templates'&&(
+          <div style={{overflowY:'auto',flex:1,padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px'}}>
+            {templates.map(tpl=>{
+              const m=calcTemplateMacros(tpl.items);
+              return(
+                <div key={tpl.id} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'14px',padding:'14px',display:'flex',alignItems:'center',gap:'12px'}}>
+                  <div style={{fontSize:'28px',flexShrink:0}}>{tpl.icon}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:'15px',fontWeight:700,color:'#e2e8f0',marginBottom:'4px'}}>{tpl.name}</div>
+                    <div style={{display:'flex',gap:'10px'}}>
+                      <span style={{fontSize:'12px',color:'#f97316',fontWeight:600}}>{m.kcal} kcal</span>
+                      <span style={{fontSize:'12px',color:'#8b5cf6'}}>{m.p}g prot</span>
+                      <span style={{fontSize:'12px',color:'#3b82f6'}}>{m.c}g carbs</span>
+                    </div>
+                  </div>
+                  <div style={{display:'flex',gap:'6px'}}>
+                    <button onClick={()=>sendTemplate(tpl)} style={{padding:'8px 16px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>▸</button>
+                    {!DEFAULT_TEMPLATES.find(d=>d.id===tpl.id)&&<button onClick={()=>deleteTpl(tpl.id)} style={{padding:'8px 10px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'10px',color:'#ef4444',fontSize:'13px',cursor:'pointer'}}>×</button>}
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{height:'20px'}}/>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// ─── Workout Tab ──────────────────────────────────────────────────
-function WorkoutTab({workouts,setWorkouts,onSendToCoach}){
-  const [mode,setMode]=useState('gym'); // 'gym' | 'cardio'
-  const [selectedGroup,setSelectedGroup]=useState('piept');
-  const [selectedEx,setSelectedEx]=useState(null);
-  const [sets,setSets]=useState([]); // [{kg, reps}]
-  const [cardioType,setCardioType]=useState('mers');
-  const [cardioDuration,setCardioDuration]=useState('');
-  const [cardioIntensity,setCardioIntensity]=useState('moderată');
+// ─── Progress Photos ──────────────────────────────────────────────
+function PhotosPanel() {
+  const [photos, setPhotos] = useState(ls(PHOTOS_KEY, []));
+  const fileRef = useRef(null);
 
-  const key=todayKey();
-  const todayWorkout=workouts.days[key]||{exercises:[],cardio:[]};
-
-  const addSet=()=>setSets(s=>[...s,{kg:'',reps:''}]);
-  const updateSet=(i,field,val)=>setSets(s=>s.map((set,idx)=>idx===i?{...set,[field]:val}:set));
-  const removeSet=i=>setSets(s=>s.filter((_,idx)=>idx!==i));
-
-  const saveExercise=()=>{
-    if(!selectedEx||sets.length===0)return;
-    const validSets=sets.filter(s=>s.kg&&s.reps&&parseFloat(s.kg)>0&&parseInt(s.reps)>0);
-    if(!validSets.length)return;
-    const ex=EXERCISES[selectedGroup].find(e=>e.id===selectedEx);
-    const volume=validSets.reduce((a,s)=>a+parseFloat(s.kg)*parseInt(s.reps),0);
-    const entry={id:selectedEx,name:ex.name,group:selectedGroup,sets:validSets,volume:Math.round(volume),time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};
-    const newW={...workouts};
-    if(!newW.days[key]) newW.days[key]={exercises:[],cardio:[]};
-    newW.days[key].exercises=[...newW.days[key].exercises,entry];
-
-    // Check PR
-    const allSameEx=Object.values(newW.days).flatMap(d=>d.exercises||[]).filter(e=>e.id===selectedEx);
-    const maxPrev=Math.max(0,...allSameEx.slice(0,-1).map(e=>Math.max(...e.sets.map(s=>parseFloat(s.kg)))));
-    const maxNew=Math.max(...validSets.map(s=>parseFloat(s.kg)));
-    const isPR=maxNew>maxPrev;
-
-    saveWorkouts(newW); setWorkouts({...newW});
-    setSets([]); setSelectedEx(null);
-
-    // Send to coach
-    const setsStr=validSets.map(s=>`${s.kg}kg×${s.reps}`).join(', ');
-    onSendToCoach(`Forță: ${ex.name} — ${setsStr}${isPR?' 🏆 RECORD PERSONAL':''}`);
+  const addPhoto = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const newPhoto = { id: Date.now(), date: todayKey(), dataUrl: ev.target.result, note: '' };
+      const updated = [...photos, newPhoto].slice(-20); // max 20 photos
+      setPhotos(updated);
+      lsSet(PHOTOS_KEY, updated);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const saveCardio=()=>{
-    if(!cardioDuration||parseInt(cardioDuration)<=0)return;
-    const ct=CARDIO_TYPES.find(c=>c.id===cardioType);
-    const kcal=calcCaloriesBurned(ct.met,parseInt(cardioDuration));
-    const entry={id:cardioType,name:ct.name,icon:ct.icon,duration:parseInt(cardioDuration),intensity:cardioIntensity,kcal,time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};
-    const newW={...workouts};
-    if(!newW.days[key]) newW.days[key]={exercises:[],cardio:[]};
-    newW.days[key].cardio=[...(newW.days[key].cardio||[]),entry];
-    saveWorkouts(newW); setWorkouts({...newW});
-    setCardioDuration('');
-    onSendToCoach(`Activitate: ${ct.name} ${cardioDuration} min (${cardioIntensity}) — ~${kcal} kcal arse`);
+  const deletePhoto = (id) => {
+    const updated = photos.filter(p=>p.id!==id);
+    setPhotos(updated);
+    lsSet(PHOTOS_KEY, updated);
   };
 
-  const totalVolume=todayWorkout.exercises.reduce((a,e)=>a+e.volume,0);
-  const totalCardioKcal=(todayWorkout.cardio||[]).reduce((a,c)=>a+c.kcal,0);
+  return (
+    <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px'}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#94a3b8',letterSpacing:'0.05em',textTransform:'uppercase'}}>📸 PROGRES FOTO</div>
+        <button onClick={()=>fileRef.current?.click()} style={{padding:'7px 14px',background:'rgba(59,130,246,0.1)',border:'1px solid rgba(59,130,246,0.25)',borderRadius:'10px',color:'#3b82f6',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>+ ADAUGĂ</button>
+        <input ref={fileRef} type="file" accept="image/*" capture="user" onChange={addPhoto} style={{display:'none'}}/>
+      </div>
+      {photos.length===0?(
+        <div style={{textAlign:'center',color:'#334155',fontSize:'13px',padding:'20px'}}>Nicio poză adăugată. Fotografiază progresul săptămânal!</div>
+      ):(
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
+          {[...photos].reverse().map(photo=>{
+            const [,m,d]=photo.date.split('-');
+            return(
+              <div key={photo.id} style={{position:'relative',borderRadius:'10px',overflow:'hidden',aspectRatio:'1'}}>
+                <img src={photo.dataUrl} alt={photo.date} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,0.7))',padding:'6px 8px'}}>
+                  <div style={{fontSize:'11px',color:'#fff',fontWeight:600}}>{d}/{m}</div>
+                </div>
+                <button onClick={()=>deletePhoto(photo.id)} style={{position:'absolute',top:'4px',right:'4px',background:'rgba(0,0,0,0.6)',border:'none',borderRadius:'50%',width:'22px',height:'22px',color:'#fff',fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
-  // PR finder
-  const getPR=(exId)=>{
-    const allSets=Object.values(workouts.days).flatMap(d=>(d.exercises||[]).filter(e=>e.id===exId).flatMap(e=>e.sets));
-    if(!allSets.length)return null;
-    return Math.max(...allSets.map(s=>parseFloat(s.kg)));
+// ─── Muscle Volume Chart ──────────────────────────────────────────
+function MuscleVolumeChart({workouts}) {
+  const last7 = Array.from({length:7},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()-i); return d.toISOString().slice(0,10); });
+  const volumeByGroup = {};
+  MUSCLE_GROUPS.forEach(g=>{ volumeByGroup[g.id]=0; });
+  last7.forEach(date=>{
+    const day=workouts.days?.[date];
+    if(!day?.exercises) return;
+    day.exercises.forEach(ex=>{
+      if(volumeByGroup[ex.group]!==undefined) volumeByGroup[ex.group]+=ex.sets?.length||0;
+    });
+  });
+  const maxSets = Math.max(1,...Object.values(volumeByGroup));
+  const totalSets = Object.values(volumeByGroup).reduce((a,b)=>a+b,0);
+  if (totalSets===0) return (
+    <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#94a3b8',letterSpacing:'0.05em',textTransform:'uppercase',marginBottom:'8px'}}>💪 VOLUM / GRUPĂ (7 zile)</div>
+      <div style={{textAlign:'center',color:'#334155',fontSize:'13px',padding:'12px'}}>Nicio sesiune în ultimele 7 zile</div>
+    </div>
+  );
+  return (
+    <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'15px',color:'#94a3b8',letterSpacing:'0.05em',textTransform:'uppercase',marginBottom:'14px'}}>💪 VOLUM / GRUPĂ (7 zile)</div>
+      <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+        {MUSCLE_GROUPS.map(g=>{
+          const sets=volumeByGroup[g.id]||0;
+          const pct=Math.round((sets/maxSets)*100);
+          const warn=sets<6&&totalSets>10;
+          return(
+            <div key={g.id}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:'3px'}}>
+                <span style={{fontSize:'12px',color:warn?'#ef4444':'#94a3b8',fontWeight:600}}>{g.icon} {g.label}{warn?' ⚠️':''}</span>
+                <span style={{fontSize:'12px',fontWeight:700,color:g.color}}>{sets} seturi</span>
+              </div>
+              <div style={{height:'6px',background:'rgba(255,255,255,0.05)',borderRadius:'3px',overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${pct}%`,background:g.color,borderRadius:'3px',transition:'width 0.5s ease',opacity:sets===0?0.2:1}}/>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {MUSCLE_GROUPS.some(g=>volumeByGroup[g.id]<4&&totalSets>8)&&(
+        <div style={{marginTop:'12px',padding:'8px 12px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'10px',fontSize:'12px',color:'#fca5a5'}}>
+          ⚠️ Dezechilibru detectat — grupele cu sub 4 seturi necesită atenție
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Weekly Report ────────────────────────────────────────────────
+function WeeklyReportPanel({stats, workouts}) {
+  const [report,  setReport]  = useState(ls(WEEKLY_KEY, null));
+  const [loading, setLoading] = useState(false);
+  const [expanded,setExpanded]= useState(false);
+
+  useEffect(()=>{
+    // Auto-run on Monday
+    const day=new Date().getDay();
+    const lastRun=report?.date;
+    const lastRunDay=lastRun?new Date(lastRun).getDay():null;
+    if(day===1&&lastRunDay!==1&&Object.keys(stats.daily||{}).length>=3) runReport();
+  },[]);
+
+  async function runReport(){
+    setLoading(true);
+    setExpanded(true);
+    const data=await generateWeeklyReport(stats,workouts);
+    const workoutDetails=Object.entries(workouts.days||{}).slice(-7).map(([date,d])=>`${date}: ${d.exercises?.length||0} exerciții, ${d.cardio?.length||0} sesiuni cardio`).join('\n');
+    const prompt=`Generează un raport săptămânal concis pentru Mihai.
+
+DATE SĂPTĂMÂNA ${data.period}:
+- Zile logate: ${data.logDays}/7
+- Calorii medii/zi: ${data.avgCal} kcal (țintă ~2000)
+- Proteine medii/zi: ${data.avgProt}g (țintă 160-175g)
+- Zile antrenament: ${data.workoutDays}
+- Total exerciții: ${data.totalSets}
+- Schimbare greutate: ${data.weightChange!==null?data.weightChange+'kg':'neînregistrată'}
+${workoutDetails}
+
+Format: scurt, cu emoji, maxim 200 cuvinte. Include: rezumat performanță, ce a mers bine, ce trebuie îmbunătățit, obiectiv săptămâna viitoare. Răspunde în română.`;
+
+    try{
+      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:prompt}]})});
+      const d=await res.json();
+      const text=d.content?.[0]?.text||'Eroare.';
+      const newReport={text,date:new Date().toISOString(),data};
+      setReport(newReport);
+      lsSet(WEEKLY_KEY,newReport);
+    }catch{setReport({text:'⚠️ Eroare de conexiune.',date:new Date().toISOString()});}
+    setLoading(false);
+  }
+
+  const lastRunLabel=report?.date?new Date(report.date).toLocaleDateString('ro-RO',{weekday:'long',day:'numeric',month:'short'}):null;
+
+  return(
+    <div style={{background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.18)',borderRadius:'16px',overflow:'hidden'}}>
+      <div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExpanded(e=>!e)}>
+        <div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',color:'#10b981',letterSpacing:'0.05em'}}>📅 RAPORT SĂPTĂMÂNAL</div>
+          <div style={{fontSize:'11px',color:'#475569',marginTop:'2px'}}>{lastRunLabel?`Generat: ${lastRunLabel}`:'Se generează automat luni'}</div>
+        </div>
+        <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+          <button onClick={e=>{e.stopPropagation();runReport();}} disabled={loading} style={{padding:'7px 14px',background:loading?'rgba(16,185,129,0.1)':'rgba(16,185,129,0.15)',border:'1px solid rgba(16,185,129,0.3)',borderRadius:'10px',color:'#10b981',fontSize:'13px',fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:"'Barlow Condensed',sans-serif",opacity:loading?0.6:1}}>
+            {loading?'⏳':'▸ GENEREAZĂ'}
+          </button>
+          <span style={{color:'#475569',fontSize:'18px'}}>{expanded?'↑':'↓'}</span>
+        </div>
+      </div>
+      {expanded&&(
+        <div style={{borderTop:'1px solid rgba(16,185,129,0.12)',padding:'16px'}}>
+          {loading&&<div style={{display:'flex',gap:'6px',justifyContent:'center',padding:'16px'}}>{[0,1,2].map(i=><div key={i} style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div>}
+          {!loading&&report&&<div>{renderMarkdown(report.text)}</div>}
+          {!loading&&!report&&<div style={{textAlign:'center',color:'#334155',fontSize:'13px',padding:'16px'}}>Apasă GENEREAZĂ pentru raportul săptămânal.</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Pattern Detection ────────────────────────────────────────────
+function PatternPanel({stats, workouts}) {
+  const [report,  setReport]  = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [lastRun, setLastRun] = useState(null);
+  const [expanded,setExpanded]= useState(false);
+
+  useEffect(()=>{
+    try{
+      const saved=localStorage.getItem(PATTERN_KEY);
+      if(saved){const d=JSON.parse(saved);setReport(d.report);setLastRun(d.date);const days=(Date.now()-new Date(d.date).getTime())/(1000*60*60*24);if(days>=7)checkAndAutoRun();}
+      else checkAndAutoRun();
+    }catch{}
+  },[]);
+
+  function checkAndAutoRun(){if(Object.keys(stats.daily||{}).length>=7)runAnalysis(true);}
+
+  async function runAnalysis(silent=false){
+    const logDays=Object.keys(stats.daily||{}).length;if(logDays<3)return;
+    if(!silent)setExpanded(true);setLoading(true);
+    const weight=Object.entries(stats.weight||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-14);
+    const daily=Object.entries(stats.daily||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-14);
+    const days=Object.entries(workouts.days||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-14);
+    const prompt=`Analizează datele lui Mihai și identifică patternuri concrete.
+Greutate: ${JSON.stringify(weight)}
+Nutriție: ${JSON.stringify(daily)}
+Antrenamente: ${JSON.stringify(days)}
+Profil: 45 ani, 188cm, ~96kg → 88-90kg, 2×fullbody+3×split/săpt.
+Macro țintă: antr 2150-2250kcal/165-180g prot, activ 1900-2000/160-175g, repaus 1700-1800/155-170g.
+Analiză: 1.TREND GREUTATE 2.CONSISTENȚĂ NUTRIȚIE 3.CORELAȚII 4.PUNCTE SLABE 5.RECOMANDĂRI (max 3). Direct, tehnic, română.`;
+    try{
+      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})});
+      const data=await res.json();const text=data.content?.[0]?.text||'Eroare.';const now=new Date().toISOString();
+      setReport(text);setLastRun(now);setExpanded(true);lsSet(PATTERN_KEY,{report:text,date:now});
+    }catch{setReport('⚠️ Eroare de conexiune.');}
+    setLoading(false);
+  }
+
+  const logDays=Object.keys(stats.daily||{}).length;
+  const lastRunLabel=lastRun?new Date(lastRun).toLocaleDateString('ro-RO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):null;
+
+  return(
+    <div style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'16px',overflow:'hidden'}}>
+      <div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExpanded(e=>!e)}>
+        <div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',background:'linear-gradient(90deg,#8b5cf6,#ec4899)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.05em'}}>🧠 PATTERN DETECTION</div>
+          <div style={{fontSize:'11px',color:'#475569',marginTop:'2px'}}>{lastRunLabel?`Ultima: ${lastRunLabel}`:logDays>=3?'Date suficiente pentru analiză':`Necesare ${3-logDays} zile în plus`}</div>
+        </div>
+        <div style={{display:'flex',gap:'8px'}}>
+          {logDays>=3&&<button onClick={e=>{e.stopPropagation();runAnalysis();}} disabled={loading} style={{padding:'7px 14px',background:loading?'rgba(139,92,246,0.1)':'linear-gradient(135deg,#8b5cf6,#ec4899)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:"'Barlow Condensed',sans-serif",opacity:loading?0.6:1,boxShadow:loading?'none':'0 4px 15px rgba(139,92,246,0.3)'}}>{loading?'⏳':'▸ ANALIZEAZĂ'}</button>}
+          <span style={{color:'#475569',fontSize:'18px'}}>{expanded?'↑':'↓'}</span>
+        </div>
+      </div>
+      {expanded&&<div style={{borderTop:'1px solid rgba(139,92,246,0.15)',padding:'16px'}}>
+        {loading&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'10px',padding:'16px'}}><div style={{display:'flex',gap:'6px'}}>{[0,1,2].map(i=><div key={i} style={{width:'8px',height:'8px',borderRadius:'50%',background:'linear-gradient(135deg,#8b5cf6,#ec4899)',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div><div style={{fontSize:'13px',color:'#64748b'}}>Analizez {logDays} zile...</div></div>}
+        {!loading&&report&&<div style={{fontSize:'14px',lineHeight:'1.7'}}>{renderMarkdown(report)}</div>}
+        {!loading&&!report&&<div style={{textAlign:'center',color:'#334155',fontSize:'13px',padding:'16px'}}>Loghează cel puțin 3 zile pentru a activa analiza.</div>}
+      </div>}
+    </div>
+  );
+}
+
+// ─── Notification Settings ────────────────────────────────────────
+function NotifSettings() {
+  const [cfg, setCfg] = useState(ls(NOTIF_KEY, {enabled:false}));
+  const [perm,setPerm]= useState(typeof Notification!=='undefined'?Notification.permission:'denied');
+
+  const toggle = async () => {
+    if (!cfg.enabled) {
+      const granted = await requestNotifPermission();
+      setPerm(Notification.permission);
+      if (granted) { const newCfg={enabled:true,setupDate:new Date().toISOString()}; setCfg(newCfg); lsSet(NOTIF_KEY,newCfg); }
+    } else {
+      const newCfg={...cfg,enabled:false}; setCfg(newCfg); lsSet(NOTIF_KEY,newCfg);
+    }
   };
 
   return(
-    <div style={{flex:1,overflowY:'auto',padding:'14px',maxWidth:'800px',margin:'0 auto',width:'100%',display:'flex',flexDirection:'column',gap:'14px'}}>
-
-      {/* Today summary */}
-      {(todayWorkout.exercises.length>0||(todayWorkout.cardio||[]).length>0)&&(
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px'}}>
-          {[{l:'EXERCIȚII',v:todayWorkout.exercises.length,c:'#f97316',bg:'rgba(249,115,22,0.08)',b:'rgba(249,115,22,0.2)'},{l:'VOLUM TOT.',v:`${(totalVolume/1000).toFixed(1)}t`,c:'#8b5cf6',bg:'rgba(139,92,246,0.08)',b:'rgba(139,92,246,0.2)'},{l:'CARDIO',v:`${totalCardioKcal}kcal`,c:'#10b981',bg:'rgba(16,185,129,0.08)',b:'rgba(16,185,129,0.2)'}].map(x=>(
-            <div key={x.l} style={{background:x.bg,border:`1px solid ${x.b}`,borderRadius:'14px',padding:'12px',textAlign:'center'}}>
-              <div style={{fontSize:'10px',color:'#94a3b8',letterSpacing:'0.1em',marginBottom:'3px'}}>{x.l}</div>
-              <div style={{fontSize:'20px',fontWeight:900,color:x.c,fontFamily:"'Barlow Condensed',sans-serif"}}>{x.v}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Mode selector */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-        {[{id:'gym',label:'🏋️ Sală',color:'#f97316'},{id:'cardio',label:'🏃 Cardio',color:'#10b981'}].map(m=>(
-          <button key={m.id} onClick={()=>setMode(m.id)} style={{padding:'12px',borderRadius:'12px',border:`2px solid ${mode===m.id?m.color:'rgba(255,255,255,0.07)'}`,background:mode===m.id?`${m.color}15`:'transparent',color:mode===m.id?m.color:'#64748b',fontSize:'15px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s'}}>{m.label}</button>
-        ))}
+    <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'14px',padding:'14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+      <div>
+        <div style={{fontSize:'14px',fontWeight:700,color:'#94a3b8'}}>🔔 Notificări push</div>
+        <div style={{fontSize:'11px',color:'#475569',marginTop:'2px'}}>Dimineața 8:00 · Prânz 12:30 · Seara 20:30</div>
       </div>
-
-      {mode==='gym'&&(
-        <>
-          {/* Muscle group selector */}
-          <div style={{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'2px'}}>
-            {MUSCLE_GROUPS.map(g=>(
-              <button key={g.id} onClick={()=>{setSelectedGroup(g.id);setSelectedEx(null);setSets([]);}} style={{padding:'8px 14px',borderRadius:'100px',fontSize:'13px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s',flexShrink:0,borderColor:selectedGroup===g.id?g.color:'rgba(255,255,255,0.08)',background:selectedGroup===g.id?`${g.color}18`:'transparent',color:selectedGroup===g.id?g.color:'#64748b'}}>{g.icon} {g.label}</button>
-            ))}
-          </div>
-
-          {/* Exercise selector */}
-          <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'12px',display:'flex',flexDirection:'column',gap:'6px'}}>
-            <div style={{fontSize:'11px',color:'#475569',letterSpacing:'0.1em',fontWeight:700,textTransform:'uppercase',marginBottom:'4px'}}>ALEGE EXERCIȚIU</div>
-            {EXERCISES[selectedGroup].map(ex=>{
-              const pr=getPR(ex.id);
-              return(
-                <button key={ex.id} onClick={()=>{setSelectedEx(ex.id);if(sets.length===0)setSets([{kg:'',reps:''}]);}} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',borderRadius:'10px',border:`1.5px solid ${selectedEx===ex.id?'rgba(249,115,22,0.5)':'rgba(255,255,255,0.06)'}`,background:selectedEx===ex.id?'rgba(249,115,22,0.08)':'rgba(255,255,255,0.02)',cursor:'pointer',transition:'all 0.15s',textAlign:'left'}}>
-                  <span style={{fontSize:'15px',fontWeight:600,color:selectedEx===ex.id?'#f97316':'#94a3b8'}}>{ex.name}</span>
-                  {pr&&<span style={{fontSize:'11px',color:'#475569',background:'rgba(255,255,255,0.04)',padding:'2px 8px',borderRadius:'6px'}}>PR: {pr}kg</span>}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Sets logger */}
-          {selectedEx&&(
-            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(249,115,22,0.2)',borderRadius:'16px',padding:'14px'}}>
-              <div style={{fontSize:'13px',color:'#f97316',fontWeight:700,letterSpacing:'0.05em',marginBottom:'12px',fontFamily:"'Barlow Condensed',sans-serif",textTransform:'uppercase'}}>
-                {EXERCISES[selectedGroup].find(e=>e.id===selectedEx)?.name}
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:'8px',marginBottom:'8px'}}>
-                <div style={{fontSize:'11px',color:'#475569',textAlign:'center',letterSpacing:'0.08em'}}>KG</div>
-                <div style={{fontSize:'11px',color:'#475569',textAlign:'center',letterSpacing:'0.08em'}}>REPS</div>
-                <div style={{width:'32px'}}/>
-              </div>
-              {sets.map((set,i)=>(
-                <div key={i} style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:'8px',marginBottom:'6px',alignItems:'center'}}>
-                  <input type="number" value={set.kg} onChange={e=>updateSet(i,'kg',e.target.value)} placeholder="kg" style={{background:'rgba(255,255,255,0.06)',border:'1.5px solid rgba(255,255,255,0.1)',borderRadius:'10px',padding:'10px',color:'#e2e8f0',fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
-                  <input type="number" value={set.reps} onChange={e=>updateSet(i,'reps',e.target.value)} placeholder="reps" style={{background:'rgba(255,255,255,0.06)',border:'1.5px solid rgba(255,255,255,0.1)',borderRadius:'10px',padding:'10px',color:'#e2e8f0',fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
-                  <button onClick={()=>removeSet(i)} style={{width:'32px',height:'42px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'10px',color:'#ef4444',cursor:'pointer',fontSize:'16px',display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
-                </div>
-              ))}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginTop:'10px'}}>
-                <button onClick={addSet} style={{padding:'10px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'10px',color:'#64748b',fontSize:'14px',fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>+ Set</button>
-                <button onClick={saveExercise} style={{padding:'10px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 4px 15px rgba(249,115,22,0.3)'}}>SALVEAZĂ ▸</button>
-              </div>
-            </div>
-          )}
-
-          {/* Today's exercises log */}
-          {todayWorkout.exercises.length>0&&(
-            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}>
-              <div style={{fontSize:'12px',color:'#475569',letterSpacing:'0.1em',fontWeight:700,textTransform:'uppercase',marginBottom:'10px'}}>📋 SESIUNE AZI</div>
-              {todayWorkout.exercises.map((ex,i)=>{
-                const mg=MUSCLE_GROUPS.find(g=>g.id===ex.group);
-                return(
-                  <div key={i} style={{marginBottom:'10px',padding:'10px 12px',background:'rgba(255,255,255,0.02)',borderRadius:'10px',borderLeft:`3px solid ${mg?.color||'#f97316'}`}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
-                      <span style={{fontSize:'14px',fontWeight:700,color:'#e2e8f0'}}>{ex.name}</span>
-                      <span style={{fontSize:'11px',color:'#334155'}}>{ex.time}</span>
-                    </div>
-                    <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-                      {ex.sets.map((s,j)=>(
-                        <span key={j} style={{fontSize:'13px',color:'#64748b',background:'rgba(255,255,255,0.04)',padding:'3px 8px',borderRadius:'6px'}}>{s.kg}kg×{s.reps}</span>
-                      ))}
-                      <span style={{fontSize:'12px',color:'#475569',marginLeft:'auto'}}>Vol: {ex.volume}kg</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      )}
-
-      {mode==='cardio'&&(
-        <>
-          {/* Cardio type */}
-          <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-            {CARDIO_TYPES.map(ct=>(
-              <button key={ct.id} onClick={()=>setCardioType(ct.id)} style={{display:'flex',alignItems:'center',gap:'6px',padding:'10px 16px',borderRadius:'100px',border:`1.5px solid ${cardioType===ct.id?ct.color:'rgba(255,255,255,0.08)'}`,background:cardioType===ct.id?`${ct.color}15`:'transparent',color:cardioType===ct.id?ct.color:'#64748b',fontSize:'14px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",transition:'all 0.2s'}}>
-                <span style={{fontSize:'18px'}}>{ct.icon}</span>{ct.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Duration + intensity */}
-          <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px',display:'flex',flexDirection:'column',gap:'14px'}}>
-            <div>
-              <div style={{fontSize:'11px',color:'#475569',letterSpacing:'0.1em',marginBottom:'8px',fontWeight:700}}>DURATĂ (minute)</div>
-              <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'8px'}}>
-                {[15,20,30,45,60,90].map(min=>(
-                  <button key={min} onClick={()=>setCardioDuration(String(min))} style={{padding:'8px 16px',borderRadius:'10px',border:`1.5px solid ${cardioDuration===String(min)?'#10b981':'rgba(255,255,255,0.08)'}`,background:cardioDuration===String(min)?'rgba(16,185,129,0.12)':'rgba(255,255,255,0.03)',color:cardioDuration===String(min)?'#10b981':'#64748b',fontSize:'14px',fontWeight:700,cursor:'pointer',transition:'all 0.15s'}}>{min}</button>
-                ))}
-              </div>
-              <input type="number" value={cardioDuration} onChange={e=>setCardioDuration(e.target.value)} placeholder="sau introdu manual..." style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1.5px solid rgba(255,255,255,0.08)',borderRadius:'10px',padding:'10px 14px',color:'#e2e8f0',fontSize:'16px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
-            </div>
-            <div>
-              <div style={{fontSize:'11px',color:'#475569',letterSpacing:'0.1em',marginBottom:'8px',fontWeight:700}}>INTENSITATE</div>
-              <div style={{display:'flex',gap:'8px'}}>
-                {['ușoară','moderată','intensă'].map(int=>(
-                  <button key={int} onClick={()=>setCardioIntensity(int)} style={{flex:1,padding:'10px',borderRadius:'10px',border:`1.5px solid ${cardioIntensity===int?'#10b981':'rgba(255,255,255,0.08)'}`,background:cardioIntensity===int?'rgba(16,185,129,0.12)':'rgba(255,255,255,0.03)',color:cardioIntensity===int?'#10b981':'#64748b',fontSize:'13px',fontWeight:700,cursor:'pointer',textTransform:'capitalize',transition:'all 0.15s'}}>{int}</button>
-                ))}
-              </div>
-            </div>
-            {cardioDuration&&parseInt(cardioDuration)>0&&(
-              <div style={{background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'12px',padding:'12px',textAlign:'center'}}>
-                <div style={{fontSize:'12px',color:'#64748b',marginBottom:'4px'}}>ESTIMAT ARS</div>
-                <div style={{fontSize:'28px',fontWeight:900,color:'#10b981',fontFamily:"'Barlow Condensed',sans-serif"}}>{calcCaloriesBurned(CARDIO_TYPES.find(c=>c.id===cardioType).met,parseInt(cardioDuration))} kcal</div>
-              </div>
-            )}
-            <button onClick={saveCardio} disabled={!cardioDuration||parseInt(cardioDuration)<=0} style={{padding:'14px',background:cardioDuration&&parseInt(cardioDuration)>0?'linear-gradient(135deg,#10b981,#059669)':'rgba(255,255,255,0.06)',border:'none',borderRadius:'12px',color:cardioDuration&&parseInt(cardioDuration)>0?'#fff':'#334155',fontSize:'15px',fontWeight:800,cursor:cardioDuration&&parseInt(cardioDuration)>0?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:cardioDuration&&parseInt(cardioDuration)>0?'0 4px 15px rgba(16,185,129,0.3)':'none',transition:'all 0.2s'}}>
-              ▸ SALVEAZĂ CARDIO
-            </button>
-          </div>
-
-          {/* Cardio log */}
-          {(todayWorkout.cardio||[]).length>0&&(
-            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}>
-              <div style={{fontSize:'12px',color:'#475569',letterSpacing:'0.1em',fontWeight:700,textTransform:'uppercase',marginBottom:'10px'}}>📋 CARDIO AZI</div>
-              {(todayWorkout.cardio||[]).map((c,i)=>(
-                <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 12px',background:'rgba(255,255,255,0.02)',borderRadius:'10px',marginBottom:'6px',borderLeft:'3px solid #10b981'}}>
-                  <span style={{fontSize:'16px'}}>{c.icon}</span>
-                  <div style={{flex:1,marginLeft:'10px'}}>
-                    <div style={{fontSize:'14px',fontWeight:700,color:'#e2e8f0'}}>{c.name}</div>
-                    <div style={{fontSize:'12px',color:'#475569'}}>{c.duration} min · {c.intensity}</div>
-                  </div>
-                  <div style={{textAlign:'right'}}>
-                    <div style={{fontSize:'16px',fontWeight:800,color:'#10b981'}}>{c.kcal} kcal</div>
-                    <div style={{fontSize:'11px',color:'#334155'}}>{c.time}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      <div style={{height:'16px'}}/>
+      <button onClick={toggle} style={{padding:'8px 16px',borderRadius:'100px',border:'none',background:cfg.enabled?'rgba(74,222,128,0.15)':'rgba(255,255,255,0.06)',color:cfg.enabled?'#4ade80':'#475569',fontSize:'13px',fontWeight:700,cursor:'pointer',border:`1px solid ${cfg.enabled?'rgba(74,222,128,0.3)':'rgba(255,255,255,0.08)'}`}}>
+        {cfg.enabled?'✓ Activ':'Activează'}
+      </button>
     </div>
   );
 }
 
-// ─── Stats Charts ─────────────────────────────────────────────────
+// ─── Charts ───────────────────────────────────────────────────────
 function LineChart({data,color,label,unit,target}){
-  if(!data||data.length===0)return<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'90px',color:'#334155',fontSize:'13px'}}>Nicio dată înregistrată</div>;
+  if(!data||data.length===0)return<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'90px',color:'#334155',fontSize:'13px'}}>Nicio dată</div>;
   const vals=data.map(d=>d.value),min=Math.min(...vals)-1,max=Math.max(...vals)+1,W=300,H=90;
   const px=i=>(i/(data.length-1||1))*W,py=v=>H-((v-min)/(max-min||1))*H;
   const points=data.map((d,i)=>`${px(i)},${py(d.value)}`).join(' '),last=vals[vals.length-1];
   return(<div><div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:'6px'}}><span style={{fontSize:'11px',color:'#64748b',letterSpacing:'0.1em',textTransform:'uppercase',fontWeight:700}}>{label}</span><span style={{fontSize:'22px',fontWeight:800,color}}>{last}{unit}</span></div>{target&&<div style={{fontSize:'11px',color:'#475569',marginBottom:'6px'}}>Țintă: {target}{unit}</div>}<svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',height:'90px',overflow:'visible'}}><defs><linearGradient id={`g${label.replace(/\s/g,'')}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.2"/><stop offset="100%" stopColor={color} stopOpacity="0"/></linearGradient></defs><polygon points={`0,${H} ${points} ${W},${H}`} fill={`url(#g${label.replace(/\s/g,'')})`}/><polyline points={points} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>{data.map((d,i)=><circle key={i} cx={px(i)} cy={py(d.value)} r="3" fill={color} stroke="#080b14" strokeWidth="2"/>)}</svg><div style={{display:'flex',justifyContent:'space-between',marginTop:'2px'}}><span style={{fontSize:'10px',color:'#334155'}}>{data[0]?.date}</span><span style={{fontSize:'10px',color:'#334155'}}>{data[data.length-1]?.date}</span></div></div>);
 }
 
+// ─── Calendar ─────────────────────────────────────────────────────
 function CalendarPicker({selectedDate,onSelect,stats,workouts}){
   const [viewDate,setViewDate]=useState(new Date());
   const year=viewDate.getFullYear(),month=viewDate.getMonth();
   const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate(),today=new Date();
-  const hasData=day=>{const k=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;return stats.weight[k]||stats.daily[k]||(workouts.days[k]&&(workouts.days[k].exercises?.length>0||workouts.days[k].cardio?.length>0));};
-  const hasWorkout=day=>{const k=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;return workouts.days[k]&&(workouts.days[k].exercises?.length>0||workouts.days[k].cardio?.length>0);};
-  const isSel=day=>`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`===selectedDate;
+  const k=day=>`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const hasData=day=>{const key=k(day);return stats.weight[key]||stats.daily[key]||(workouts.days[key]&&(workouts.days[key].exercises?.length>0||workouts.days[key].cardio?.length>0));};
+  const hasWorkout=day=>{const key=k(day);return workouts.days[key]&&(workouts.days[key].exercises?.length>0||workouts.days[key].cardio?.length>0);};
+  const isSel=day=>k(day)===selectedDate;
   const isToday=day=>day===today.getDate()&&month===today.getMonth()&&year===today.getFullYear();
   const cells=[];for(let i=0;i<firstDay;i++)cells.push(null);for(let d=1;d<=daysInMonth;d++)cells.push(d);
-  return(<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px'}}><button onClick={()=>setViewDate(new Date(year,month-1,1))} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',color:'#94a3b8',padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>‹</button><span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'17px',color:'#e2e8f0'}}>{RO_MONTHS[month]} {year}</span><button onClick={()=>setViewDate(new Date(year,month+1,1))} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',color:'#94a3b8',padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>›</button></div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'3px',marginBottom:'6px'}}>{RO_DAYS.map(d=><div key={d} style={{textAlign:'center',fontSize:'11px',fontWeight:700,color:'#334155',padding:'3px 0'}}>{d}</div>)}</div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'3px'}}>{cells.map((day,idx)=><div key={idx} onClick={()=>{if(!day)return;onSelect(`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`);}} style={{textAlign:'center',padding:'7px 2px',borderRadius:'9px',fontSize:'14px',fontWeight:600,cursor:day?'pointer':'default',background:isSel(day)?'linear-gradient(135deg,#f97316,#ef4444)':isToday(day)?'rgba(249,115,22,0.1)':hasData(day)?'rgba(255,255,255,0.04)':'transparent',color:isSel(day)?'#fff':isToday(day)?'#f97316':day?'#94a3b8':'transparent',border:isToday(day)&&!isSel(day)?'1px solid rgba(249,115,22,0.3)':'1px solid transparent',position:'relative',transition:'all 0.15s'}}>{day||''}{day&&hasData(day)&&!isSel(day)&&<div style={{position:'absolute',bottom:'2px',left:'50%',transform:'translateX(-50%)',width:'3px',height:'3px',borderRadius:'50%',background:hasWorkout(day)?'#8b5cf6':'#f97316'}}/>}</div>)}</div></div>);
+  return(<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px'}}><button onClick={()=>setViewDate(new Date(year,month-1,1))} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',color:'#94a3b8',padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>‹</button><span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'17px',color:'#e2e8f0'}}>{RO_MONTHS[month]} {year}</span><button onClick={()=>setViewDate(new Date(year,month+1,1))} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',color:'#94a3b8',padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>›</button></div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'3px',marginBottom:'6px'}}>{RO_DAYS.map(d=><div key={d} style={{textAlign:'center',fontSize:'11px',fontWeight:700,color:'#334155',padding:'3px 0'}}>{d}</div>)}</div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'3px'}}>{cells.map((day,idx)=><div key={idx} onClick={()=>{if(!day)return;onSelect(k(day));}} style={{textAlign:'center',padding:'7px 2px',borderRadius:'9px',fontSize:'14px',fontWeight:600,cursor:day?'pointer':'default',background:isSel(day)?'linear-gradient(135deg,#f97316,#ef4444)':isToday(day)?'rgba(249,115,22,0.1)':hasData(day)?'rgba(255,255,255,0.04)':'transparent',color:isSel(day)?'#fff':isToday(day)?'#f97316':day?'#94a3b8':'transparent',border:isToday(day)&&!isSel(day)?'1px solid rgba(249,115,22,0.3)':'1px solid transparent',position:'relative',transition:'all 0.15s'}}>{day||''}{day&&hasData(day)&&!isSel(day)&&<div style={{position:'absolute',bottom:'2px',left:'50%',transform:'translateX(-50%)',width:'3px',height:'3px',borderRadius:'50%',background:hasWorkout(day)?'#8b5cf6':'#f97316'}}/>}</div>)}</div></div>);
 }
 
-const PATTERN_KEY = 'mp_patterns_v1';
-
-function buildPatternPayload(stats, workouts) {
-  const weight = Object.entries(stats.weight||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-14);
-  const daily  = Object.entries(stats.daily||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-14);
-  const days   = Object.entries(workouts.days||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-14);
-  return { weight, daily, workoutDays: days };
-}
-
-function PatternPanel({stats, workouts}) {
-  const [report, setReport]   = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [lastRun, setLastRun] = useState(null);
-  const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(PATTERN_KEY);
-      if (saved) {
-        const d = JSON.parse(saved);
-        setReport(d.report);
-        setLastRun(d.date);
-        // Auto-trigger if 7 days passed since last run
-        const daysSince = (Date.now() - new Date(d.date).getTime()) / (1000*60*60*24);
-        if (daysSince >= 7) checkAndAutoRun();
-      } else {
-        checkAndAutoRun();
-      }
-    } catch {}
-  }, []);
-
-  function checkAndAutoRun() {
-    const logDays = Object.keys(stats.daily||{}).length;
-    if (logDays >= 7) runAnalysis(true);
-  }
-
-  async function runAnalysis(silent=false) {
-    const logDays = Object.keys(stats.daily||{}).length;
-    if (logDays < 3) return;
-    if (!silent) setExpanded(true);
-    setLoading(true);
-    const payload = buildPatternPayload(stats, workouts);
-    const prompt = `Analizează datele de tracking ale lui Mihai din ultimele 14 zile și identifică patternuri și corelații concrete.
-
-DATE DISPONIBILE:
-Greutate (dată: kg): ${JSON.stringify(payload.weight)}
-Nutriție zilnică (dată: {calories, protein}): ${JSON.stringify(payload.daily)}
-Antrenamente (dată: {exercises, cardio}): ${JSON.stringify(payload.workoutDays)}
-
-PROFIL: Bărbat 45 ani, 188cm, ~96kg → țintă 88-90kg, 2× fullbody + 3× split/săptămână.
-Macro țintă: antrenament 2150-2250kcal/165-180g prot, activ 1900-2000kcal/160-175g, repaus 1700-1800kcal/155-170g.
-
-Furnizează o analiză structurată cu:
-1. **TREND GREUTATE** — evoluție, rată de schimbare, prognoză
-2. **CONSISTENȚĂ NUTRIȚIE** — zile sub/peste țintă, media caloriilor și proteinelor
-3. **CORELAȚII IDENTIFICATE** — patternuri între variabile (ex: zile antrenament vs calorii, consistență proteine vs zile, etc.)
-4. **PUNCTE SLABE** — ce lipsește sau e inconsistent
-5. **RECOMANDĂRI CONCRETE** — maxim 3 acțiuni prioritare pentru săptămâna următoare
-
-Fii direct, tehnic, fără introduceri inutile. Răspunde în română.`;
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1500,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      const data = await res.json();
-      const text = data.content?.[0]?.text || 'Eroare la analiză.';
-      const now = new Date().toISOString();
-      setReport(text);
-      setLastRun(now);
-      setExpanded(true);
-      localStorage.setItem(PATTERN_KEY, JSON.stringify({report: text, date: now}));
-    } catch { setReport('⚠️ Eroare de conexiune.'); }
-    setLoading(false);
-  }
-
-  const logDays = Object.keys(stats.daily||{}).length;
-  const canRun  = logDays >= 3;
-  const lastRunLabel = lastRun ? new Date(lastRun).toLocaleDateString('ro-RO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : null;
-
-  return (
-    <div style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'16px',overflow:'hidden'}}>
-      {/* Header */}
-      <div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExpanded(e=>!e)}>
-        <div>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',background:'linear-gradient(90deg,#8b5cf6,#ec4899)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.05em'}}>🧠 PATTERN DETECTION</div>
-          <div style={{fontSize:'11px',color:'#475569',marginTop:'2px'}}>
-            {lastRunLabel ? `Ultima analiză: ${lastRunLabel}` : canRun ? 'Date suficiente pentru analiză' : `Necesare min. 3 zile de log (${logDays}/3)`}
+// ─── Workout Tab ──────────────────────────────────────────────────
+function WorkoutTab({workouts,setWorkouts,onSendToCoach}){
+  const [mode,setMode]=useState('gym');
+  const [selGroup,setSelGroup]=useState('piept');
+  const [selEx,setSelEx]=useState(null);
+  const [sets,setSets]=useState([]);
+  const [cardioType,setCardioType]=useState('mers');
+  const [cardioDur,setCardioDur]=useState('');
+  const [cardioInt,setCardioInt]=useState('moderată');
+  const key=todayKey();
+  const todayW=workouts.days[key]||{exercises:[],cardio:[]};
+  const addSet=()=>setSets(s=>[...s,{kg:'',reps:''}]);
+  const updSet=(i,f,v)=>setSets(s=>s.map((set,idx)=>idx===i?{...set,[f]:v}:set));
+  const rmSet=i=>setSets(s=>s.filter((_,idx)=>idx!==i));
+  const getPR=exId=>{const all=Object.values(workouts.days).flatMap(d=>(d.exercises||[]).filter(e=>e.id===exId).flatMap(e=>e.sets));if(!all.length)return null;return Math.max(...all.map(s=>parseFloat(s.kg)));};
+  const saveEx=()=>{
+    if(!selEx||!sets.length)return;
+    const valid=sets.filter(s=>s.kg&&s.reps&&parseFloat(s.kg)>0&&parseInt(s.reps)>0);if(!valid.length)return;
+    const ex=EXERCISES[selGroup].find(e=>e.id===selEx);
+    const vol=valid.reduce((a,s)=>a+parseFloat(s.kg)*parseInt(s.reps),0);
+    const entry={id:selEx,name:ex.name,group:selGroup,sets:valid,volume:Math.round(vol),time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};
+    const nw={...workouts};if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};
+    nw.days[key].exercises=[...nw.days[key].exercises,entry];
+    const allEx=Object.values(nw.days).flatMap(d=>d.exercises||[]).filter(e=>e.id===selEx);
+    const maxPrev=Math.max(0,...allEx.slice(0,-1).map(e=>Math.max(...e.sets.map(s=>parseFloat(s.kg)))));
+    const maxNew=Math.max(...valid.map(s=>parseFloat(s.kg)));const isPR=maxNew>maxPrev;
+    saveWorkouts(nw);setWorkouts({...nw});setSets([]);setSelEx(null);
+    onSendToCoach(`Forță: ${ex.name} — ${valid.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}${isPR?' 🏆 RECORD PERSONAL':''}`);
+  };
+  const saveCardio=()=>{
+    if(!cardioDur||parseInt(cardioDur)<=0)return;
+    const ct=CARDIO_TYPES.find(c=>c.id===cardioType);const kcal=calcBurned(ct.met,parseInt(cardioDur));
+    const entry={id:cardioType,name:ct.name,icon:ct.icon,duration:parseInt(cardioDur),intensity:cardioInt,kcal,time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};
+    const nw={...workouts};if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};
+    nw.days[key].cardio=[...(nw.days[key].cardio||[]),entry];
+    saveWorkouts(nw);setWorkouts({...nw});setCardioDur('');
+    onSendToCoach(`Activitate: ${ct.name} ${cardioDur} min (${cardioInt}) — ~${kcal} kcal arse`);
+  };
+  const totalVol=todayW.exercises.reduce((a,e)=>a+e.volume,0);
+  const totalCard=(todayW.cardio||[]).reduce((a,c)=>a+c.kcal,0);
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'14px',maxWidth:'800px',margin:'0 auto',width:'100%',display:'flex',flexDirection:'column',gap:'14px'}}>
+      {(todayW.exercises.length>0||(todayW.cardio||[]).length>0)&&<div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px'}}>{[{l:'EXERCIȚII',v:todayW.exercises.length,c:'#f97316',bg:'rgba(249,115,22,0.08)',b:'rgba(249,115,22,0.2)'},{l:'VOLUM',v:`${(totalVol/1000).toFixed(1)}t`,c:'#8b5cf6',bg:'rgba(139,92,246,0.08)',b:'rgba(139,92,246,0.2)'},{l:'CARDIO',v:`${totalCard}kcal`,c:'#10b981',bg:'rgba(16,185,129,0.08)',b:'rgba(16,185,129,0.2)'}].map(x=><div key={x.l} style={{background:x.bg,border:`1px solid ${x.b}`,borderRadius:'14px',padding:'12px',textAlign:'center'}}><div style={{fontSize:'10px',color:'#94a3b8',letterSpacing:'0.1em',marginBottom:'3px'}}>{x.l}</div><div style={{fontSize:'20px',fontWeight:900,color:x.c,fontFamily:"'Barlow Condensed',sans-serif"}}>{x.v}</div></div>)}</div>}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>{[{id:'gym',label:'🏋️ Sală',c:'#f97316'},{id:'cardio',label:'🏃 Cardio',c:'#10b981'}].map(m=><button key={m.id} onClick={()=>setMode(m.id)} style={{padding:'12px',borderRadius:'12px',border:`2px solid ${mode===m.id?m.c:'rgba(255,255,255,0.07)'}`,background:mode===m.id?`${m.c}15`:'transparent',color:mode===m.id?m.c:'#64748b',fontSize:'15px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s'}}>{m.label}</button>)}</div>
+      {mode==='gym'&&<>
+        <div style={{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'2px'}}>{MUSCLE_GROUPS.map(g=><button key={g.id} onClick={()=>{setSelGroup(g.id);setSelEx(null);setSets([]);}} style={{padding:'8px 14px',borderRadius:'100px',fontSize:'13px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s',flexShrink:0,borderColor:selGroup===g.id?g.color:'rgba(255,255,255,0.08)',background:selGroup===g.id?`${g.color}18`:'transparent',color:selGroup===g.id?g.color:'#64748b'}}>{g.icon} {g.label}</button>)}</div>
+        <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'12px',display:'flex',flexDirection:'column',gap:'6px'}}>
+          <div style={{fontSize:'11px',color:'#475569',letterSpacing:'0.1em',fontWeight:700,textTransform:'uppercase',marginBottom:'4px'}}>ALEGE EXERCIȚIU</div>
+          {EXERCISES[selGroup].map(ex=>{const pr=getPR(ex.id);return(<button key={ex.id} onClick={()=>{setSelEx(ex.id);if(!sets.length)setSets([{kg:'',reps:''}]);}} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',borderRadius:'10px',border:`1.5px solid ${selEx===ex.id?'rgba(249,115,22,0.5)':'rgba(255,255,255,0.06)'}`,background:selEx===ex.id?'rgba(249,115,22,0.08)':'rgba(255,255,255,0.02)',cursor:'pointer',transition:'all 0.15s',textAlign:'left'}}><span style={{fontSize:'15px',fontWeight:600,color:selEx===ex.id?'#f97316':'#94a3b8'}}>{ex.name}</span>{pr&&<span style={{fontSize:'11px',color:'#475569',background:'rgba(255,255,255,0.04)',padding:'2px 8px',borderRadius:'6px'}}>PR: {pr}kg</span>}</button>);})}
+        </div>
+        {selEx&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(249,115,22,0.2)',borderRadius:'16px',padding:'14px'}}>
+          <div style={{fontSize:'13px',color:'#f97316',fontWeight:700,letterSpacing:'0.05em',marginBottom:'12px',fontFamily:"'Barlow Condensed',sans-serif",textTransform:'uppercase'}}>{EXERCISES[selGroup].find(e=>e.id===selEx)?.name}</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:'8px',marginBottom:'8px'}}>{['KG','REPS',''].map((h,i)=><div key={i} style={{fontSize:'11px',color:'#475569',textAlign:'center',letterSpacing:'0.08em',width:i===2?'32px':'auto'}}>{h}</div>)}</div>
+          {sets.map((set,i)=><div key={i} style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:'8px',marginBottom:'6px',alignItems:'center'}}>
+            <input type="number" value={set.kg} onChange={e=>updSet(i,'kg',e.target.value)} placeholder="kg" style={{background:'rgba(255,255,255,0.06)',border:'1.5px solid rgba(255,255,255,0.1)',borderRadius:'10px',padding:'10px',color:'#e2e8f0',fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+            <input type="number" value={set.reps} onChange={e=>updSet(i,'reps',e.target.value)} placeholder="reps" style={{background:'rgba(255,255,255,0.06)',border:'1.5px solid rgba(255,255,255,0.1)',borderRadius:'10px',padding:'10px',color:'#e2e8f0',fontSize:'16px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+            <button onClick={()=>rmSet(i)} style={{width:'32px',height:'42px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'10px',color:'#ef4444',cursor:'pointer',fontSize:'16px',display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
+          </div>)}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginTop:'10px'}}>
+            <button onClick={addSet} style={{padding:'10px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'10px',color:'#64748b',fontSize:'14px',fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>+ Set</button>
+            <button onClick={saveEx} style={{padding:'10px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 4px 15px rgba(249,115,22,0.3)'}}>SALVEAZĂ ▸</button>
           </div>
+        </div>}
+        {todayW.exercises.length>0&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}>
+          <div style={{fontSize:'12px',color:'#475569',letterSpacing:'0.1em',fontWeight:700,textTransform:'uppercase',marginBottom:'10px'}}>📋 SESIUNE AZI</div>
+          {todayW.exercises.map((ex,i)=>{const mg=MUSCLE_GROUPS.find(g=>g.id===ex.group);return(<div key={i} style={{marginBottom:'10px',padding:'10px 12px',background:'rgba(255,255,255,0.02)',borderRadius:'10px',borderLeft:`3px solid ${mg?.color||'#f97316'}`}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}><span style={{fontSize:'14px',fontWeight:700,color:'#e2e8f0'}}>{ex.name}</span><span style={{fontSize:'11px',color:'#334155'}}>{ex.time}</span></div><div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>{ex.sets.map((s,j)=><span key={j} style={{fontSize:'13px',color:'#64748b',background:'rgba(255,255,255,0.04)',padding:'3px 8px',borderRadius:'6px'}}>{s.kg}kg×{s.reps}</span>)}<span style={{fontSize:'12px',color:'#475569',marginLeft:'auto'}}>Vol: {ex.volume}kg</span></div></div>);})}
+        </div>}
+      </>}
+      {mode==='cardio'&&<>
+        <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>{CARDIO_TYPES.map(ct=><button key={ct.id} onClick={()=>setCardioType(ct.id)} style={{display:'flex',alignItems:'center',gap:'6px',padding:'10px 16px',borderRadius:'100px',border:`1.5px solid ${cardioType===ct.id?ct.color:'rgba(255,255,255,0.08)'}`,background:cardioType===ct.id?`${ct.color}15`:'transparent',color:cardioType===ct.id?ct.color:'#64748b',fontSize:'14px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",transition:'all 0.2s'}}><span style={{fontSize:'18px'}}>{ct.icon}</span>{ct.name}</button>)}</div>
+        <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px',display:'flex',flexDirection:'column',gap:'14px'}}>
+          <div><div style={{fontSize:'11px',color:'#475569',letterSpacing:'0.1em',marginBottom:'8px',fontWeight:700}}>DURATĂ (minute)</div><div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'8px'}}>{[15,20,30,45,60,90].map(min=><button key={min} onClick={()=>setCardioDur(String(min))} style={{padding:'8px 16px',borderRadius:'10px',border:`1.5px solid ${cardioDur===String(min)?'#10b981':'rgba(255,255,255,0.08)'}`,background:cardioDur===String(min)?'rgba(16,185,129,0.12)':'rgba(255,255,255,0.03)',color:cardioDur===String(min)?'#10b981':'#64748b',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>{min}</button>)}</div><input type="number" value={cardioDur} onChange={e=>setCardioDur(e.target.value)} placeholder="sau introdu manual..." style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1.5px solid rgba(255,255,255,0.08)',borderRadius:'10px',padding:'10px 14px',color:'#e2e8f0',fontSize:'16px',outline:'none',fontFamily:"'Inter',sans-serif"}}/></div>
+          <div><div style={{fontSize:'11px',color:'#475569',letterSpacing:'0.1em',marginBottom:'8px',fontWeight:700}}>INTENSITATE</div><div style={{display:'flex',gap:'8px'}}>{['ușoară','moderată','intensă'].map(int=><button key={int} onClick={()=>setCardioInt(int)} style={{flex:1,padding:'10px',borderRadius:'10px',border:`1.5px solid ${cardioInt===int?'#10b981':'rgba(255,255,255,0.08)'}`,background:cardioInt===int?'rgba(16,185,129,0.12)':'rgba(255,255,255,0.03)',color:cardioInt===int?'#10b981':'#64748b',fontSize:'13px',fontWeight:700,cursor:'pointer',transition:'all 0.15s'}}>{int}</button>)}</div></div>
+          {cardioDur&&parseInt(cardioDur)>0&&<div style={{background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'12px',padding:'12px',textAlign:'center'}}><div style={{fontSize:'12px',color:'#64748b',marginBottom:'4px'}}>ESTIMAT ARS</div><div style={{fontSize:'28px',fontWeight:900,color:'#10b981',fontFamily:"'Barlow Condensed',sans-serif"}}>{calcBurned(CARDIO_TYPES.find(c=>c.id===cardioType).met,parseInt(cardioDur))} kcal</div></div>}
+          <button onClick={saveCardio} disabled={!cardioDur||parseInt(cardioDur)<=0} style={{padding:'14px',background:cardioDur&&parseInt(cardioDur)>0?'linear-gradient(135deg,#10b981,#059669)':'rgba(255,255,255,0.06)',border:'none',borderRadius:'12px',color:cardioDur&&parseInt(cardioDur)>0?'#fff':'#334155',fontSize:'15px',fontWeight:800,cursor:cardioDur&&parseInt(cardioDur)>0?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:cardioDur&&parseInt(cardioDur)>0?'0 4px 15px rgba(16,185,129,0.3)':'none',transition:'all 0.2s'}}>▸ SALVEAZĂ CARDIO</button>
         </div>
-        <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-          {canRun && (
-            <button onClick={e=>{e.stopPropagation();runAnalysis();}} disabled={loading} style={{padding:'7px 14px',background:loading?'rgba(139,92,246,0.1)':'linear-gradient(135deg,#8b5cf6,#ec4899)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',opacity:loading?0.6:1,boxShadow:loading?'none':'0 4px 15px rgba(139,92,246,0.3)',transition:'all 0.2s'}}>
-              {loading ? '⏳ ANALIZEZ...' : '▸ ANALIZEAZĂ'}
-            </button>
-          )}
-          <span style={{color:'#475569',fontSize:'18px'}}>{expanded?'↑':'↓'}</span>
-        </div>
-      </div>
-
-      {/* Report */}
-      {expanded && (
-        <div style={{borderTop:'1px solid rgba(139,92,246,0.15)',padding:'16px'}}>
-          {loading && (
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'12px',padding:'20px'}}>
-              <div style={{display:'flex',gap:'6px'}}>
-                {[0,1,2].map(i=><div key={i} style={{width:'8px',height:'8px',borderRadius:'50%',background:'linear-gradient(135deg,#8b5cf6,#ec4899)',animation:`bnc 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}
-              </div>
-              <div style={{fontSize:'13px',color:'#64748b'}}>Analizez {logDays} zile de date...</div>
-            </div>
-          )}
-          {!loading && report && (
-            <div style={{fontSize:'14px',lineHeight:'1.7',color:'#cbd5e1'}}>
-              {renderMarkdown(report)}
-            </div>
-          )}
-          {!loading && !report && !canRun && (
-            <div style={{textAlign:'center',color:'#334155',fontSize:'13px',padding:'16px'}}>
-              Loghează cel puțin 3 zile de nutriție pentru a activa analiza de patternuri.
-            </div>
-          )}
-        </div>
-      )}
+        {(todayW.cardio||[]).length>0&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}>
+          <div style={{fontSize:'12px',color:'#475569',letterSpacing:'0.1em',fontWeight:700,textTransform:'uppercase',marginBottom:'10px'}}>📋 CARDIO AZI</div>
+          {(todayW.cardio||[]).map((c,i)=><div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 12px',background:'rgba(255,255,255,0.02)',borderRadius:'10px',marginBottom:'6px',borderLeft:'3px solid #10b981'}}><span style={{fontSize:'16px'}}>{c.icon}</span><div style={{flex:1,marginLeft:'10px'}}><div style={{fontSize:'14px',fontWeight:700,color:'#e2e8f0'}}>{c.name}</div><div style={{fontSize:'12px',color:'#475569'}}>{c.duration} min · {c.intensity}</div></div><div style={{textAlign:'right'}}><div style={{fontSize:'16px',fontWeight:800,color:'#10b981'}}>{c.kcal} kcal</div><div style={{fontSize:'11px',color:'#334155'}}>{c.time}</div></div></div>)}
+        </div>}
+      </>}
+      <div style={{height:'16px'}}/>
     </div>
   );
 }
 
-function StatsTab({stats,workouts}){
+// ─── Stats Tab ────────────────────────────────────────────────────
+function StatsTab({stats, workouts}) {
   const [sel,setSel]=useState(todayKey());
   const prep=(key,filter,valFn)=>Object.entries(stats[key]||{}).filter(filter).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([k,v])=>{const[,m,d]=k.split('-');return{date:`${d}/${m}`,value:valFn(v)};});
   const weightData=prep('weight',()=>true,v=>parseFloat(v));
@@ -627,57 +783,77 @@ function StatsTab({stats,workouts}){
   const latestW=weightData.length?weightData[weightData.length-1].value:null;
   const startW=weightData.length?weightData[0].value:96;
   const lost=latestW?(startW-latestW).toFixed(1):null;
+  const streak=calcStreak(stats);
   const selWeight=stats.weight[sel],selDaily=stats.daily[sel],selWorkout=workouts.days[sel];
   const [y,m,d]=sel.split('-');
-  return(<div style={{flex:1,overflowY:'auto',padding:'14px',maxWidth:'800px',margin:'0 auto',width:'100%',display:'flex',flexDirection:'column',gap:'14px'}}>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px'}}>{[{l:'CURENT',v:latestW??'–',u:'kg',c:'#f97316',bg:'rgba(249,115,22,0.08)',b:'rgba(249,115,22,0.2)'},{l:'PIERDUT',v:lost!==null?(parseFloat(lost)>0?`-${lost}`:`+${Math.abs(lost)}`):'–',u:'kg',c:'#4ade80',bg:'rgba(74,222,128,0.08)',b:'rgba(74,222,128,0.2)'},{l:'ZILE LOG',v:Object.keys(stats.daily||{}).length,u:'zile',c:'#3b82f6',bg:'rgba(59,130,246,0.08)',b:'rgba(59,130,246,0.2)'}].map(x=><div key={x.l} style={{background:x.bg,border:`1px solid ${x.b}`,borderRadius:'14px',padding:'12px',textAlign:'center'}}><div style={{fontSize:'10px',color:'#94a3b8',letterSpacing:'0.1em',marginBottom:'3px'}}>{x.l}</div><div style={{fontSize:'20px',fontWeight:900,color:x.c,fontFamily:"'Barlow Condensed',sans-serif"}}>{x.v}</div><div style={{fontSize:'10px',color:'#64748b'}}>{x.u}</div></div>)}</div>
-    <CalendarPicker selectedDate={sel} onSelect={setSel} stats={stats} workouts={workouts}/>
-    {/* Day detail */}
-    {(selWeight||selDaily||selWorkout)&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'14px',padding:'14px'}}>
-      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'14px',color:'#64748b',letterSpacing:'0.05em',marginBottom:'12px',textTransform:'uppercase'}}>{d} {RO_MONTHS[parseInt(m)-1]} {y}</div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom: selWorkout?'12px':'0'}}>
-        {selWeight&&<div style={{background:'rgba(249,115,22,0.08)',border:'1px solid rgba(249,115,22,0.2)',borderRadius:'11px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'10px',color:'#94a3b8',marginBottom:'3px'}}>GREUTATE</div><div style={{fontSize:'20px',fontWeight:800,color:'#f97316'}}>{selWeight}</div><div style={{fontSize:'10px',color:'#64748b'}}>kg</div></div>}
-        {selDaily?.calories&&<div style={{background:'rgba(59,130,246,0.08)',border:'1px solid rgba(59,130,246,0.2)',borderRadius:'11px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'10px',color:'#94a3b8',marginBottom:'3px'}}>CALORII</div><div style={{fontSize:'20px',fontWeight:800,color:'#3b82f6'}}>{selDaily.calories}</div><div style={{fontSize:'10px',color:'#64748b'}}>kcal</div></div>}
-        {selDaily?.protein&&<div style={{background:'rgba(139,92,246,0.08)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'11px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'10px',color:'#94a3b8',marginBottom:'3px'}}>PROTEINE</div><div style={{fontSize:'20px',fontWeight:800,color:'#8b5cf6'}}>{selDaily.protein}</div><div style={{fontSize:'10px',color:'#64748b'}}>g</div></div>}
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'14px',maxWidth:'800px',margin:'0 auto',width:'100%',display:'flex',flexDirection:'column',gap:'14px'}}>
+      {/* Summary */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px'}}>
+        {[{l:'CURENT',v:latestW??'–',u:'kg',c:'#f97316',bg:'rgba(249,115,22,0.08)',b:'rgba(249,115,22,0.2)'},{l:'PIERDUT',v:lost!==null?(parseFloat(lost)>0?`-${lost}`:`+${Math.abs(lost)}`):'–',u:'kg',c:'#4ade80',bg:'rgba(74,222,128,0.08)',b:'rgba(74,222,128,0.2)'},{l:'LOG',v:Object.keys(stats.daily||{}).length,u:'zile',c:'#3b82f6',bg:'rgba(59,130,246,0.08)',b:'rgba(59,130,246,0.2)'},{l:'STREAK',v:streak,u:'🔥',c:'#fbbf24',bg:'rgba(251,191,36,0.08)',b:'rgba(251,191,36,0.2)'}].map(x=><div key={x.l} style={{background:x.bg,border:`1px solid ${x.b}`,borderRadius:'12px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'9px',color:'#94a3b8',letterSpacing:'0.1em',marginBottom:'2px'}}>{x.l}</div><div style={{fontSize:'18px',fontWeight:900,color:x.c,fontFamily:"'Barlow Condensed',sans-serif"}}>{x.v}</div><div style={{fontSize:'10px',color:'#64748b'}}>{x.u}</div></div>)}
       </div>
-      {selWorkout&&selWorkout.exercises?.length>0&&<div style={{marginTop:'8px'}}><div style={{fontSize:'11px',color:'#475569',marginBottom:'6px',letterSpacing:'0.08em',fontWeight:700}}>EXERCIȚII</div>{selWorkout.exercises.map((ex,i)=><div key={i} style={{fontSize:'13px',color:'#94a3b8',marginBottom:'4px'}}>▸ {ex.name} — {ex.sets.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}</div>)}</div>}
-      {selWorkout&&selWorkout.cardio?.length>0&&<div style={{marginTop:'8px'}}><div style={{fontSize:'11px',color:'#475569',marginBottom:'6px',letterSpacing:'0.08em',fontWeight:700}}>CARDIO</div>{selWorkout.cardio.map((c,i)=><div key={i} style={{fontSize:'13px',color:'#94a3b8',marginBottom:'4px'}}>{c.icon} {c.name} {c.duration}min — {c.kcal} kcal</div>)}</div>}
-    </div>}
-    {weightData.length>1&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}><LineChart data={weightData} color="#f97316" label="Greutate" unit=" kg" target="88–90"/></div>}
-    {calData.length>1&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}><LineChart data={calData} color="#3b82f6" label="Calorii" unit=" kcal" target="1900–2250"/></div>}
-    {protData.length>1&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}><LineChart data={protData} color="#8b5cf6" label="Proteine" unit="g" target="160–180"/></div>}
-    {weightData.length>0&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'13px',letterSpacing:'0.1em',color:'#64748b',textTransform:'uppercase',marginBottom:'10px'}}>📋 Jurnal Greutate</div><div style={{display:'flex',flexDirection:'column',gap:'5px'}}>{[...weightData].reverse().map((d,i,arr)=><div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',background:'rgba(255,255,255,0.02)',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.04)'}}><span style={{fontSize:'13px',color:'#64748b'}}>{d.date}</span><span style={{fontSize:'16px',fontWeight:700,color:'#f97316'}}>{d.value} kg</span>{arr[i+1]&&<span style={{fontSize:'12px',fontWeight:600,color:d.value<arr[i+1].value?'#4ade80':'#ef4444'}}>{d.value<arr[i+1].value?'↓':'↑'}{Math.abs(d.value-arr[i+1].value).toFixed(1)}</span>}</div>)}</div></div>}
-    <PatternPanel stats={stats} workouts={workouts}/>
-    <div style={{height:'16px'}}/>
-  </div>);
+      <NotifSettings/>
+      <CalendarPicker selectedDate={sel} onSelect={setSel} stats={stats} workouts={workouts}/>
+      {/* Day detail */}
+      {(selWeight||selDaily||selWorkout)&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'14px',padding:'14px'}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'14px',color:'#64748b',letterSpacing:'0.05em',marginBottom:'12px',textTransform:'uppercase'}}>{d} {RO_MONTHS[parseInt(m)-1]} {y}</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:selWorkout?'12px':'0'}}>
+          {selWeight&&<div style={{background:'rgba(249,115,22,0.08)',border:'1px solid rgba(249,115,22,0.2)',borderRadius:'11px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'10px',color:'#94a3b8',marginBottom:'3px'}}>GREUTATE</div><div style={{fontSize:'20px',fontWeight:800,color:'#f97316'}}>{selWeight}</div><div style={{fontSize:'10px',color:'#64748b'}}>kg</div></div>}
+          {selDaily?.calories&&<div style={{background:'rgba(59,130,246,0.08)',border:'1px solid rgba(59,130,246,0.2)',borderRadius:'11px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'10px',color:'#94a3b8',marginBottom:'3px'}}>CALORII</div><div style={{fontSize:'20px',fontWeight:800,color:'#3b82f6'}}>{selDaily.calories}</div><div style={{fontSize:'10px',color:'#64748b'}}>kcal</div></div>}
+          {selDaily?.protein&&<div style={{background:'rgba(139,92,246,0.08)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'11px',padding:'10px',textAlign:'center'}}><div style={{fontSize:'10px',color:'#94a3b8',marginBottom:'3px'}}>PROTEINE</div><div style={{fontSize:'20px',fontWeight:800,color:'#8b5cf6'}}>{selDaily.protein}</div><div style={{fontSize:'10px',color:'#64748b'}}>g</div></div>}
+        </div>
+        {selWorkout?.exercises?.length>0&&<div style={{marginTop:'8px'}}><div style={{fontSize:'11px',color:'#475569',marginBottom:'6px',letterSpacing:'0.08em',fontWeight:700}}>EXERCIȚII</div>{selWorkout.exercises.map((ex,i)=><div key={i} style={{fontSize:'13px',color:'#94a3b8',marginBottom:'4px'}}>▸ {ex.name} — {ex.sets.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}</div>)}</div>}
+        {selWorkout?.cardio?.length>0&&<div style={{marginTop:'8px'}}><div style={{fontSize:'11px',color:'#475569',marginBottom:'6px',letterSpacing:'0.08em',fontWeight:700}}>CARDIO</div>{selWorkout.cardio.map((c,i)=><div key={i} style={{fontSize:'13px',color:'#94a3b8',marginBottom:'4px'}}>{c.icon} {c.name} {c.duration}min — {c.kcal} kcal</div>)}</div>}
+      </div>}
+      <MuscleVolumeChart workouts={workouts}/>
+      {weightData.length>1&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}><LineChart data={weightData} color="#f97316" label="Greutate" unit=" kg" target="88–90"/></div>}
+      {calData.length>1&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}><LineChart data={calData} color="#3b82f6" label="Calorii" unit=" kcal" target="1900–2250"/></div>}
+      {protData.length>1&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'16px'}}><LineChart data={protData} color="#8b5cf6" label="Proteine" unit="g" target="160–180"/></div>}
+      {weightData.length>0&&<div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'13px',letterSpacing:'0.1em',color:'#64748b',textTransform:'uppercase',marginBottom:'10px'}}>📋 Jurnal Greutate</div><div style={{display:'flex',flexDirection:'column',gap:'5px'}}>{[...weightData].reverse().map((d,i,arr)=><div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',background:'rgba(255,255,255,0.02)',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.04)'}}><span style={{fontSize:'13px',color:'#64748b'}}>{d.date}</span><span style={{fontSize:'16px',fontWeight:700,color:'#f97316'}}>{d.value} kg</span>{arr[i+1]&&<span style={{fontSize:'12px',fontWeight:600,color:d.value<arr[i+1].value?'#4ade80':'#ef4444'}}>{d.value<arr[i+1].value?'↓':'↑'}{Math.abs(d.value-arr[i+1].value).toFixed(1)}</span>}</div>)}</div></div>}
+      <PhotosPanel/>
+      <WeeklyReportPanel stats={stats} workouts={workouts}/>
+      <PatternPanel stats={stats} workouts={workouts}/>
+      <div style={{height:'16px'}}/>
+    </div>
+  );
 }
 
 // ─── Main App ─────────────────────────────────────────────────────
 export default function App(){
   const session=loadSession();
   const [messages,setMessages]=useState(session.messages||[]);
-  const [input,setInput]=useState('');
-  const [loading,setLoading]=useState(false);
-  const [dayType,setDayType]=useState(session.dayType||'normal');
-  const [toast,setToast]=useState(null);
-  const [tab,setTab]=useState('coach');
-  const [stats,setStats]=useState(loadStats());
+  const [input,   setInput]   =useState('');
+  const [loading, setLoading] =useState(false);
+  const [dayType, setDayType] =useState(session.dayType||'normal');
+  const [toast,   setToast]   =useState(null);
+  const [tab,     setTab]     =useState('coach');
+  const [stats,   setStats]   =useState(loadStats());
   const [workouts,setWorkouts]=useState(loadWorkouts());
-  const [picker,setPicker]=useState(false);
+  const [picker,  setPicker]  =useState(false);
   const messagesEndRef=useRef(null),textareaRef=useRef(null);
   const currentDay=DAY_TYPES.find(d=>d.val===dayType);
 
-  useEffect(()=>{messagesEndRef.current?.scrollIntoView({behavior:'smooth'});},[messages,loading]);
-  useEffect(()=>{saveSession(messages,dayType);},[messages,dayType]);
+  useEffect(()=>{ messagesEndRef.current?.scrollIntoView({behavior:'smooth'}); },[messages,loading]);
+  useEffect(()=>{ saveSession(messages,dayType); },[messages,dayType]);
+
+  // Notification check every 5 min
+  useEffect(()=>{
+    const cfg=ls(NOTIF_KEY,{enabled:false});
+    if(cfg.enabled) checkAndSendNotif(stats);
+    const iv=setInterval(()=>{ const c=ls(NOTIF_KEY,{enabled:false}); if(c.enabled)checkAndSendNotif(loadStats()); },5*60*1000);
+    return()=>clearInterval(iv);
+  },[]);
 
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(null),2500);};
 
   const extractAndSave=useCallback(reply=>{
     const match=reply.match(/\{"_data":\s*(\{.+\})\s*\}/);if(!match)return;
-    try{const d=JSON.parse(match[1]),key=todayKey(),ns=loadStats();
-    if(d.type==='weight'&&d.value)ns.weight[key]=d.value;
-    if(d.type==='daily'){if(!ns.daily[key])ns.daily[key]={};if(d.calories)ns.daily[key].calories=d.calories;if(d.protein)ns.daily[key].protein=d.protein;}
-    saveStats(ns);setStats({...ns});}catch{}
+    try{
+      const d=JSON.parse(match[1]),key=todayKey(),ns=loadStats();
+      if(d.type==='weight'&&d.value)ns.weight[key]=d.value;
+      if(d.type==='daily'){if(!ns.daily[key])ns.daily[key]={};if(d.calories)ns.daily[key].calories=d.calories;if(d.protein)ns.daily[key].protein=d.protein;}
+      saveStats(ns);setStats({...ns});
+    }catch{}
   },[]);
 
   const sendMessage=useCallback(async text=>{
@@ -771,6 +947,7 @@ export default function App(){
         <div className="hdr-top">
           <div><div className="logo">MIHAI PERFORMANCE</div><div className="logo-sub">AI Nutrition & Fitness Coach</div></div>
           <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+            <StreakBadge stats={stats}/>
             {messages.length>0&&<button className="clrbtn" onClick={clearHistory}>CLR</button>}
             <div className="day-pills">
               {DAY_TYPES.map(d=><button key={d.val} className={`day-pill ${dayType===d.val?'active':''}`} style={dayType===d.val?{background:d.gradient,boxShadow:`0 0 16px ${d.glow}`}:{}} onClick={()=>{setDayType(d.val);showToast(`${d.icon} ${d.label}`);}}>{d.icon} {d.labelShort}</button>)}
@@ -793,16 +970,17 @@ export default function App(){
       </div>
 
       {tab==='coach'&&(<>
+        <MacroBar stats={stats} dayType={dayType}/>
         <div className="qbar">
           {QUICK_COMMANDS.map(q=><button key={q.cmd} className="qbtn pr" onClick={()=>sendMessage(q.cmd)}>{q.icon} {q.label}</button>)}
           <div className="sep"/>
           <button className="qbtn gn" onClick={()=>setPicker(true)}>🍽️ Masă rapidă</button>
           <div className="sep"/>
-          {[{icon:'😴',prefix:'Somn: '},{icon:'⚖️',prefix:'Greutate: '},{icon:'🏋️',prefix:'Forță: '},{icon:'⚡',prefix:'Energie: '}].map(q=><button key={q.prefix} className="qbtn" onClick={()=>{setInput(q.prefix);textareaRef.current?.focus();}}>{q.icon} {q.prefix.trim().replace(':','')}</button>)}
+          {[{icon:'😴',prefix:'Somn: '},{icon:'⚖️',prefix:'Greutate: '},{icon:'🏋️',prefix:'Forță: '},{icon:'⚡',prefix:'Energie: '}].map(q=><button key={q.prefix} className="qbtn" onClick={()=>{setInput(q.prefix);textareaRef.current?.focus();}}>{q.icon} {q.prefix.replace(':','').trim()}</button>)}
         </div>
         <div className="msgs-wrap">
           <div className="msgs">
-            {messages.length===0&&<div className="empty"><div className="eicon">🔥</div><div className="etitle">96 kg → 88 kg</div><div className="esub">Selectează tipul zilei, apasă <strong style={{color:'#fb923c'}}>Start zi</strong> sau loghează prin tab-ul <strong style={{color:'#8b5cf6'}}>Workout</strong>.</div><div className="hchips"><span className="hchip">⚡ Antrenament</span><span className="hchip">🔥 Zi activă</span><span className="hchip">🌙 Repaus</span></div></div>}
+            {messages.length===0&&<div className="empty"><div className="eicon">🔥</div><div className="etitle">96 kg → 88 kg</div><div className="esub">Selectează tipul zilei, apasă <strong style={{color:'#fb923c'}}>Start zi</strong> sau loghează prin <strong style={{color:'#8b5cf6'}}>Workout</strong>.</div><div className="hchips"><span className="hchip">⚡ Antrenament</span><span className="hchip">🔥 Zi activă</span><span className="hchip">🌙 Repaus</span></div></div>}
             {messages.map((m,i)=><div key={i} className={m.role==='user'?'mu':'ma'}><div className={`mlbl ${m.role==='user'?'lu':'la'}`}>{m.role==='user'?'▸ MIHAI':'◆ AI COACH'}</div>{m.role==='assistant'?<div>{renderMarkdown(m.content)}</div>:<div style={{color:'#cbd5e1',fontSize:'16px',lineHeight:'1.5'}}>{m.display||m.content}</div>}</div>)}
             {loading&&<div className="ldots"><div className="dot"/><div className="dot"/><div className="dot"/></div>}
             <div ref={messagesEndRef}/>
@@ -811,14 +989,13 @@ export default function App(){
         <div className="inpwrap">
           <div className="inpinner">
             <button className="fbtn" onClick={()=>setPicker(true)}>🍽️</button>
-            <textarea ref={textareaRef} value={input} onChange={e=>{setInput(e.target.value);e.target.style.height='48px';e.target.style.height=Math.min(e.target.scrollHeight,140)+'px';}} onKeyDown={handleKey} placeholder="Scrie liber sau apasă 🍽️ pentru alimente..." disabled={loading} rows={1}/>
+            <textarea ref={textareaRef} value={input} onChange={e=>{setInput(e.target.value);e.target.style.height='48px';e.target.style.height=Math.min(e.target.scrollHeight,140)+'px';}} onKeyDown={handleKey} placeholder="Scrie liber sau apasă 🍽️..." disabled={loading} rows={1}/>
             <button className="sbtn" onClick={()=>sendMessage(input)} disabled={loading||!input.trim()}>↑</button>
           </div>
         </div>
       </>)}
 
-      {tab==='workout'&&<div style={{flex:1,overflowY:'auto',minHeight:0}}><WorkoutTab workouts={workouts} setWorkouts={setWorkouts} onSendToCoach={text=>{sendMessage(text);}}/></div>}
-
+      {tab==='workout'&&<div style={{flex:1,overflowY:'auto',minHeight:0}}><WorkoutTab workouts={workouts} setWorkouts={setWorkouts} onSendToCoach={sendMessage}/></div>}
       {tab==='stats'&&<div style={{flex:1,overflowY:'auto',minHeight:0}}><StatsTab stats={stats} workouts={workouts}/></div>}
 
       {picker&&<FoodPicker onSend={sendMessage} onClose={()=>setPicker(false)} dayType={dayType}/>}

@@ -105,11 +105,11 @@ function AziTab({ th, profile, dayType, setDayType, currentDay, dayMacros, today
 
         {/* START / STOP ZI */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <button onClick={() => { setShowChat(true); onSend('Start zi'); }} className="btn-tap"
+          <button onClick={() => { if(navigator.vibrate) navigator.vibrate(10); setShowChat(true); onSend('Start zi'); }} className="btn-tap"
             style={{ padding: '12px', background: 'linear-gradient(135deg,#10b981,#059669)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '14px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.05em', boxShadow: '0 3px 12px rgba(16,185,129,0.4)' }}>
             🌅 START ZI
           </button>
-          <button onClick={() => { setShowChat(true); onSend('Stop zi — sinteză completă cu pro/contra și recomandări pentru mâine'); }} className="btn-tap"
+          <button onClick={() => { if(navigator.vibrate) navigator.vibrate(10); setShowChat(true); onSend('Stop zi — sinteză completă cu pro/contra și recomandări pentru mâine'); }} className="btn-tap"
             style={{ padding: '12px', background: 'linear-gradient(135deg,#8b5cf6,#6366f1)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '14px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.05em', boxShadow: '0 3px 12px rgba(139,92,246,0.4)' }}>
             🌙 STOP ZI
           </button>
@@ -176,7 +176,7 @@ function AziTab({ th, profile, dayType, setDayType, currentDay, dayMacros, today
         </div>
 
         {/* ── ADAUGĂ MASĂ ── */}
-        <button onClick={onOpenFoodPicker} className="btn-tap"
+        <button onClick={() => { if(navigator.vibrate) navigator.vibrate(12); onOpenFoodPicker(); }} className="btn-tap"
           style={{ width: '100%', background: currentDay?.bg || 'linear-gradient(135deg,#f97316,#ef4444)', border: 'none', borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '13px', cursor: 'pointer', boxShadow: `0 4px 16px ${currentDay?.glow || 'rgba(249,115,22,0.3)'}` }}>
           <div style={{ width: '38px', height: '38px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>+</div>
           <div style={{ textAlign: 'left' }}>
@@ -188,13 +188,33 @@ function AziTab({ th, profile, dayType, setDayType, currentDay, dayMacros, today
         {/* ── MACRO PROGRESS ── */}
         {dayMacros && (
           <div style={{ background: th.bg2, borderRadius: '16px', padding: '14px', border: `1px solid ${th.border}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: th.text }}>📊 Macro azi</span>
-              <span style={{ fontSize: '12px', color: calPct >= 100 ? '#ef4444' : th.accent, fontWeight: 700 }}>{todayStats.calories || 0} / {dayMacros.kcal} kcal · {calPct}%</span>
-            </div>
-            {/* Calorii bar */}
-            <div style={{ height: '8px', background: th.card2, borderRadius: '4px', overflow: 'hidden', marginBottom: '10px' }}>
-              <div style={{ width: `${calPct}%`, height: '100%', background: calPct > 100 ? '#ef4444' : currentDay?.bg || 'linear-gradient(90deg,#f97316,#ef4444)', borderRadius: '4px', transition: 'width 0.5s ease' }}/>
+            {/* ── RING CALORIC ── */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '14px' }}>
+              {/* SVG Ring */}
+              <div style={{ position: 'relative', width: '88px', height: '88px', flexShrink: 0 }}>
+                <svg viewBox="0 0 88 88" style={{ width: '88px', height: '88px', transform: 'rotate(-90deg)' }}>
+                  <circle cx="44" cy="44" r="36" fill="none" stroke={th.card2} strokeWidth="8"/>
+                  <circle cx="44" cy="44" r="36" fill="none"
+                    stroke={calPct > 100 ? '#ef4444' : (currentDay?.color || '#f97316')}
+                    strokeWidth="8" strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 36}`}
+                    strokeDashoffset={`${2 * Math.PI * 36 * (1 - Math.min(calPct, 100) / 100)}`}
+                    style={{ transition: 'stroke-dashoffset 0.6s ease' }}/>
+                </svg>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '18px', fontWeight: 900, color: calPct > 100 ? '#ef4444' : (currentDay?.color || '#f97316'), lineHeight: 1 }}>{calPct}%</span>
+                  <span style={{ fontSize: '9px', color: th.text3, fontWeight: 600 }}>kcal</span>
+                </div>
+              </div>
+              {/* Right side info */}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '11px', color: th.text3, marginBottom: '2px' }}>Consumate</div>
+                <div style={{ fontSize: '22px', fontWeight: 900, color: th.text, lineHeight: 1 }}>{todayStats.calories || 0}</div>
+                <div style={{ fontSize: '11px', color: th.text3, marginTop: '4px' }}>din {dayMacros.kcal} kcal · rămase:</div>
+                <div style={{ fontSize: '16px', fontWeight: 800, color: calPct >= 100 ? '#ef4444' : '#10b981' }}>
+                  {Math.max(0, dayMacros.kcal - (todayStats.calories || 0))} kcal
+                </div>
+              </div>
             </div>
             {/* Macro 3 cols */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>

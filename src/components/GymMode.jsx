@@ -106,7 +106,7 @@ function GymMode({ workouts, setWorkouts, onClose, onSendToCoach, profile, th })
     setTempoPhase(null); setRepCount(0);
     if (!tempoEnabled) {
       let e = 0; const total = reps * 5;
-      tempoRef.current = setInterval(() => { e++; if (e >= total) { clearInterval(tempoRef.current); beepDone(); setTimeout(() => onDone?.(), 400); } }, 1000);
+      tempoRef.current = setInterval(() => { e++; if (e >= total) { clearInterval(tempoRef.current); beepDone(); if(navigator.vibrate) navigator.vibrate([50,30,50]); setTimeout(() => onDone?.(), 400); } }, 1000);
       return;
     }
     const STEPS = [{l:'UP',b:beepUp},{l:'HOLD',b:beepHold},{l:'DOWN',b:beepDown},{l:'DOWN',b:null},{l:'DOWN',b:null}];
@@ -133,7 +133,7 @@ function GymMode({ workouts, setWorkouts, onClose, onSendToCoach, profile, th })
     setCompletedSets(newCompleted);
     setCurrentSetIdx(nextIdx); currentSetIdxRef.current = nextIdx;
     if (nextIdx >= targetSetsRef.current) {
-      speak('Done');
+      speak('Done'); if(navigator.vibrate) navigator.vibrate([100,50,100]);
       setTimeout(() => autoFinishExercise(newCompleted), 500);
     } else {
       speak('Pause');
@@ -153,7 +153,7 @@ function GymMode({ workouts, setWorkouts, onClose, onSendToCoach, profile, th })
           clearInterval(intervalRef.current);
           if (navigator.vibrate) navigator.vibrate([300,100,300]);
           const reps = parseInt(currentRepsRef.current) || 5;
-          speak('Start');
+          speak('Start'); if(navigator.vibrate) navigator.vibrate(30);
           setPhase('active'); setSetTimer(0); setRepCount(0); setTimerRef.current = 0;
           setTimeout(() => startTempo(reps, () => doStopSetRef.current()), 700);
           return 0;
@@ -187,7 +187,7 @@ function GymMode({ workouts, setWorkouts, onClose, onSendToCoach, profile, th })
     setCompletedSets([]); completedSetsRef.current = [];
     setPhase('active'); setSetTimer(0); setRepCount(0); setTimerRef.current = 0;
     if (!totalRef.current) { setTotalTimer(0); totalRef.current = setInterval(() => setTotalTimer(t => t+1), 1000); }
-    speak('Start');
+    speak('Start'); if(navigator.vibrate) navigator.vibrate(30);
     setTimeout(() => startTempo(reps, () => doStopSetRef.current()), 700);
   };
 
@@ -197,7 +197,7 @@ function GymMode({ workouts, setWorkouts, onClose, onSendToCoach, profile, th })
     clearInterval(intervalRef.current);
     const reps = parseInt(currentRepsRef.current) || 5;
     setPhase('active'); setSetTimer(0); setRepCount(0); setRestTimer(0); setTimerRef.current = 0;
-    speak('Start');
+    speak('Start'); if(navigator.vibrate) navigator.vibrate(30);
     setTimeout(() => startTempo(reps, () => doStopSetRef.current()), 700);
   };
 

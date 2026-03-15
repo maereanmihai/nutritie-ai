@@ -37,6 +37,9 @@ export default function App() {
   const [gymMode, setGymMode]     = useState(false);
   const [showFoodPicker, setShowFoodPicker] = useState(false);
   const [toast, setToast]         = useState(null);
+  const [tabDir, setTabDir]       = useState(1); // 1=right, -1=left
+  const touchStartX = useRef(null);
+  const TAB_ORDER = ['azi','alimente','antrenament','progres','profil'];
   const messagesEndRef = useRef(null);
   const messagesRef    = useRef(messages);
 
@@ -48,6 +51,14 @@ export default function App() {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const showToast = (msg, dur = 2500) => { setToast(msg); setTimeout(() => setToast(null), dur); };
+
+  const switchTab = (newTab) => {
+    const cur = TAB_ORDER.indexOf(tab);
+    const next = TAB_ORDER.indexOf(newTab);
+    setTabDir(next >= cur ? 1 : -1);
+    setTab(newTab);
+    if (navigator.vibrate) navigator.vibrate(8);
+  };
 
   const saveProfile = useCallback((p) => {
     setProfile(p); lsSave(K.profile, p); showToast('✓ Profil salvat!');
@@ -152,7 +163,7 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
     setMessages(snapshot);
     setInput('');
     setLoading(true);
-    if (tab !== 'azi') setTab('azi');
+    if (tab !== 'azi') switchTab('azi');
     try {
       const apiMsgs = snapshot.map(m => ({ role: m.role, content: m.content }));
       const reply = await callAI(apiMsgs, buildSystemPrompt(profile, dayType), 2000);
@@ -201,14 +212,31 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
         input[type=number]{-moz-appearance:textfield}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        @keyframes slideInRight{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes slideInLeft{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:translateX(0)}}
         .tab-content{animation:fadeUp 0.25s ease}
+        .tab-slide-right{animation:slideInRight 0.22s cubic-bezier(0.25,0.46,0.45,0.94)}
+        .tab-slide-left{animation:slideInLeft 0.22s cubic-bezier(0.25,0.46,0.45,0.94)}
         .btn-tap{transition:transform 0.1s,opacity 0.1s}
         .btn-tap:active{transform:scale(0.95);opacity:0.85}
+        *{transition:background-color 0.3s ease,border-color 0.3s ease,color 0.15s ease}
+        button,input,textarea,svg,img,.no-trans{transition:none!important}
       `}</style>
 
       {/* ── CONTENT ── */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
+        onTouchEnd={e => {
+          if (touchStartX.current === null) return;
+          const dx = e.changedTouches[0].clientX - touchStartX.current;
+          touchStartX.current = null;
+          if (Math.abs(dx) < 60) return;
+          const cur = TAB_ORDER.indexOf(tab);
+          if (dx < 0 && cur < TAB_ORDER.length - 1) switchTab(TAB_ORDER[cur + 1]);
+          if (dx > 0 && cur > 0) switchTab(TAB_ORDER[cur - 1]);
+        }}>
         {tab === 'azi' && (
+          <div key="azi" className={`tab-slide tab-slide-${tabDir > 0 ? 'right' : 'left'}`} style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
           <AziTab
             th={th} darkMode={darkMode} setDarkMode={setDarkMode}
             profile={profile} dayType={dayType} setDayType={setDayType}
@@ -248,30 +276,39 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
               showToast('✓ Masă ștearsă');
             }}
           />
+          </div>
         )}
         {tab === 'alimente' && (
+          <div key="alimente" className={`tab-slide tab-slide-${tabDir > 0 ? 'right' : 'left'}`} style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
           <AlimenteTab th={th}
             customFoods={customFoods}
             setCustomFoods={(cf) => { setCustomFoods(cf); lsSave(K.customFoods, cf); }}
             onAddMeal={addMeal}
           />
+          </div>
         )}
         {tab === 'antrenament' && (
+          <div key="antrenament" className={`tab-slide tab-slide-${tabDir > 0 ? 'right' : 'left'}`} style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
           <AntrenamentTab th={th} workouts={workouts} setWorkouts={setWorkouts}
             profile={profile} onSendToCoach={sendMessage} onOpenGymMode={() => setGymMode(true)}
           />
+          </div>
         )}
         {tab === 'progres' && (
+          <div key="progres" className={`tab-slide tab-slide-${tabDir > 0 ? 'right' : 'left'}`} style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
           <ProgresTab th={th} stats={stats} setStats={setStats}
             workouts={workouts} profile={profile}
           />
+          </div>
         )}
         {tab === 'profil' && (
+          <div key="profil" className={`tab-slide tab-slide-${tabDir > 0 ? 'right' : 'left'}`} style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
           <ProfilTab th={th} profile={profile} saveProfile={saveProfile}
             supplements={supplements}
             setSupplements={(s) => { setSupplements(s); lsSave('ha_supl_list_v1', s); }}
             sendMessage={sendMessage}
           />
+          </div>
         )}
       </div>
 
@@ -284,7 +321,7 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
           { id: 'progres',      icon: '📊', label: 'Progres'  },
           { id: 'profil',       icon: '👤', label: 'Profil'   },
         ].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} className="btn-tap"
+          <button key={t.id} onClick={() => switchTab(t.id)} className="btn-tap"
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 10px', minWidth: '52px' }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: tab === t.id ? (currentDay?.bg || 'linear-gradient(135deg,#f97316,#ef4444)') : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', transition: 'all 0.2s' }}>
               {t.icon}

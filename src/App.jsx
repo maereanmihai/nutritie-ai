@@ -851,9 +851,9 @@ Reguli cat: carne/peste/oua/lactate/leguminoase=proteine, cereale/paste/paine/fr
         {/* ─── TAB: ALIMENTE ─── */}
         {activeTab==='alimente'&&(
           <div style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px'}}>
-            <div style={{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'4px'}}>
+            <div style={{display:'flex',gap:'6px',flexWrap:'wrap',paddingBottom:'4px'}}>
               {[{id:'all',l:'Toate'},{id:'proteine',l:'🥩 Proteine'},{id:'carbs',l:'🌾 Carbs'},{id:'legume',l:'🥦 Legume'},{id:'grasimi',l:'🫒 Grăsimi'},{id:'diverse',l:'🫙 Diverse'}].map(c=>(
-                <button key={c.id} onClick={()=>setCat(c.id)} style={{padding:'5px 12px',borderRadius:'100px',fontSize:'12px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:`1.5px solid ${cat===c.id?'#f97316':theme.border}`,background:cat===c.id?'rgba(249,115,22,0.12)':theme.surface,color:cat===c.id?'#f97316':theme.text3,flexShrink:0}}>{c.l}</button>
+                <button key={c.id} onClick={()=>setCat(c.id)} style={{padding:'6px 14px',borderRadius:'100px',fontSize:'13px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:`1.5px solid ${cat===c.id?'#f97316':theme.border}`,background:cat===c.id?'rgba(249,115,22,0.12)':theme.surface,color:cat===c.id?'#f97316':theme.text3}}>{c.l}</button>
               ))}
             </div>
             {filtered.map(food=>(

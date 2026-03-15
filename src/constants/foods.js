@@ -1,0 +1,80 @@
+const FOODS = [
+  // PROTEINE
+  { id:'ou',       name:'Ou întreg',          emoji:'🥚', unit:'buc', unitG:55,  kcal:155, p:13,  c:1.1, f:11,  fiber:0,   cat:'proteine' },
+  { id:'albus',    name:'Albuș lichid',        emoji:'🥛', unit:'ml',  unitG:1,   kcal:52,  p:11,  c:0.7, f:0.2, fiber:0,   cat:'proteine' },
+  { id:'iaurt',    name:'Iaurt proteic 2%',    emoji:'🥛', unit:'g',   unitG:1,   kcal:65,  p:9,   c:5,   f:1.5, fiber:0,   cat:'proteine' },
+  { id:'branza',   name:'Brânză de vaci',      emoji:'🧀', unit:'g',   unitG:1,   kcal:98,  p:12,  c:3.5, f:4,   fiber:0,   cat:'proteine' },
+  { id:'cottage',  name:'Brânză Cottage',      emoji:'🧀', unit:'g',   unitG:1,   kcal:98,  p:11,  c:3.4, f:4.3, fiber:0,   cat:'proteine' },
+  { id:'fagaras',  name:'Brânză Făgăraș',      emoji:'🧀', unit:'g',   unitG:1,   kcal:263, p:18,  c:2,   f:21,  fiber:0,   cat:'proteine' },
+  { id:'vita',     name:'Vită mușchi',         emoji:'🥩', unit:'g',   unitG:1,   kcal:158, p:26,  c:0,   f:6,   fiber:0,   cat:'proteine' },
+  { id:'pui',      name:'Piept pui',           emoji:'🍗', unit:'g',   unitG:1,   kcal:165, p:31,  c:0,   f:3.6, fiber:0,   cat:'proteine' },
+  { id:'pulpe',    name:'Pulpe pui',           emoji:'🍗', unit:'g',   unitG:1,   kcal:209, p:26,  c:0,   f:11,  fiber:0,   cat:'proteine' },
+  { id:'pastrav',  name:'Păstrăv',             emoji:'🐟', unit:'g',   unitG:1,   kcal:148, p:21,  c:0,   f:7,   fiber:0,   cat:'proteine' },
+  { id:'somon',    name:'Somon',               emoji:'🐟', unit:'g',   unitG:1,   kcal:208, p:20,  c:0,   f:13,  fiber:0,   cat:'proteine' },
+  { id:'ton',      name:'Ton conservă',        emoji:'🐟', unit:'g',   unitG:1,   kcal:116, p:26,  c:0,   f:1,   fiber:0,   cat:'proteine' },
+  { id:'porc',     name:'Mușchi porc',         emoji:'🥩', unit:'g',   unitG:1,   kcal:143, p:22,  c:0,   f:6,   fiber:0,   cat:'proteine' },
+  // CARBS
+  { id:'ovaz',     name:'Ovăz',                emoji:'🌾', unit:'g',   unitG:1,   kcal:389, p:17,  c:66,  f:7,   fiber:10,  cat:'carbs' },
+  { id:'orez',     name:'Orez fiert',          emoji:'🍚', unit:'g',   unitG:1,   kcal:130, p:2.7, c:28,  f:0.3, fiber:0.4, cat:'carbs' },
+  { id:'orez_b',   name:'Orez brun fiert',     emoji:'🍚', unit:'g',   unitG:1,   kcal:112, p:2.6, c:23,  f:0.9, fiber:1.8, cat:'carbs' },
+  { id:'cartof',   name:'Cartof fiert',        emoji:'🥔', unit:'g',   unitG:1,   kcal:77,  p:2,   c:17,  f:0.1, fiber:2.2, cat:'carbs' },
+  { id:'cartof_d', name:'Cartof dulce',        emoji:'🍠', unit:'g',   unitG:1,   kcal:86,  p:1.6, c:20,  f:0.1, fiber:3,   cat:'carbs' },
+  { id:'paste',    name:'Paste fierte',        emoji:'🍝', unit:'g',   unitG:1,   kcal:131, p:5,   c:25,  f:1.1, fiber:1.8, cat:'carbs' },
+  { id:'paine_n',  name:'Pâine neagră',        emoji:'🍞', unit:'felie',unitG:30,  kcal:65,  p:2.5, c:12,  f:0.8, fiber:1.9, cat:'carbs' },
+  { id:'fasole',   name:'Fasole roșie',        emoji:'🫘', unit:'g',   unitG:1,   kcal:127, p:8.7, c:22,  f:0.5, fiber:6.4, cat:'carbs' },
+  { id:'linte',    name:'Linte fiartă',        emoji:'🫘', unit:'g',   unitG:1,   kcal:116, p:9,   c:20,  f:0.4, fiber:7.9, cat:'carbs' },
+  // LEGUME
+  { id:'broccoli', name:'Broccoli',            emoji:'🥦', unit:'g',   unitG:1,   kcal:34,  p:2.8, c:6.6, f:0.4, fiber:2.6, cat:'legume' },
+  { id:'spanac',   name:'Spanac',              emoji:'🥬', unit:'g',   unitG:1,   kcal:23,  p:2.9, c:3.6, f:0.4, fiber:2.2, cat:'legume' },
+  { id:'varza',    name:'Varză',               emoji:'🥬', unit:'g',   unitG:1,   kcal:25,  p:1.3, c:5.8, f:0.1, fiber:2.5, cat:'legume' },
+  { id:'varzam',   name:'Varză murată',        emoji:'🥬', unit:'g',   unitG:1,   kcal:19,  p:0.9, c:4.3, f:0.1, fiber:2.9, cat:'legume' },
+  { id:'ciuperci', name:'Ciuperci',            emoji:'🍄', unit:'g',   unitG:1,   kcal:22,  p:3.1, c:3.3, f:0.3, fiber:1,   cat:'legume' },
+  { id:'ardei',    name:'Ardei gras',          emoji:'🫑', unit:'g',   unitG:1,   kcal:31,  p:1,   c:6,   f:0.3, fiber:2.1, cat:'legume' },
+  { id:'rosii',    name:'Roșii',               emoji:'🍅', unit:'g',   unitG:1,   kcal:18,  p:0.9, c:3.9, f:0.2, fiber:1.2, cat:'legume' },
+  { id:'castravete',name:'Castravete',         emoji:'🥒', unit:'g',   unitG:1,   kcal:15,  p:0.7, c:3.6, f:0.1, fiber:0.5, cat:'legume' },
+  { id:'sfecla',   name:'Sfeclă roșie',        emoji:'🟣', unit:'g',   unitG:1,   kcal:43,  p:1.6, c:9.6, f:0.2, fiber:2.8, cat:'legume' },
+  { id:'conopida', name:'Conopidă',            emoji:'🥦', unit:'g',   unitG:1,   kcal:25,  p:1.9, c:5,   f:0.3, fiber:2,   cat:'legume' },
+  { id:'morcov',   name:'Morcov',              emoji:'🥕', unit:'g',   unitG:1,   kcal:41,  p:0.9, c:9.6, f:0.2, fiber:2.8, cat:'legume' },
+  // FRUCTE
+  { id:'mar',      name:'Măr',                 emoji:'🍎', unit:'buc', unitG:150, kcal:52,  p:0.3, c:14,  f:0.2, fiber:2.4, cat:'fructe' },
+  { id:'banana',   name:'Banană',              emoji:'🍌', unit:'buc', unitG:120, kcal:89,  p:1.1, c:23,  f:0.3, fiber:2.6, cat:'fructe' },
+  { id:'para',     name:'Pară',                emoji:'🍐', unit:'buc', unitG:160, kcal:57,  p:0.4, c:15,  f:0.1, fiber:3.1, cat:'fructe' },
+  { id:'portocala',name:'Portocală',           emoji:'🍊', unit:'buc', unitG:130, kcal:47,  p:0.9, c:12,  f:0.1, fiber:2.4, cat:'fructe' },
+  { id:'capsuni',  name:'Căpșuni',             emoji:'🍓', unit:'g',   unitG:1,   kcal:32,  p:0.7, c:7.7, f:0.3, fiber:2,   cat:'fructe' },
+  { id:'afine',    name:'Afine',               emoji:'🫐', unit:'g',   unitG:1,   kcal:57,  p:0.7, c:14,  f:0.3, fiber:2.4, cat:'fructe' },
+  { id:'kiwi',     name:'Kiwi',                emoji:'🥝', unit:'buc', unitG:75,  kcal:61,  p:1.1, c:15,  f:0.5, fiber:3,   cat:'fructe' },
+  { id:'struguri', name:'Struguri',            emoji:'🍇', unit:'g',   unitG:1,   kcal:69,  p:0.7, c:18,  f:0.2, fiber:0.9, cat:'fructe' },
+  { id:'piersica', name:'Piersică',            emoji:'🍑', unit:'buc', unitG:150, kcal:39,  p:0.9, c:9.5, f:0.3, fiber:1.5, cat:'fructe' },
+  { id:'pepene',   name:'Pepene roșu',         emoji:'🍉', unit:'g',   unitG:1,   kcal:30,  p:0.6, c:7.6, f:0.2, fiber:0.4, cat:'fructe' },
+  { id:'coacaze',  name:'Coacăze',             emoji:'🫐', unit:'g',   unitG:1,   kcal:63,  p:1.4, c:15,  f:0.4, fiber:4.3, cat:'fructe' },
+  { id:'mango',    name:'Mango',               emoji:'🥭', unit:'g',   unitG:1,   kcal:60,  p:0.8, c:15,  f:0.4, fiber:1.6, cat:'fructe' },
+  // GRASIMI
+  { id:'ulei_m',   name:'Ulei măsline',        emoji:'🫒', unit:'ml',  unitG:0.9, kcal:884, p:0,   c:0,   f:100, fiber:0,   cat:'grasimi' },
+  { id:'ulei_c',   name:'Ulei cocos',          emoji:'🥥', unit:'ml',  unitG:0.9, kcal:862, p:0,   c:0,   f:100, fiber:0,   cat:'grasimi' },
+  { id:'migdale',  name:'Migdale',             emoji:'🌰', unit:'g',   unitG:1,   kcal:579, p:21,  c:22,  f:50,  fiber:12,  cat:'grasimi' },
+  { id:'nuci',     name:'Nuci',                emoji:'🌰', unit:'g',   unitG:1,   kcal:654, p:15,  c:14,  f:65,  fiber:6.7, cat:'grasimi' },
+  { id:'chia',     name:'Semințe chia',        emoji:'🌱', unit:'g',   unitG:1,   kcal:486, p:17,  c:42,  f:31,  fiber:34,  cat:'grasimi' },
+  { id:'avocado',  name:'Avocado',             emoji:'🥑', unit:'g',   unitG:1,   kcal:160, p:2,   c:9,   f:15,  fiber:6.7, cat:'grasimi' },
+  { id:'unt',      name:'Unt',                 emoji:'🧈', unit:'g',   unitG:1,   kcal:717, p:0.9, c:0.1, f:81,  fiber:0,   cat:'grasimi' },
+  { id:'cioc_n',   name:'Ciocolată neagră 85%',emoji:'🍫', unit:'g',   unitG:1,   kcal:598, p:8,   c:46,  f:43,  fiber:11,  cat:'grasimi' },
+  // DIVERSE
+  { id:'miere',    name:'Miere',               emoji:'🍯', unit:'g',   unitG:1,   kcal:304, p:0.3, c:82,  f:0,   fiber:0.2, cat:'diverse' },
+  { id:'cafea',    name:'Cafea neagră',        emoji:'☕', unit:'ml',  unitG:1,   kcal:1,   p:0.1, c:0,   f:0,   fiber:0,   cat:'diverse' },
+  { id:'lapte',    name:'Lapte 1.5%',          emoji:'🥛', unit:'ml',  unitG:1,   kcal:42,  p:3.4, c:5,   f:1.5, fiber:0,   cat:'diverse' },
+  { id:'psyllium', name:'Psyllium',            emoji:'🌿', unit:'g',   unitG:1,   kcal:200, p:2,   c:85,  f:1,   fiber:71,  cat:'diverse' },
+  { id:'proteine_p',name:'Proteină Pudră',     emoji:'💪', unit:'g',   unitG:1,   kcal:380, p:80,  c:8,   f:4,   fiber:0,   cat:'diverse' },
+];
+
+const FOOD_CATS = [
+  { id:'all',      label:'Toate',    icon:'🍽', color:'#6366f1' },
+  { id:'proteine', label:'Proteine', icon:'🥩', color:'#ef4444' },
+  { id:'carbs',    label:'Carbs',    icon:'🌾', color:'#f59e0b' },
+  { id:'legume',   label:'Legume',   icon:'🥦', color:'#10b981' },
+  { id:'fructe',   label:'Fructe',   icon:'🍎', color:'#ec4899' },
+  { id:'grasimi',  label:'Grăsimi',  icon:'🫒', color:'#8b5cf6' },
+  { id:'diverse',  label:'Diverse',  icon:'🫙', color:'#64748b' },
+];
+
+// ─── SUPPLEMENTS ──────────────────────────────────────────────────────────────
+
+export { FOODS, FOOD_CATS };

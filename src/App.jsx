@@ -655,7 +655,7 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
   const searchTimerRef=useRef(null);
 
   const allFoods=[...FOODS,...customFoods];
-  const filtered=cat==='all'?allFoods:allFoods.filter(f=>f.cat===cat||(cat==='custom'&&customFoods.some(cf=>cf.id===f.id)));
+  const filtered=cat==='all'?allFoods:allFoods.filter(f=>f.cat===cat);
   const setQty=(id,val)=>setQuantities(q=>({...q,[id]:val}));
   const totals=Object.entries(quantities).reduce((acc,[id,qty])=>{
     if(!qty||isNaN(qty)||qty<=0)return acc;
@@ -752,8 +752,10 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
           system:`Esti un expert in nutritie. Utilizatorul scrie un aliment in orice limba (romana, engleza etc).
 Returneaza DOAR un JSON array cu 1-4 variante ale acelui aliment (ex: crud, fiert, prajit).
 Format strict - DOAR JSON, fara text inainte sau dupa:
-[{"name":"Calamari prajiti","emoji":"🦑","kcal":175,"p":18,"c":8,"fat":8,"fiber":0},...]
-Valorile sunt la 100g. Fii precis din punct de vedere nutritional.`,
+[{"name":"Calamari prajiti","emoji":"🦑","kcal":175,"p":18,"c":8,"fat":8,"fiber":0,"cat":"proteine"},...]
+Valorile sunt la 100g. Fii precis din punct de vedere nutritional.
+Pentru campul "cat" foloseste EXACT una din: "proteine", "carbs", "legume", "grasimi", "diverse".
+Reguli cat: carne/peste/oua/lactate/leguminoase=proteine, cereale/paste/paine/fructe/zahar=carbs, legume/salate/zarzavaturi=legume, uleiuri/nuci/seminte/unt=grasimi, altele=diverse.`,
           messages:[{role:'user',content:query}]
         })
       });

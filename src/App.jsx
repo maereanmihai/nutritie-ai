@@ -243,6 +243,7 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
             currentDay={currentDay} dayMacros={dayMacros}
             todayStats={todayStats} todayMeals={todayMeals} todayWorkout={todayWorkout}
             streak={streak} todaySupl={todaySupl} suplTakenToday={suplTakenToday}
+            stats={stats} workouts={workouts}
             onToggleSupl={(id) => {
               setSuplTaken(prev => {
                 const ns = { ...prev, [key]: { ...(prev[key] || {}), [id]: !prev[key]?.[id] } };

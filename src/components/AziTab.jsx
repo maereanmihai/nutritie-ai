@@ -3,6 +3,7 @@ import { getDayMacros } from '../utils/calculations';
 import { todayKey } from '../utils/storage';
 import { DAY_TYPES } from '../constants/dayTypes';
 import { getDailyQuote } from '../constants/quotes';
+import { SuggestieAI } from './SetariTab';
 
 function AziTab({ th, profile, dayType, setDayType, currentDay, dayMacros, todayStats, todayMeals, todayWorkout, streak, todaySupl, suplTakenToday, onToggleSupl, messages, input, setInput, loading, onSend, messagesEndRef, darkMode, setDarkMode, onOpenFoodPicker, onDeleteMeal, stats, workouts }) {
   const [activeView, setActiveView] = useState('azi'); // azi | calendar
@@ -313,6 +314,13 @@ function AziTab({ th, profile, dayType, setDayType, currentDay, dayMacros, today
                 <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: '1px' }}>📷 Poză · 🔲 Barcode · 📋 Listă · 🤖 AI</div>
               </div>
             </button>
+
+            {/* ── SUGESTIE AI ── */}
+            <SuggestieAI
+              th={th} profile={profile} todayStats={todayStats}
+              dayMacros={dayMacros} todayMeals={todayMeals}
+              dayType={dayType} currentDay={currentDay}
+            />
 
             {/* ── MACRO RING ── */}
             {dayMacros && (

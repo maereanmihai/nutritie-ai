@@ -11,6 +11,8 @@ import ProgresTab from './components/ProgresTab';
 import ProfilTab from './components/ProfilTab';
 import FoodPickerModal from './components/FoodPickerModal';
 import GymMode from './components/GymMode';
+import { SetariTab } from './components/SetariTab';
+import { registerServiceWorker, scheduleSupplementNotifications } from './utils/notifications';
 
 // ─── Profile helpers ──────────────────────────────────────────────────────────
 const defaultProfile = () => ({
@@ -39,12 +41,20 @@ export default function App() {
   const [toast, setToast]         = useState(null);
   const [tabDir, setTabDir]       = useState(1); // 1=right, -1=left
   const touchStartX = useRef(null);
-  const TAB_ORDER = ['azi','alimente','antrenament','progres','profil'];
+  const TAB_ORDER = ['azi','alimente','antrenament','progres','profil','setari'];
   const messagesEndRef = useRef(null);
   const messagesRef    = useRef(messages);
 
   // ── Effects ────────────────────────────────────────────────────────────────
   useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => {
+    // Register SW and schedule supplement notifications
+    registerServiceWorker().then(reg => {
+      if (reg && supplements?.length) {
+        scheduleSupplementNotifications(supplements);
+      }
+    });
+  }, []);
   useEffect(() => { lsSave(K.theme, darkMode); }, [darkMode]);
   useEffect(() => { lsSave(K.session, { date: todayKey(), messages }); }, [messages]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
@@ -311,6 +321,13 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
           />
           </div>
         )}
+        {tab === 'setari' && (
+          <div key="setari" className={`tab-slide tab-slide-${tabDir > 0 ? 'right' : 'left'}`} style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
+          <SetariTab th={th} supplements={supplements} profile={profile}
+            stats={stats} meals={meals} workouts={workouts} customFoods={customFoods}
+          />
+          </div>
+        )}
       </div>
 
       {/* ── BOTTOM TAB BAR ── */}
@@ -321,6 +338,7 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
           { id: 'antrenament',  icon: '💪', label: 'Sport'    },
           { id: 'progres',      icon: '📊', label: 'Progres'  },
           { id: 'profil',       icon: '👤', label: 'Profil'   },
+          { id: 'setari',       icon: '⚙️', label: 'Setări'   },
         ].map(t => (
           <button key={t.id} onClick={() => switchTab(t.id)} className="btn-tap"
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 10px', minWidth: '52px' }}>

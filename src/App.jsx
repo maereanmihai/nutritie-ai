@@ -1408,11 +1408,25 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
   const speak=(text)=>{
     if(!window.speechSynthesis)return;
     window.speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(text);
-    u.lang='ro-RO';u.rate=voiceRate;u.volume=1;
-    const v=window.speechSynthesis.getVoices().find(x=>x.name===selectedVoice);
-    if(v)u.voice=v;
-    window.speechSynthesis.speak(u);
+    const doSpeak=()=>{
+      const u=new SpeechSynthesisUtterance(text);
+      u.rate=voiceRate;u.volume=1;
+      const voices=window.speechSynthesis.getVoices();
+      const v=voices.find(x=>x.name===selectedVoice);
+      if(v){
+        u.voice=v;
+        u.lang=v.lang; // foloseste lang-ul exact al vocii alese
+      } else {
+        u.lang='ro-RO'; // fallback
+      }
+      window.speechSynthesis.speak(u);
+    };
+    // Pe Android getVoices() poate fi gol - retry dupa 100ms
+    if(window.speechSynthesis.getVoices().length>0){
+      doSpeak();
+    } else {
+      setTimeout(doSpeak,100);
+    }
   };
   speakRef.current=speak;
 

@@ -1317,50 +1317,99 @@ function BodyMeasurements({theme=THEMES.dark}){
 // ─── GYM MODE FULLSCREEN ─────────────────────────────────────────────────────
 function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark}){
   const key=todayKey();
-  const [phase,setPhase]=useState('pick'); // pick | input | active | rest | summary
+  const [phase,setPhase]=useState('pick'); // pick | setup | active | rest | summary
   const [selGroup,setSelGroup]=useState('piept');
   const [selEx,setSelEx]=useState(null);
   const [currentKg,setCurrentKg]=useState('');
   const [currentReps,setCurrentReps]=useState('');
-  const [currentSets,setCurrentSets]=useState([]);
+  const [targetSets,setTargetSets]=useState(3);
+  const [currentSetIdx,setCurrentSetIdx]=useState(0);
+  const [completedSets,setCompletedSets]=useState([]);
   const [restDuration,setRestDuration]=useState(90);
   const [restTimer,setRestTimer]=useState(0);
   const [setTimer,setSetTimer]=useState(0);
   const [totalTimer,setTotalTimer]=useState(0);
   const [sessionLog,setSessionLog]=useState([]);
-  const [tempoPhase,setTempoPhase]=useState(null); // null | 'up' | 'hold' | 'down'
-  const [tempoTimer,setTempoTimer]=useState(0);
+  const [tempoPhase,setTempoPhase]=useState(null);
   const [repCount,setRepCount]=useState(0);
   const [tempoEnabled,setTempoEnabled]=useState(true);
-  // Voce
   const [voices,setVoices]=useState([]);
   const [selectedVoice,setSelectedVoice]=useState(null);
   const [showVoicePanel,setShowVoicePanel]=useState(false);
   const [voiceRate,setVoiceRate]=useState(0.9);
 
+  // Refs pentru valori accesibile din callbacks async
   const intervalRef=useRef(null);
   const tempoRef=useRef(null);
   const totalRef=useRef(null);
   const wakeLockRef=useRef(null);
   const audioCtxRef=useRef(null);
+  const currentKgRef=useRef('');
+  const currentRepsRef=useRef('');
+  const currentSetIdxRef=useRef(0);
+  const completedSetsRef=useRef([]);
+  const targetSetsRef=useRef(3);
+  const restDurationRef=useRef(90);
+  const selExRef=useRef(null);
+  const selGroupRef=useRef('piept');
+  const setTimerRef=useRef(0);
+  const doStopSetRef=useRef(null); // forward ref pentru doStopSet
 
-  // Wake Lock + timer total + voci
+  // Sync state -> refs
+  useEffect(()=>{currentKgRef.current=currentKg;},[currentKg]);
+  useEffect(()=>{currentRepsRef.current=currentReps;},[currentReps]);
+  useEffect(()=>{currentSetIdxRef.current=currentSetIdx;},[currentSetIdx]);
+  useEffect(()=>{completedSetsRef.current=completedSets;},[completedSets]);
+  useEffect(()=>{targetSetsRef.current=targetSets;},[targetSets]);
+  useEffect(()=>{restDurationRef.current=restDuration;},[restDuration]);
+  useEffect(()=>{selExRef.current=selEx;},[selEx]);
+  useEffect(()=>{selGroupRef.current=selGroup;},[selGroup]);
+
+  // Audio
+  const beep=(freq=440,dur=0.15,type='sine',vol=0.3)=>{
+    try{
+      if(!audioCtxRef.current) audioCtxRef.current=new(window.AudioContext||window.webkitAudioContext)();
+      const ctx=audioCtxRef.current;
+      const osc=ctx.createOscillator();const gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type=type;osc.frequency.value=freq;
+      gain.gain.setValueAtTime(vol,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+      osc.start(ctx.currentTime);osc.stop(ctx.currentTime+dur);
+    }catch{}
+  };
+  const beepUp=()=>beep(880,0.15,'sine',0.3);
+  const beepHold=()=>beep(660,0.1,'sine',0.15);
+  const beepDown=()=>beep(440,0.2,'sine',0.25);
+  const beepDone=()=>{beep(660,0.15,'sine',0.3);setTimeout(()=>beep(880,0.25,'sine',0.4),180);};
+
+  const speakRef=useRef(null);
+  const speak=(text)=>{
+    if(!window.speechSynthesis)return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='ro-RO';u.rate=voiceRate;u.volume=1;
+    const v=window.speechSynthesis.getVoices().find(x=>x.name===selectedVoice);
+    if(v)u.voice=v;
+    window.speechSynthesis.speak(u);
+  };
+  speakRef.current=speak;
+
+  const fmt=(s)=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+
+  // Wake lock + timer total + voci
   useEffect(()=>{
     const req=async()=>{try{if('wakeLock' in navigator)wakeLockRef.current=await navigator.wakeLock.request('screen');}catch{}};
     req();
     totalRef.current=setInterval(()=>setTotalTimer(t=>t+1),1000);
-
-    // Incarca vocile
     const loadVoices=()=>{
       const v=window.speechSynthesis?.getVoices()||[];
       setVoices(v);
-      // Alege prima voce romaneasca disponibila
       const ro=v.find(x=>x.lang.startsWith('ro'))||v.find(x=>x.lang.startsWith('en')&&x.name.includes('Female'))||v[0]||null;
-      setSelectedVoice(ro?.name||null);
+      setSelectedVoice(p=>p||ro?.name||null);
     };
     loadVoices();
-    if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged=loadVoices;
-
+    if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=loadVoices;
     return()=>{
       wakeLockRef.current?.release?.();
       clearInterval(intervalRef.current);
@@ -1370,51 +1419,108 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
     };
   },[]);
 
-  // Timer set activ
+  // Tempo auto: numara exact 'reps' repetari (5s/rep) si apeleaza onDone
+  const startTempo=(reps,onDone)=>{
+    clearInterval(tempoRef.current);
+    setTempoPhase(null);setRepCount(0);
+    const STEPS=[
+      {label:'UP',beep:beepUp},
+      {label:'HOLD',beep:beepHold},
+      {label:'DOWN',beep:beepDown},
+      {label:'DOWN',beep:null},
+      {label:'DOWN',beep:null},
+    ];
+    const totalSteps=reps*5;
+    let step=0;
+    const tick=()=>{
+      if(step>=totalSteps){
+        clearInterval(tempoRef.current);
+        setTempoPhase('DONE');
+        beepDone();
+        setTimeout(()=>{setTempoPhase(null);if(onDone)onDone();},400);
+        return;
+      }
+      const s=STEPS[step%5];
+      setTempoPhase(s.label);
+      if(s.beep)s.beep();
+      const rep=Math.floor(step/5)+1;
+      setRepCount(rep);
+      step++;
+    };
+    tick();
+    tempoRef.current=setInterval(tick,1000);
+  };
+
+  // Fara tempo: cronometru simplu care se opreste dupa reps*5s
+  const startSimpleTimer=(reps,onDone)=>{
+    clearInterval(tempoRef.current);
+    let elapsed=0;const total=reps*5;
+    tempoRef.current=setInterval(()=>{
+      elapsed++;
+      if(elapsed>=total){clearInterval(tempoRef.current);beepDone();setTimeout(()=>{if(onDone)onDone();},400);}
+    },1000);
+  };
+
+  const stopTempo=()=>{clearInterval(tempoRef.current);setTempoPhase(null);};
+
+  // doStopSet: salveza setul curent, decide pauza sau finish
+  const doStopSet=()=>{
+    const kg=parseFloat(currentKgRef.current)||0;
+    const reps=parseInt(currentRepsRef.current)||0;
+    const duration=setTimerRef.current;
+    const newSet={kg:String(kg),reps:String(reps),duration};
+    const idx=currentSetIdxRef.current;
+    const nextIdx=idx+1;
+    const newCompleted=[...completedSetsRef.current,newSet];
+    completedSetsRef.current=newCompleted;
+    setCompletedSets(newCompleted);
+    setCurrentSetIdx(nextIdx);
+    currentSetIdxRef.current=nextIdx;
+
+    if(nextIdx>=targetSetsRef.current){
+      speakRef.current(`${targetSetsRef.current} seturi complete! Excelent!`);
+      setTimeout(()=>autoFinishExercise(newCompleted),500);
+    } else {
+      speakRef.current(`Set ${idx+1} complet! Pauza ${restDurationRef.current} secunde!`);
+      setPhase('rest');
+      setRestTimer(restDurationRef.current);
+    }
+  };
+  doStopSetRef.current=doStopSet;
+
+  // Timer set activ (cronometru)
   useEffect(()=>{
     clearInterval(intervalRef.current);
-    if(phase==='active') intervalRef.current=setInterval(()=>setSetTimer(t=>t+1),1000);
-    else if(phase==='rest'&&restTimer>0){
+    if(phase==='active'){
+      setTimerRef.current=0;
+      intervalRef.current=setInterval(()=>{
+        setSetTimer(t=>{const nt=t+1;setTimerRef.current=nt;return nt;});
+      },1000);
+    } else if(phase==='rest'&&restTimer>0){
       intervalRef.current=setInterval(()=>setRestTimer(t=>{
-        if(t<=1){clearInterval(intervalRef.current);setPhase('input');if(navigator.vibrate)navigator.vibrate([300,100,300]);speak('Pauza terminata! Urmatorul set!');return 0;}
+        if(t<=1){
+          clearInterval(intervalRef.current);
+          if(navigator.vibrate)navigator.vibrate([300,100,300]);
+          const reps=parseInt(currentRepsRef.current)||5;
+          const nextIdx=currentSetIdxRef.current;
+          speakRef.current(`Pauza terminata! Set ${nextIdx+1} din ${targetSetsRef.current}! ${reps} repetari!`);
+          setPhase('active');setSetTimer(0);setRepCount(0);setTimerRef.current=0;
+          setTimeout(()=>{
+            if(tempoEnabled) startTempo(reps,()=>doStopSetRef.current());
+            else startSimpleTimer(reps,()=>doStopSetRef.current());
+          },700);
+          return 0;
+        }
+        if(t===10)speakRef.current('10 secunde!');
+        if(t===5)speakRef.current('5!');
+        if(t===3)beepDown();
+        if(t===2)beepDown();
+        if(t===1)beepDown();
         return t-1;
       }),1000);
     }
     return()=>clearInterval(intervalRef.current);
-  },[phase,restTimer]);
-
-  // Audio beep
-  const beep=(freq=440,dur=0.15,type='sine',vol=0.3)=>{
-    try{
-      if(!audioCtxRef.current) audioCtxRef.current=new(window.AudioContext||window.webkitAudioContext)();
-      const ctx=audioCtxRef.current;
-      const osc=ctx.createOscillator();
-      const gain=ctx.createGain();
-      osc.connect(gain);gain.connect(ctx.destination);
-      osc.type=type;osc.frequency.value=freq;
-      gain.gain.setValueAtTime(vol,ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
-      osc.start(ctx.currentTime);osc.stop(ctx.currentTime+dur);
-    }catch{}
-  };
-
-  const beepUp=()=>beep(880,0.12,'sine',0.25);    // ton inalt placut - sus
-  const beepHold=()=>beep(660,0.08,'sine',0.15);   // ton mediu - pauza
-  const beepDown=()=>beep(440,0.18,'sine',0.2);    // ton jos placut - coborare
-
-  const speak=(text)=>{
-    if(!window.speechSynthesis)return;
-    window.speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(text);
-    u.lang='ro-RO';u.rate=voiceRate;u.volume=1;
-    if(selectedVoice){
-      const v=window.speechSynthesis.getVoices().find(x=>x.name===selectedVoice);
-      if(v)u.voice=v;
-    }
-    window.speechSynthesis.speak(u);
-  };
-
-  const fmt=(s)=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  },[phase,restTimer,tempoEnabled]);
 
   const getPR=exId=>{
     const all=Object.values(workouts.days).flatMap(d=>(d.exercises||[]).filter(e=>e.id===exId).flatMap(e=>e.sets||[]));
@@ -1422,73 +1528,67 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
     return Math.max(...all.map(s=>parseFloat(s.kg)||0));
   };
 
-  // Tempo metronom: 1s UP → 1s HOLD → 3s DOWN
-  const startTempo=()=>{
-    clearInterval(tempoRef.current);
-    if(!tempoEnabled){setTempoPhase(null);return;}
-    let step=0; // 0=up, 1=hold, 2,3,4=down
-    const STEPS=[
-      {label:'UP',dur:1000,beep:beepUp},
-      {label:'HOLD',dur:1000,beep:beepHold},
-      {label:'DOWN',dur:1000,beep:beepDown},
-      {label:'DOWN',dur:1000,beep:null},
-      {label:'DOWN',dur:1000,beep:null},
-    ];
-    const tick=()=>{
-      const s=STEPS[step%STEPS.length];
-      setTempoPhase(s.label);
-      setTempoTimer(step%STEPS.length);
-      if(s.beep)s.beep();
-      if(step%STEPS.length===0)setRepCount(r=>r+1);
-      step++;
-    };
-    tick();
-    tempoRef.current=setInterval(tick,1000);
-  };
-
-  const stopTempo=()=>{clearInterval(tempoRef.current);setTempoPhase(null);setRepCount(0);};
-
   const startExercise=(exId)=>{
     const ex=EXERCISES[selGroup].find(e=>e.id===exId);
-    setSelEx(exId);setCurrentSets([]);setCurrentKg('');setCurrentReps('');setPhase('input');
-    speak(`${ex.name}. Introdu greutatea si repetarile!`);
+    setSelEx(exId);selExRef.current=exId;
+    setCompletedSets([]);completedSetsRef.current=[];
+    setCurrentSetIdx(0);currentSetIdxRef.current=0;
+    setCurrentKg('');setCurrentReps('');
+    setPhase('setup');
+    speak(`${ex.name}. Configureaza exercitiul!`);
   };
 
-  const startSet=()=>{
+  const beginSets=()=>{
     if(!currentKg||!currentReps)return;
-    setPhase('active');setSetTimer(0);setRepCount(0);
-    speak(`Start set ${currentSets.length+1}! Sus!`);
-    startTempo();
+    const reps=parseInt(currentReps);
+    setCurrentSetIdx(0);currentSetIdxRef.current=0;
+    setCompletedSets([]);completedSetsRef.current=[];
+    setPhase('active');setSetTimer(0);setRepCount(0);setTimerRef.current=0;
+    speak(`Start! Set 1 din ${targetSets}! ${reps} repetari!`);
+    setTimeout(()=>{
+      if(tempoEnabled) startTempo(reps,()=>doStopSetRef.current());
+      else startSimpleTimer(reps,()=>doStopSetRef.current());
+    },700);
   };
 
-  const stopSet=()=>{
+  // Buton STOP manual (daca vrea sa opreasca inainte)
+  const manualStop=()=>{
     stopTempo();
-    const kg=parseFloat(currentKg),reps=parseInt(currentReps);
-    const duration=setTimer;
-    const newSet={kg:String(kg),reps:String(reps),duration};
-    setCurrentSets(s=>[...s,newSet]);
-    speak(`Set ${currentSets.length+1} complet! Pauza ${restDuration} secunde!`);
-    setPhase('rest');setRestTimer(restDuration);
-    setCurrentReps('');
+    doStopSetRef.current();
   };
 
-  const skipRest=()=>{clearInterval(intervalRef.current);setPhase('input');setRestTimer(0);};
+  const skipRest=()=>{
+    clearInterval(intervalRef.current);
+    const reps=parseInt(currentRepsRef.current)||5;
+    const nextIdx=currentSetIdxRef.current;
+    speak(`Set ${nextIdx+1} din ${targetSetsRef.current}! ${reps} repetari!`);
+    setPhase('active');setSetTimer(0);setRepCount(0);setRestTimer(0);setTimerRef.current=0;
+    setTimeout(()=>{
+      if(tempoEnabled) startTempo(reps,()=>doStopSetRef.current());
+      else startSimpleTimer(reps,()=>doStopSetRef.current());
+    },700);
+  };
 
-  const finishExercise=()=>{
-    if(!currentSets.length)return;
-    stopTempo();
-    const ex=EXERCISES[selGroup].find(e=>e.id===selEx);
-    const vol=currentSets.reduce((a,s)=>a+parseFloat(s.kg)*parseInt(s.reps),0);
-    const totalDur=currentSets.reduce((a,s)=>a+(s.duration||0),0);
-    const entry={id:selEx,name:ex.name,group:selGroup,sets:currentSets,volume:Math.round(vol),duration:totalDur,time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};
+  const autoFinishExercise=(sets)=>{
+    if(!sets||!sets.length)return;
+    const exId=selExRef.current;
+    const grp=selGroupRef.current;
+    const ex=EXERCISES[grp]?.find(e=>e.id===exId);
+    if(!ex)return;
+    const vol=sets.reduce((a,s)=>a+parseFloat(s.kg)*parseInt(s.reps),0);
+    const totalDur=sets.reduce((a,s)=>a+(s.duration||0),0);
+    const entry={id:exId,name:ex.name,group:grp,sets,volume:Math.round(vol),duration:totalDur,time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};
     const nw={...workouts};
     if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};
     nw.days[key].exercises=[...nw.days[key].exercises,entry];
     saveWorkouts(nw);setWorkouts({...nw});
     setSessionLog(l=>[...l,entry]);
-    onSendToCoach(`Forta: ${ex.name} — ${currentSets.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}`);
+    onSendToCoach(`Forta: ${ex.name} — ${sets.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}`);
     speak(`${ex.name} finalizat! Alege urmatorul exercitiu!`);
-    setCurrentSets([]);setCurrentKg('');setCurrentReps('');setSelEx(null);setPhase('pick');
+    setCompletedSets([]);completedSetsRef.current=[];
+    setCurrentKg('');setCurrentReps('');
+    setSelEx(null);selExRef.current=null;
+    setPhase('pick');
   };
 
   const finishWorkout=()=>{
@@ -1500,34 +1600,29 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
   const deleteDay=()=>{
     const nw={...workouts};delete nw.days[key];
     saveWorkouts(nw);setWorkouts({...nw});
-    setSessionLog([]);setCurrentSets([]);setSelEx(null);setPhase('pick');
+    setSessionLog([]);setCompletedSets([]);completedSetsRef.current=[];
+    setSelEx(null);setPhase('pick');
   };
 
   const restPct=restDuration>0?Math.round((restTimer/restDuration)*100):0;
   const restColor=restTimer<=10?'#ef4444':restTimer<=30?'#f59e0b':'#10b981';
   const pr=selEx?getPR(selEx):null;
-
-  // PRs la final
+  const tempoColors={'UP':'#4ade80','HOLD':'#fbbf24','DOWN':'#60a5fa','DONE':'#ec4899'};
+  const tempoLabels={'UP':'↑ SUS','HOLD':'⏸','DOWN':'↓ JOS','DONE':'✓ GATA'};
+  const relevantVoices=voices.filter(v=>v.lang.startsWith('ro')||v.lang.startsWith('en'));
   const sessionPRs=sessionLog.filter(log=>{
     const allPrev=Object.values(workouts.days).flatMap(d=>
-      (d.exercises||[]).filter(e=>e.id===log.id&&d!==workouts.days[key]).flatMap(e=>e.sets||[])
+      (d.exercises||[]).filter(e=>e.id===log.id).flatMap(e=>e.sets||[])
     );
     const maxPrev=allPrev.length?Math.max(...allPrev.map(s=>parseFloat(s.kg)||0)):0;
     const maxNew=Math.max(...(log.sets||[]).map(s=>parseFloat(s.kg)||0));
     return maxNew>maxPrev;
   });
 
-  // Culori tempo
-  const tempoColors={'UP':'#4ade80','HOLD':'#fbbf24','DOWN':'#60a5fa'};
-  const tempoLabels={'UP':'↑ SUS','HOLD':'⏸ PAUZĂ','DOWN':'↓ JOS'};
-
-  // Filtrare voci relevante
-  const relevantVoices=voices.filter(v=>v.lang.startsWith('ro')||v.lang.startsWith('en')||v.lang.startsWith('hu'));
-
   return(
     <div style={{position:'fixed',inset:0,zIndex:200,background:'#060810',display:'flex',flexDirection:'column',fontFamily:"'Inter',sans-serif"}}>
 
-      {/* Header */}
+      {/* HEADER cu cronometru sesiune */}
       <div style={{padding:'10px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid rgba(236,72,153,0.12)',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'18px',background:'linear-gradient(90deg,#ec4899,#8b5cf6)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.08em'}}>💪 GYM</div>
@@ -1539,91 +1634,102 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
         <div style={{display:'flex',gap:'6px',alignItems:'center'}}>
           <button onClick={()=>setShowVoicePanel(v=>!v)} style={{padding:'5px 10px',background:'rgba(139,92,246,0.1)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'8px',color:'#8b5cf6',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>🎙</button>
           <button onClick={deleteDay} style={{padding:'5px 10px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>🗑</button>
-          <button onClick={()=>{wakeLockRef.current?.release?.();window.speechSynthesis?.cancel();clearInterval(totalRef.current);onClose();}} style={{padding:'5px 10px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',color:'rgba(160,144,112,0.6)',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>✕</button>
+          <button onClick={()=>{wakeLockRef.current?.release?.();window.speechSynthesis?.cancel();clearInterval(totalRef.current);stopTempo();onClose();}} style={{padding:'5px 10px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',color:'rgba(160,144,112,0.6)',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>✕</button>
         </div>
       </div>
 
-      {/* Panel setari voce */}
+      {/* Panel voce */}
       {showVoicePanel&&(
         <div style={{background:'rgba(10,13,24,0.98)',borderBottom:'1px solid rgba(139,92,246,0.2)',padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px',flexShrink:0}}>
           <div style={{fontSize:'11px',color:'#8b5cf6',fontWeight:700,letterSpacing:'0.1em'}}>🎙 SETĂRI VOCE</div>
-          <div>
-            <div style={{fontSize:'10px',color:'rgba(160,144,112,0.5)',marginBottom:'6px'}}>VOCE</div>
-            <select value={selectedVoice||''} onChange={e=>setSelectedVoice(e.target.value)}
-              style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'8px',padding:'8px 10px',color:'#f0ece4',fontSize:'13px',outline:'none'}}>
-              {relevantVoices.length===0&&<option>Nicio voce disponibilă</option>}
-              {relevantVoices.map(v=>(
-                <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <div style={{fontSize:'10px',color:'rgba(160,144,112,0.5)',marginBottom:'6px'}}>VITEZĂ VOCE</div>
-            <div style={{display:'flex',gap:'6px'}}>
-              {[{l:'Lent',v:0.7},{l:'Normal',v:0.9},{l:'Rapid',v:1.1}].map(({l,v})=>(
-                <button key={v} onClick={()=>setVoiceRate(v)}
-                  style={{flex:1,padding:'6px',borderRadius:'8px',border:`1px solid ${voiceRate===v?'#8b5cf6':'rgba(139,92,246,0.15)'}`,background:voiceRate===v?'rgba(139,92,246,0.12)':'transparent',color:voiceRate===v?'#8b5cf6':'rgba(160,144,112,0.5)',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>
-                  {l}
-                </button>
-              ))}
-            </div>
+          <select value={selectedVoice||''} onChange={e=>setSelectedVoice(e.target.value)}
+            style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'8px',padding:'8px 10px',color:'#f0ece4',fontSize:'13px',outline:'none'}}>
+            {relevantVoices.length===0&&<option>Nicio voce</option>}
+            {relevantVoices.map(v=><option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
+          </select>
+          <div style={{display:'flex',gap:'6px'}}>
+            {[{l:'Lent',v:0.7},{l:'Normal',v:0.9},{l:'Rapid',v:1.1}].map(({l,v})=>(
+              <button key={v} onClick={()=>setVoiceRate(v)} style={{flex:1,padding:'6px',borderRadius:'8px',border:`1px solid ${voiceRate===v?'#8b5cf6':'rgba(139,92,246,0.15)'}`,background:voiceRate===v?'rgba(139,92,246,0.12)':'transparent',color:voiceRate===v?'#8b5cf6':'rgba(160,144,112,0.5)',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>{l}</button>
+            ))}
           </div>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <div style={{fontSize:'10px',color:'rgba(160,144,112,0.5)'}}>TEMPO GHIDAT (UP/DOWN)</div>
-            <button onClick={()=>setTempoEnabled(t=>!t)}
-              style={{padding:'5px 14px',borderRadius:'8px',border:`1px solid ${tempoEnabled?'#4ade80':'rgba(255,255,255,0.1)'}`,background:tempoEnabled?'rgba(74,222,128,0.12)':'transparent',color:tempoEnabled?'#4ade80':'rgba(160,144,112,0.4)',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>
-              {tempoEnabled?'ON':'OFF'}
-            </button>
+            <div>
+              <div style={{fontSize:'10px',color:'rgba(160,144,112,0.5)'}}>TEMPO GHIDAT (↑1s ⏸1s ↓3s)</div>
+              <div style={{fontSize:'10px',color:'rgba(160,144,112,0.3)'}}>Oprit = cronometru simplu</div>
+            </div>
+            <button onClick={()=>setTempoEnabled(t=>!t)} style={{padding:'5px 14px',borderRadius:'8px',border:`1px solid ${tempoEnabled?'#4ade80':'rgba(255,255,255,0.1)'}`,background:tempoEnabled?'rgba(74,222,128,0.12)':'transparent',color:tempoEnabled?'#4ade80':'rgba(160,144,112,0.4)',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>{tempoEnabled?'ON':'OFF'}</button>
           </div>
-          <button onClick={()=>{speak('Test voce. Sus! Jos! Pauza terminata!');}} style={{padding:'8px',background:'rgba(139,92,246,0.1)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'8px',color:'#8b5cf6',fontSize:'13px',fontWeight:700,cursor:'pointer'}}>
-            ▶ Testează vocea
-          </button>
+          <button onClick={()=>speak('Test voce. Sus! Jos! Gata!')} style={{padding:'8px',background:'rgba(139,92,246,0.1)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'8px',color:'#8b5cf6',fontSize:'13px',fontWeight:700,cursor:'pointer'}}>▶ Testează</button>
         </div>
       )}
 
-      {/* PHASE: ACTIVE — cronometru + tempo */}
+      {/* PHASE: ACTIVE */}
       {phase==='active'&&(
-        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'16px',padding:'20px'}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'18px',fontWeight:900,color:'#ec4899'}}>
+        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'14px',padding:'20px'}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'20px',fontWeight:900,color:'#ec4899'}}>
             {EXERCISES[selGroup].find(e=>e.id===selEx)?.name}
           </div>
-          <div style={{fontSize:'13px',color:'rgba(160,144,112,0.6)'}}>
-            {currentKg}kg × {currentReps} reps — Set {currentSets.length+1}
+          <div style={{fontSize:'13px',color:'rgba(160,144,112,0.6)',fontWeight:700}}>
+            SET {currentSetIdx+1} / {targetSets} · {currentKg}kg × {currentReps} rep
           </div>
 
-          {/* Tempo indicator mare */}
-          {tempoEnabled&&tempoPhase&&(
+          {/* Bara progres seturi */}
+          <div style={{display:'flex',gap:'6px'}}>
+            {Array.from({length:targetSets}).map((_,i)=>(
+              <div key={i} style={{width:'32px',height:'6px',borderRadius:'3px',background:i<currentSetIdx?'#4ade80':i===currentSetIdx?'#ec4899':'rgba(255,255,255,0.1)',transition:'background 0.3s'}}/>
+            ))}
+          </div>
+
+          {/* Bara progres repetari */}
+          <div style={{fontSize:'12px',color:'rgba(160,144,112,0.4)'}}>
+            Rep {repCount} / {currentReps}
+          </div>
+          <div style={{display:'flex',gap:'4px'}}>
+            {Array.from({length:parseInt(currentReps)||0}).map((_,i)=>(
+              <div key={i} style={{width:'20px',height:'20px',borderRadius:'50%',background:i<repCount?'#4ade80':'rgba(255,255,255,0.08)',border:`1.5px solid ${i<repCount?'#4ade80':i===repCount?'#ec4899':'rgba(255,255,255,0.12)'}`,transition:'all 0.2s'}}/>
+            ))}
+          </div>
+
+          {/* Indicator tempo */}
+          {tempoPhase&&(
             <div style={{textAlign:'center'}}>
-              <div style={{fontSize:'72px',fontWeight:900,color:tempoColors[tempoPhase],fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1,transition:'color 0.1s',filter:`drop-shadow(0 0 20px ${tempoColors[tempoPhase]}66)`}}>
-                {tempoLabels[tempoPhase]}
+              <div style={{fontSize:'80px',fontWeight:900,color:tempoColors[tempoPhase]||'#ec4899',fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1,filter:`drop-shadow(0 0 20px ${tempoColors[tempoPhase]||'#ec4899'}66)`,transition:'color 0.1s'}}>
+                {tempoLabels[tempoPhase]||tempoPhase}
               </div>
-              <div style={{fontSize:'14px',color:'rgba(160,144,112,0.5)',marginTop:'4px'}}>
-                Rep {repCount} · {fmt(setTimer)}
-              </div>
+              <div style={{fontSize:'14px',color:'rgba(160,144,112,0.5)',marginTop:'4px'}}>⏱ {fmt(setTimer)}</div>
             </div>
           )}
-
-          {/* Daca tempo off, arata doar timer */}
-          {(!tempoEnabled||!tempoPhase)&&(
-            <div style={{fontSize:'80px',fontWeight:900,color:'#ec4899',fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1}}>
-              {fmt(setTimer)}
-            </div>
+          {!tempoPhase&&(
+            <div style={{fontSize:'88px',fontWeight:900,color:'#ec4899',fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1}}>{fmt(setTimer)}</div>
           )}
-
-          <button onClick={stopSet} style={{padding:'18px 48px',background:'linear-gradient(135deg,#ef4444,#dc2626)',border:'none',borderRadius:'16px',color:'#fff',fontSize:'18px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 6px 20px rgba(239,68,68,0.4)'}}>
-            ⏹ STOP SET
-          </button>
 
           <div style={{fontSize:'11px',color:'rgba(160,144,112,0.3)',textAlign:'center'}}>
-            {tempoEnabled?'↑ 1s · ⏸ 1s · ↓ 3s — tempo optim hipertrofie':'Tempo liber'}
+            {tempoEnabled?'Tempo automat · se oprește la ultima rep':'Cronometru simplu · se oprește automat'}
           </div>
+
+          <button onClick={manualStop} style={{padding:'14px 40px',background:'rgba(239,68,68,0.1)',border:'2px solid rgba(239,68,68,0.3)',borderRadius:'14px',color:'#ef4444',fontSize:'15px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>
+            ⏹ STOP MANUAL
+          </button>
         </div>
       )}
 
       {/* PHASE: REST */}
       {phase==='rest'&&(
         <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'16px',padding:'20px'}}>
-          <div style={{fontSize:'13px',color:'rgba(160,144,112,0.5)',fontWeight:700,letterSpacing:'0.2em'}}>PAUZĂ</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'20px',fontWeight:900,color:'#ec4899'}}>
+            {EXERCISES[selGroup].find(e=>e.id===selEx)?.name}
+          </div>
+          <div style={{fontSize:'13px',color:'#4ade80',fontWeight:700}}>
+            ✓ SET {currentSetIdx} / {targetSets} COMPLET
+          </div>
+          <div style={{display:'flex',gap:'6px'}}>
+            {Array.from({length:targetSets}).map((_,i)=>(
+              <div key={i} style={{width:'32px',height:'6px',borderRadius:'3px',background:i<currentSetIdx?'#4ade80':'rgba(255,255,255,0.1)',transition:'background 0.3s'}}/>
+            ))}
+          </div>
+
+          <div style={{fontSize:'12px',color:'rgba(160,144,112,0.4)'}}>Pauză → urmează SET {currentSetIdx+1}</div>
+
           <div style={{position:'relative',width:'200px',height:'200px'}}>
             <svg viewBox="0 0 200 200" style={{width:'200px',height:'200px',transform:'rotate(-90deg)'}}>
               <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(16,185,129,0.08)" strokeWidth="12"/>
@@ -1637,49 +1743,35 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
               <span style={{fontSize:'13px',color:'rgba(160,144,112,0.4)'}}>sec</span>
             </div>
           </div>
+
           <div style={{display:'flex',gap:'8px'}}>
             {[60,90,120,180].map(s=>(
-              <button key={s} onClick={()=>{setRestDuration(s);setRestTimer(s);}}
+              <button key={s} onClick={()=>{setRestDuration(s);restDurationRef.current=s;setRestTimer(s);}}
                 style={{padding:'8px 12px',borderRadius:'100px',border:`1px solid ${restDuration===s?'#10b981':'rgba(16,185,129,0.15)'}`,background:restDuration===s?'rgba(16,185,129,0.12)':'transparent',color:restDuration===s?'#10b981':'rgba(160,144,112,0.4)',fontSize:'13px',fontWeight:700,cursor:'pointer'}}>
                 {s}s
               </button>
             ))}
           </div>
-          {currentSets.length>0&&(
-            <div style={{fontSize:'12px',color:'rgba(160,144,112,0.4)',textAlign:'center'}}>
-              Set {currentSets.length}: {currentSets[currentSets.length-1]?.kg}kg × {currentSets[currentSets.length-1]?.reps} ({fmt(currentSets[currentSets.length-1]?.duration||0)})
+          {completedSets.length>0&&(
+            <div style={{fontSize:'12px',color:'rgba(160,144,112,0.4)'}}>
+              Ultimul set: {completedSets[completedSets.length-1]?.kg}kg × {completedSets[completedSets.length-1]?.reps} ({fmt(completedSets[completedSets.length-1]?.duration||0)})
             </div>
           )}
           <button onClick={skipRest} style={{padding:'12px 32px',background:'rgba(249,115,22,0.1)',border:'1px solid rgba(249,115,22,0.25)',borderRadius:'12px',color:'#f97316',fontSize:'15px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>
-            SKIP ▶
+            SKIP ▶▶
           </button>
         </div>
       )}
 
-      {/* PHASE: INPUT */}
-      {phase==='input'&&selEx&&(
-        <div style={{flex:1,overflowY:'auto',padding:'14px',display:'flex',flexDirection:'column',gap:'12px'}}>
+      {/* PHASE: SETUP */}
+      {phase==='setup'&&selEx&&(
+        <div style={{flex:1,overflowY:'auto',padding:'16px',display:'flex',flexDirection:'column',gap:'14px'}}>
           <div style={{textAlign:'center'}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'20px',fontWeight:900,color:'#ec4899',letterSpacing:'0.05em'}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'22px',fontWeight:900,color:'#ec4899',letterSpacing:'0.05em'}}>
               {EXERCISES[selGroup].find(e=>e.id===selEx)?.name}
             </div>
-            <div style={{display:'flex',justifyContent:'center',gap:'16px',marginTop:'4px'}}>
-              {pr&&<span style={{fontSize:'12px',color:'rgba(236,72,153,0.6)'}}>PR: {pr}kg</span>}
-              {currentSets.length>0&&<span style={{fontSize:'12px',color:'#4ade80'}}>✓ {currentSets.length} seturi</span>}
-            </div>
+            {pr&&<div style={{fontSize:'12px',color:'rgba(236,72,153,0.5)',marginTop:'4px'}}>Record personal: {pr}kg</div>}
           </div>
-
-          {currentSets.length>0&&(
-            <div style={{background:'rgba(74,222,128,0.06)',border:'1px solid rgba(74,222,128,0.15)',borderRadius:'12px',padding:'10px 12px'}}>
-              <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-                {currentSets.map((s,i)=>(
-                  <div key={i} style={{padding:'5px 10px',background:'rgba(74,222,128,0.1)',borderRadius:'8px',fontSize:'13px',fontWeight:700,color:'#4ade80'}}>
-                    {s.kg}kg×{s.reps} <span style={{opacity:0.5,fontWeight:400}}>({fmt(s.duration||0)})</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div>
             <div style={{fontSize:'11px',color:'rgba(160,144,112,0.5)',fontWeight:700,marginBottom:'8px',letterSpacing:'0.1em',textAlign:'center'}}>GREUTATE (kg)</div>
@@ -1691,13 +1783,12 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
                 </button>
               ))}
             </div>
-            <input type="number" value={currentKg} onChange={e=>setCurrentKg(e.target.value)}
-              placeholder="manual..." inputMode="decimal"
+            <input type="number" value={currentKg} onChange={e=>setCurrentKg(e.target.value)} placeholder="manual..." inputMode="decimal"
               style={{width:'100%',background:'rgba(255,255,255,0.04)',border:`1.5px solid ${currentKg?'rgba(236,72,153,0.4)':'rgba(236,72,153,0.1)'}`,borderRadius:'12px',padding:'12px',color:'#f0ece4',fontSize:'22px',textAlign:'center',outline:'none',fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}/>
           </div>
 
           <div>
-            <div style={{fontSize:'11px',color:'rgba(160,144,112,0.5)',fontWeight:700,marginBottom:'8px',letterSpacing:'0.1em',textAlign:'center'}}>REPETĂRI</div>
+            <div style={{fontSize:'11px',color:'rgba(160,144,112,0.5)',fontWeight:700,marginBottom:'8px',letterSpacing:'0.1em',textAlign:'center'}}>REPETĂRI / SET</div>
             <div style={{display:'flex',gap:'6px',flexWrap:'wrap',justifyContent:'center',marginBottom:'8px'}}>
               {[5,6,8,10,12,15,20].map(r=>(
                 <button key={r} onClick={()=>setCurrentReps(String(r))}
@@ -1706,33 +1797,55 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
                 </button>
               ))}
             </div>
-            <input type="number" value={currentReps} onChange={e=>setCurrentReps(e.target.value)}
-              placeholder="manual..." inputMode="numeric"
+            <input type="number" value={currentReps} onChange={e=>setCurrentReps(e.target.value)} placeholder="manual..." inputMode="numeric"
               style={{width:'100%',background:'rgba(255,255,255,0.04)',border:`1.5px solid ${currentReps?'rgba(74,222,128,0.4)':'rgba(74,222,128,0.1)'}`,borderRadius:'12px',padding:'12px',color:'#f0ece4',fontSize:'22px',textAlign:'center',outline:'none',fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}/>
           </div>
 
           <div>
-            <div style={{fontSize:'11px',color:'rgba(160,144,112,0.5)',fontWeight:700,marginBottom:'6px',letterSpacing:'0.1em',textAlign:'center'}}>PAUZĂ DUPĂ SET</div>
+            <div style={{fontSize:'11px',color:'rgba(160,144,112,0.5)',fontWeight:700,marginBottom:'8px',letterSpacing:'0.1em',textAlign:'center'}}>NUMĂR DE SETURI</div>
+            <div style={{display:'flex',gap:'8px',justifyContent:'center'}}>
+              {[1,2,3,4,5,6].map(n=>(
+                <button key={n} onClick={()=>setTargetSets(n)}
+                  style={{flex:1,padding:'12px',borderRadius:'12px',border:`2px solid ${targetSets===n?'#8b5cf6':'rgba(139,92,246,0.15)'}`,background:targetSets===n?'rgba(139,92,246,0.15)':'rgba(255,255,255,0.02)',color:targetSets===n?'#8b5cf6':'rgba(160,144,112,0.4)',fontSize:'20px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",transition:'all 0.15s'}}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div style={{fontSize:'11px',color:'rgba(160,144,112,0.5)',fontWeight:700,marginBottom:'6px',letterSpacing:'0.1em',textAlign:'center'}}>PAUZĂ ÎNTRE SETURI</div>
             <div style={{display:'flex',gap:'8px',justifyContent:'center'}}>
               {[60,90,120,180].map(s=>(
-                <button key={s} onClick={()=>setRestDuration(s)}
-                  style={{flex:1,padding:'9px',borderRadius:'10px',border:`1.5px solid ${restDuration===s?'#10b981':'rgba(16,185,129,0.1)'}`,background:restDuration===s?'rgba(16,185,129,0.12)':'transparent',color:restDuration===s?'#10b981':'rgba(160,144,112,0.4)',fontSize:'13px',fontWeight:700,cursor:'pointer',textAlign:'center'}}>
+                <button key={s} onClick={()=>{setRestDuration(s);restDurationRef.current=s;}}
+                  style={{flex:1,padding:'9px',borderRadius:'10px',border:`1.5px solid ${restDuration===s?'#10b981':'rgba(16,185,129,0.1)'}`,background:restDuration===s?'rgba(16,185,129,0.12)':'transparent',color:restDuration===s?'#10b981':'rgba(160,144,112,0.4)',fontSize:'13px',fontWeight:700,cursor:'pointer'}}>
                   {s}s
                 </button>
               ))}
             </div>
           </div>
 
+          {currentKg&&currentReps&&(
+            <div style={{background:'rgba(139,92,246,0.08)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'12px',padding:'14px',textAlign:'center'}}>
+              <div style={{fontSize:'16px',fontWeight:700,color:'#8b5cf6',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>
+                {targetSets} seturi × {currentReps} rep × {currentKg}kg
+              </div>
+              <div style={{fontSize:'14px',color:'rgba(160,144,112,0.6)',marginTop:'4px'}}>
+                = {(parseInt(currentReps||0)*parseFloat(currentKg||0)*targetSets).toFixed(0)}kg volum total · ~{Math.ceil(parseInt(currentReps||0)*5/60)}min/set
+              </div>
+            </div>
+          )}
+
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
-            <button onClick={startSet} disabled={!currentKg||!currentReps}
-              style={{padding:'16px',background:currentKg&&currentReps?'linear-gradient(135deg,#ec4899,#8b5cf6)':'rgba(255,255,255,0.05)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:currentKg&&currentReps?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:currentKg&&currentReps?'0 4px 16px rgba(236,72,153,0.35)':'none',transition:'all 0.2s'}}>
-              ▶ START SET
+            <button onClick={()=>{setSelEx(null);setPhase('pick');}} style={{padding:'14px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'14px',color:'rgba(160,144,112,0.5)',fontSize:'15px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>
+              ← ÎNAPOI
             </button>
-            <button onClick={finishExercise} disabled={!currentSets.length}
-              style={{padding:'16px',background:currentSets.length?'linear-gradient(135deg,#4ade80,#10b981)':'rgba(255,255,255,0.05)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:currentSets.length?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:currentSets.length?'0 4px 16px rgba(74,222,128,0.3)':'none',transition:'all 0.2s'}}>
-              ✓ GATA EX.
+            <button onClick={beginSets} disabled={!currentKg||!currentReps}
+              style={{padding:'14px',background:currentKg&&currentReps?'linear-gradient(135deg,#ec4899,#8b5cf6)':'rgba(255,255,255,0.05)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:currentKg&&currentReps?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:currentKg&&currentReps?'0 4px 16px rgba(236,72,153,0.35)':'none'}}>
+              ▶ START
             </button>
           </div>
+          <div style={{height:'8px'}}/>
         </div>
       )}
 
@@ -1750,77 +1863,67 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
               </button>
             ))}
           </div>
-
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
             {EXERCISES[selGroup].map(ex=>{
               const done=sessionLog.some(l=>l.id===ex.id)||(workouts.days[key]?.exercises||[]).some(e=>e.id===ex.id);
               const exPr=getPR(ex.id);
               return(
                 <button key={ex.id} onClick={()=>startExercise(ex.id)}
-                  style={{padding:'14px 12px',borderRadius:'12px',border:`1.5px solid ${done?'rgba(74,222,128,0.25)':'rgba(236,72,153,0.1)'}`,
-                    background:done?'rgba(74,222,128,0.05)':'rgba(255,255,255,0.02)',
-                    cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
+                  style={{padding:'14px 12px',borderRadius:'12px',border:`1.5px solid ${done?'rgba(74,222,128,0.25)':'rgba(236,72,153,0.1)'}`,background:done?'rgba(74,222,128,0.05)':'rgba(255,255,255,0.02)',cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
                   <div style={{fontSize:'14px',fontWeight:700,color:done?'#4ade80':'#f0ece4',marginBottom:'4px'}}>{done?'✓ ':''}{ex.name}</div>
                   {exPr&&<div style={{fontSize:'11px',color:'rgba(236,72,153,0.4)'}}>PR: {exPr}kg</div>}
                 </button>
               );
             })}
           </div>
-
           {sessionLog.length>0&&(
             <div style={{background:'rgba(74,222,128,0.05)',border:'1px solid rgba(74,222,128,0.12)',borderRadius:'14px',padding:'14px'}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:'13px',color:'#4ade80',letterSpacing:'0.08em',marginBottom:'10px'}}>✅ COMPLETATE</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:'13px',color:'#4ade80',letterSpacing:'0.08em',marginBottom:'10px'}}>✅ COMPLETATE AZI</div>
               {sessionLog.map((log,i)=>(
                 <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(74,222,128,0.06)'}}>
                   <span style={{fontSize:'13px',color:'#4ade80',fontWeight:600}}>{log.name}</span>
-                  <span style={{fontSize:'11px',color:'rgba(160,144,112,0.4)'}}>{log.sets?.length}×set · {fmt(log.duration||0)}</span>
+                  <span style={{fontSize:'11px',color:'rgba(160,144,112,0.4)'}}>{log.sets?.length}×set · {log.sets?.[0]?.kg}kg×{log.sets?.[0]?.reps}</span>
                 </div>
               ))}
             </div>
           )}
-
           {sessionLog.length>0&&(
-            <button onClick={finishWorkout}
-              style={{width:'100%',padding:'16px',background:'linear-gradient(135deg,#ec4899,#8b5cf6)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 6px 20px rgba(236,72,153,0.35)'}}>
-              🏁 TERMINĂ · {fmt(totalTimer)}
+            <button onClick={finishWorkout} style={{width:'100%',padding:'16px',background:'linear-gradient(135deg,#ec4899,#8b5cf6)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 6px 20px rgba(236,72,153,0.35)'}}>
+              🏁 TERMINĂ ANTRENAMENTUL · {fmt(totalTimer)}
             </button>
           )}
           <div style={{height:'20px'}}/>
         </div>
       )}
 
-      {/* PHASE: SUMMARY — rezumat final cu PR-uri */}
+      {/* PHASE: SUMMARY */}
       {phase==='summary'&&(
         <div style={{flex:1,overflowY:'auto',padding:'20px',display:'flex',flexDirection:'column',gap:'16px'}}>
           <div style={{textAlign:'center'}}>
             <div style={{fontSize:'64px',marginBottom:'8px'}}>🏆</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'26px',fontWeight:900,background:'linear-gradient(90deg,#ec4899,#8b5cf6)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.05em'}}>ANTRENAMENT COMPLET!</div>
-            <div style={{fontSize:'32px',fontWeight:900,color:'#ec4899',fontFamily:"'Barlow Condensed',sans-serif",marginTop:'6px'}}>⏱ {fmt(totalTimer)}</div>
-            <div style={{fontSize:'13px',color:'rgba(160,144,112,0.5)',marginTop:'4px'}}>{sessionLog.length} exerciții · {sessionLog.reduce((a,l)=>a+(l.sets?.length||0),0)} seturi totale</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'26px',fontWeight:900,background:'linear-gradient(90deg,#ec4899,#8b5cf6)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>ANTRENAMENT COMPLET!</div>
+            <div style={{fontSize:'48px',fontWeight:900,color:'#ec4899',fontFamily:"'Barlow Condensed',sans-serif",marginTop:'6px'}}>⏱ {fmt(totalTimer)}</div>
+            <div style={{fontSize:'13px',color:'rgba(160,144,112,0.5)',marginTop:'4px'}}>{sessionLog.length} exerciții · {sessionLog.reduce((a,l)=>a+(l.sets?.length||0),0)} seturi</div>
           </div>
-
           {sessionPRs.length>0&&(
             <div style={{background:'rgba(251,191,36,0.08)',border:'1px solid rgba(251,191,36,0.2)',borderRadius:'16px',padding:'16px'}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',color:'#fbbf24',letterSpacing:'0.05em',marginBottom:'12px'}}>🏅 RECORDURI PERSONALE</div>
-              {sessionPRs.map((pr,i)=>{
-                const maxNew=Math.max(...(pr.sets||[]).map(s=>parseFloat(s.kg)||0));
-                return(
-                  <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid rgba(251,191,36,0.1)'}}>
-                    <span style={{fontSize:'14px',color:'#fbbf24',fontWeight:700}}>{pr.name}</span>
-                    <span style={{fontSize:'16px',color:'#fbbf24',fontWeight:900,fontFamily:"'Barlow Condensed',sans-serif"}}>{maxNew}kg 🏅</span>
-                  </div>
-                );
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',color:'#fbbf24',marginBottom:'12px'}}>🏅 RECORDURI PERSONALE</div>
+              {sessionPRs.map((p,i)=>{
+                const maxNew=Math.max(...(p.sets||[]).map(s=>parseFloat(s.kg)||0));
+                return(<div key={i} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid rgba(251,191,36,0.1)'}}>
+                  <span style={{fontSize:'14px',color:'#fbbf24',fontWeight:700}}>{p.name}</span>
+                  <span style={{fontSize:'16px',color:'#fbbf24',fontWeight:900,fontFamily:"'Barlow Condensed',sans-serif"}}>{maxNew}kg 🏅</span>
+                </div>);
               })}
             </div>
           )}
-
           <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'16px',padding:'14px'}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:'13px',color:'rgba(160,144,112,0.6)',letterSpacing:'0.08em',marginBottom:'12px'}}>REZUMAT EXERCIȚII</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:'13px',color:'rgba(160,144,112,0.6)',letterSpacing:'0.08em',marginBottom:'12px'}}>REZUMAT</div>
             {sessionLog.map((log,i)=>(
               <div key={i} style={{marginBottom:'10px',paddingBottom:'10px',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
-                <div style={{display:'flex',justifyContent:'space-between',marginBottom:'4px'}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
                   <span style={{fontSize:'14px',fontWeight:700,color:'#f0ece4'}}>{log.name}</span>
-                  <span style={{fontSize:'12px',color:'rgba(160,144,112,0.5)'}}>⏱ {fmt(log.duration||0)}</span>
+                  <span style={{fontSize:'12px',color:'rgba(160,144,112,0.5)'}}>vol: {log.volume}kg</span>
                 </div>
                 <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
                   {(log.sets||[]).map((s,j)=>(
@@ -1832,9 +1935,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
               </div>
             ))}
           </div>
-
-          <button onClick={()=>{wakeLockRef.current?.release?.();window.speechSynthesis?.cancel();onClose();}}
-            style={{width:'100%',padding:'16px',background:'linear-gradient(135deg,#ec4899,#8b5cf6)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 6px 20px rgba(236,72,153,0.35)'}}>
+          <button onClick={()=>{wakeLockRef.current?.release?.();window.speechSynthesis?.cancel();onClose();}} style={{width:'100%',padding:'16px',background:'linear-gradient(135deg,#ec4899,#8b5cf6)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",boxShadow:'0 6px 20px rgba(236,72,153,0.35)'}}>
             ◆ ÎNAPOI LA APLICAȚIE
           </button>
           <div style={{height:'20px'}}/>
@@ -1843,6 +1944,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
     </div>
   );
 }
+function WorkoutTab({workouts,setWorkouts,onSendToCoach,theme=THEMES.dark}){
   const [mode,setMode]=useState('gym'),[selGroup,setSelGroup]=useState('piept'),[selEx,setSelEx]=useState(null),[sets,setSets]=useState([]);
   const [cardioType,setCT]=useState('mers'),[cardioDur,setCD]=useState(''),[cardioInt,setCI]=useState('moderată');
   const key=todayKey(),todayW=workouts.days[key]||{exercises:[],cardio:[]};

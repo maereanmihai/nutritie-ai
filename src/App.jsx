@@ -1317,37 +1317,40 @@ function BodyMeasurements({theme=THEMES.dark}){
 // ─── GYM MODE FULLSCREEN ─────────────────────────────────────────────────────
 function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark}){
   const key=todayKey();
+  const [phase,setPhase]=useState('pick'); // pick | sets | rest
   const [selGroup,setSelGroup]=useState('piept');
   const [selEx,setSelEx]=useState(null);
-  const [sets,setSets]=useState([{kg:'',reps:''}]);
-  const [restTimer,setRestTimer]=useState(null);
-  const [restRunning,setRestRunning]=useState(false);
+  const [currentKg,setCurrentKg]=useState('');
+  const [currentReps,setCurrentReps]=useState('');
+  const [currentSets,setCurrentSets]=useState([]);
+  const [restTimer,setRestTimer]=useState(0);
   const [restDuration,setRestDuration]=useState(90);
-  const [sessionPRs,setSessionPRs]=useState([]);
-  const [totalVolume,setTotalVolume]=useState(0);
+  const [sessionLog,setSessionLog]=useState([]);
   const intervalRef=useRef(null);
   const wakeLockRef=useRef(null);
 
-  // Wake Lock — ecranul nu se închide
   useEffect(()=>{
-    const requestWakeLock=async()=>{
-      try{if('wakeLock' in navigator){wakeLockRef.current=await navigator.wakeLock.request('screen');}}catch{}
-    };
-    requestWakeLock();
-    return()=>{wakeLockRef.current?.release?.();};
+    const req=async()=>{try{if('wakeLock' in navigator)wakeLockRef.current=await navigator.wakeLock.request('screen');}catch{}};
+    req();
+    return()=>{wakeLockRef.current?.release?.();clearInterval(intervalRef.current);window.speechSynthesis?.cancel();};
   },[]);
 
-  // Rest timer
   useEffect(()=>{
-    if(restRunning&&restTimer>0){
-      intervalRef.current=setInterval(()=>setRestTimer(t=>t-1),1000);
-    }else if(restTimer===0&&restRunning){
-      setRestRunning(false);
-      if(navigator.vibrate)navigator.vibrate([300,100,300]);
-      speak('Odihna s-a terminat! Următorul set!');
+    if(phase==='rest'&&restTimer>0){
+      clearInterval(intervalRef.current);
+      intervalRef.current=setInterval(()=>setRestTimer(t=>{
+        if(t<=1){
+          clearInterval(intervalRef.current);
+          setPhase('sets');
+          if(navigator.vibrate)navigator.vibrate([300,100,300]);
+          speak('Pauză terminată! Următorul set!');
+          return 0;
+        }
+        return t-1;
+      }),1000);
     }
     return()=>clearInterval(intervalRef.current);
-  },[restRunning,restTimer]);
+  },[phase,restTimer]);
 
   const speak=(text)=>{
     if('speechSynthesis' in window){
@@ -1358,209 +1361,468 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
     }
   };
 
-  const startRest=(duration=restDuration)=>{
-    setRestTimer(duration);setRestRunning(true);
-    clearInterval(intervalRef.current);
+  const getPR=exId=>{
+    const all=Object.values(workouts.days).flatMap(d=>(d.exercises||[]).filter(e=>e.id===exId).flatMap(e=>e.sets||[]));
+    if(!all.length)return null;
+    return Math.max(...all.map(s=>parseFloat(s.kg)||0));
   };
 
-  const stopRest=()=>{setRestRunning(false);setRestTimer(null);clearInterval(intervalRef.current);};
+  const startExercise=(exId)=>{
+    const ex=EXERCISES[selGroup].find(e=>e.id===exId);
+    setSelEx(exId);setCurrentSets([]);setCurrentKg('');setCurrentReps('');setPhase('sets');
+    speak(`${ex.name}. Introdu greutatea și repetările!`);
+  };
 
-  const getPR=exId=>{const all=Object.values(workouts.days).flatMap(d=>(d.exercises||[]).filter(e=>e.id===exId).flatMap(e=>e.sets));if(!all.length)return null;return Math.max(...all.map(s=>parseFloat(s.kg)));};
-
-  const saveSet=(setIndex)=>{
-    const set=sets[setIndex];
-    if(!set.kg||!set.reps||parseFloat(set.kg)<=0||parseInt(set.reps)<=0)return;
-    const kg=parseFloat(set.kg),reps=parseInt(set.reps);
-    const vol=kg*reps;
-    setTotalVolume(v=>v+vol);
+  const saveSet=()=>{
+    if(!currentKg||!currentReps||parseFloat(currentKg)<=0||parseInt(currentReps)<=0)return;
+    const kg=parseFloat(currentKg),reps=parseInt(currentReps);
+    const newSet={kg:String(kg),reps:String(reps)};
+    setCurrentSets(s=>[...s,newSet]);
     const pr=getPR(selEx)||0;
-    if(kg>pr){
-      setSessionPRs(p=>[...p,{ex:EXERCISES[selGroup].find(e=>e.id===selEx)?.name,kg}]);
-      speak(`Record personal! ${kg} kilograme!`);
-    }else{
-      speak(`Set ${setIndex+1} salvat. ${reps} repetări la ${kg} kilograme. Odihnă!`);
-    }
-    startRest();
-    // Adaugă set nou gol
-    setSets(s=>[...s,{kg:set.kg,reps:''}]);
+    if(kg>pr)speak(`Record personal! ${kg} kilograme! Pauză ${restDuration} secunde!`);
+    else speak(`Set ${currentSets.length+1} salvat. ${kg} kg, ${reps} repetări. Pauză!`);
+    setPhase('rest');setRestTimer(restDuration);
+    setCurrentReps('');
   };
 
   const finishExercise=()=>{
-    const valid=sets.filter(s=>s.kg&&s.reps&&parseFloat(s.kg)>0&&parseInt(s.reps)>0);
-    if(!valid.length)return;
+    if(!currentSets.length)return;
     const ex=EXERCISES[selGroup].find(e=>e.id===selEx);
-    const vol=valid.reduce((a,s)=>a+parseFloat(s.kg)*parseInt(s.reps),0);
-    const entry={id:selEx,name:ex.name,group:selGroup,sets:valid,volume:Math.round(vol),time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};
+    const vol=currentSets.reduce((a,s)=>a+parseFloat(s.kg)*parseInt(s.reps),0);
+    const allPrev=Object.values(workouts.days).flatMap(d=>(d.exercises||[]).filter(e=>e.id===selEx).flatMap(e=>e.sets||[]));
+    const maxPrev=allPrev.length?Math.max(...allPrev.map(s=>parseFloat(s.kg)||0)):0;
+    const maxNew=Math.max(...currentSets.map(s=>parseFloat(s.kg)||0));
+    const isPR=maxNew>maxPrev;
+    const entry={id:selEx,name:ex.name,group:selGroup,sets:currentSets,volume:Math.round(vol),time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};
     const nw={...workouts};
     if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};
     nw.days[key].exercises=[...nw.days[key].exercises,entry];
     saveWorkouts(nw);setWorkouts({...nw});
-    const allEx=Object.values(nw.days).flatMap(d=>d.exercises||[]).filter(e=>e.id===selEx);
-    const maxPrev=Math.max(0,...allEx.slice(0,-1).map(e=>Math.max(...e.sets.map(s=>parseFloat(s.kg)))));
-    const maxNew=Math.max(...valid.map(s=>parseFloat(s.kg)));
-    const isPR=maxNew>maxPrev;
-    onSendToCoach(`Forță: ${ex.name} — ${valid.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}${isPR?' 🏅 RECORD PERSONAL':''}`);
-    speak(`Exercițiu complet! ${ex.name} finalizat!`);
-    setSets([{kg:'',reps:''}]);setSelEx(null);stopRest();
+    setSessionLog(l=>[...l,{...entry,isPR}]);
+    onSendToCoach(`Forță: ${ex.name} — ${currentSets.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}${isPR?' 🏅 RECORD PERSONAL':''}`);
+    speak(`${ex.name} finalizat!${isPR?' Record personal!'':''} Alege următorul exercițiu!`);
+    clearInterval(intervalRef.current);
+    setCurrentSets([]);setCurrentKg('');setCurrentReps('');setSelEx(null);setPhase('pick');
   };
 
-  const todayExCount=(workouts.days[key]?.exercises||[]).length;
-  const restPct=restTimer!==null?Math.round((restTimer/restDuration)*100):0;
-  const restColor=restTimer!==null&&restTimer<=10?'#ef4444':restTimer!==null&&restTimer<=30?'#f59e0b':'#10b981';
-  const allEx=Object.values(EXERCISES).flat();
+  const deleteDay=()=>{
+    const nw={...workouts};
+    delete nw.days[key];
+    saveWorkouts(nw);setWorkouts({...nw});
+    setSessionLog([]);setCurrentSets([]);setSelEx(null);setPhase('pick');
+    speak('Ziua a fost ștearsă.');
+  };
+
+  const skipRest=()=>{clearInterval(intervalRef.current);setPhase('sets');setRestTimer(0);};
+  const restPct=restDuration>0?Math.round((restTimer/restDuration)*100):0;
+  const restColor=restTimer<=10?'#ef4444':restTimer<=30?'#f59e0b':'#10b981';
+  const pr=selEx?getPR(selEx):null;
 
   return(
-    <div style={{position:'fixed',inset:0,zIndex:200,background:'#060810',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+    <div style={{position:'fixed',inset:0,zIndex:200,background:'#060810',display:'flex',flexDirection:'column',fontFamily:"'Inter',sans-serif"}}>
+
       {/* Header */}
-      <div style={{padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid rgba(212,168,71,0.15)',background:'rgba(10,13,24,0.98)'}}>
-        <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'20px',background:'linear-gradient(90deg,#d4a847,#f97316)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.08em'}}>
-            💪 GYM MODE
-          </div>
-          <div style={{display:'flex',gap:'10px'}}>
-            <div style={{fontSize:'12px',color:'#d4a847',fontWeight:700}}>{todayExCount} exerciții</div>
-            <div style={{fontSize:'12px',color:'#10b981',fontWeight:700}}>{Math.round(totalVolume)}kg vol</div>
-          </div>
-        </div>
+      <div style={{padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid rgba(212,168,71,0.12)',flexShrink:0}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'20px',background:'linear-gradient(90deg,#d4a847,#f97316)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.08em'}}>💪 GYM MODE</div>
         <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
-          {sessionPRs.length>0&&<div style={{padding:'4px 10px',background:'rgba(251,191,36,0.15)',border:'1px solid rgba(251,191,36,0.3)',borderRadius:'100px',fontSize:'12px',color:'#fbbf24',fontWeight:700}}>🏅 {sessionPRs.length} PR</div>}
-          <button onClick={()=>{wakeLockRef.current?.release?.();onClose();}} style={{padding:'8px 16px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'10px',color:'#ef4444',fontSize:'14px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>✕ IEȘI</button>
+          {sessionLog.length>0&&<span style={{fontSize:'13px',color:'#4ade80',fontWeight:700}}>{sessionLog.length} ex.</span>}
+          <button onClick={deleteDay} style={{padding:'6px 12px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.25)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>🗑 Șterge ziua</button>
+          <button onClick={()=>{wakeLockRef.current?.release?.();window.speechSynthesis?.cancel();onClose();}} style={{padding:'6px 12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',color:'rgba(160,144,112,0.6)',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>✕</button>
         </div>
       </div>
 
-      {/* Rest Timer — fullscreen când rulează */}
-      {restRunning&&restTimer!==null&&(
-        <div style={{position:'absolute',inset:0,zIndex:10,background:'rgba(6,8,16,0.97)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'16px'}}>
-          <div style={{fontSize:'16px',color:'rgba(160,144,112,0.7)',fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase'}}>ODIHNĂ</div>
-          <div style={{position:'relative',width:'200px',height:'200px'}}>
-            <svg viewBox="0 0 200 200" style={{width:'200px',height:'200px',transform:'rotate(-90deg)'}}>
-              <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(212,168,71,0.1)" strokeWidth="12"/>
-              <circle cx="100" cy="100" r="90" fill="none" stroke={restColor} strokeWidth="12"
-                strokeDasharray={`${2*Math.PI*90}`}
-                strokeDashoffset={`${2*Math.PI*90*(1-restPct/100)}`}
+      {/* PHASE: REST */}
+      {phase==='rest'&&(
+        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'20px',padding:'20px'}}>
+          <div style={{fontSize:'14px',color:'rgba(160,144,112,0.6)',fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase'}}>PAUZĂ</div>
+          <div style={{position:'relative',width:'220px',height:'220px'}}>
+            <svg viewBox="0 0 220 220" style={{width:'220px',height:'220px',transform:'rotate(-90deg)'}}>
+              <circle cx="110" cy="110" r="96" fill="none" stroke="rgba(212,168,71,0.08)" strokeWidth="14"/>
+              <circle cx="110" cy="110" r="96" fill="none" stroke={restColor} strokeWidth="14"
+                strokeDasharray={`${2*Math.PI*96}`}
+                strokeDashoffset={`${2*Math.PI*96*(1-restPct/100)}`}
                 strokeLinecap="round" style={{transition:'stroke-dashoffset 1s linear,stroke 0.3s'}}/>
             </svg>
             <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-              <span style={{fontSize:'72px',fontWeight:900,color:restColor,fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1}}>{restTimer}</span>
-              <span style={{fontSize:'16px',color:'rgba(160,144,112,0.6)'}}>sec</span>
+              <span style={{fontSize:'80px',fontWeight:900,color:restColor,fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1}}>{restTimer}</span>
+              <span style={{fontSize:'14px',color:'rgba(160,144,112,0.5)'}}>secunde</span>
             </div>
           </div>
-          <div style={{display:'flex',gap:'12px'}}>
-            {[30,60,90].map(s=>(
-              <button key={s} onClick={()=>startRest(s)} style={{padding:'10px 20px',background:'rgba(212,168,71,0.1)',border:'1px solid rgba(212,168,71,0.2)',borderRadius:'100px',color:'#d4a847',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>+{s}s</button>
+          <div style={{display:'flex',gap:'8px'}}>
+            {[60,90,120,180].map(s=>(
+              <button key={s} onClick={()=>{setRestDuration(s);setRestTimer(s);}}
+                style={{padding:'8px 14px',borderRadius:'100px',border:`1px solid ${restDuration===s?'#d4a847':'rgba(212,168,71,0.15)'}`,background:restDuration===s?'rgba(212,168,71,0.12)':'transparent',color:restDuration===s?'#d4a847':'rgba(160,144,112,0.4)',fontSize:'13px',fontWeight:700,cursor:'pointer'}}>
+                {s}s
+              </button>
             ))}
-            <button onClick={stopRest} style={{padding:'10px 24px',background:'rgba(249,115,22,0.15)',border:'1px solid rgba(249,115,22,0.3)',borderRadius:'100px',color:'#f97316',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>SKIP ▶</button>
           </div>
-          <div style={{fontSize:'13px',color:'rgba(160,144,112,0.5)'}}>Apasă SKIP pentru a sări odihna</div>
+          <button onClick={skipRest} style={{padding:'14px 40px',background:'rgba(249,115,22,0.12)',border:'1px solid rgba(249,115,22,0.3)',borderRadius:'14px',color:'#f97316',fontSize:'16px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>
+            SKIP ▶
+          </button>
+          <div style={{fontSize:'12px',color:'rgba(160,144,112,0.4)'}}>
+            Setul curent: {currentSets.length} seturi salvate
+          </div>
         </div>
       )}
 
-      <div style={{flex:1,overflowY:'auto',padding:'14px',display:'flex',flexDirection:'column',gap:'12px'}}>
-
-        {/* Grup muscular */}
-        <div style={{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'4px'}}>
-          {MUSCLE_GROUPS.map(g=>(
-            <button key={g.id} onClick={()=>{setSelGroup(g.id);setSelEx(null);setSets([{kg:'',reps:''}]);}}
-              style={{padding:'10px 16px',borderRadius:'100px',fontSize:'14px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',transition:'all 0.2s',flexShrink:0,
-                borderColor:selGroup===g.id?g.color:'rgba(212,168,71,0.15)',
-                background:selGroup===g.id?`${g.color}18`:'transparent',
-                color:selGroup===g.id?g.color:'rgba(160,144,112,0.5)'}}>
-              {g.icon} {g.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Exerciții */}
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-          {EXERCISES[selGroup].map(ex=>{
-            const pr=getPR(ex.id);
-            const done=(workouts.days[key]?.exercises||[]).some(e=>e.id===ex.id);
-            return(
-              <button key={ex.id} onClick={()=>{setSelEx(ex.id);setSets([{kg:'',reps:''}]);stopRest();}}
-                style={{padding:'12px',borderRadius:'12px',border:`1.5px solid ${selEx===ex.id?'#f97316':done?'rgba(74,222,128,0.3)':'rgba(212,168,71,0.1)'}`,
-                  background:selEx===ex.id?'rgba(249,115,22,0.1)':done?'rgba(74,222,128,0.05)':'transparent',
-                  cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
-                <div style={{fontSize:'13px',fontWeight:700,color:selEx===ex.id?'#f97316':done?'#4ade80':'rgba(224,216,196,0.8)',marginBottom:'4px'}}>{ex.name}{done?' ✓':''}</div>
-                {pr&&<div style={{fontSize:'11px',color:'rgba(212,168,71,0.6)'}}>PR: {pr}kg</div>}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Set input */}
-        {selEx&&(
-          <div style={{background:'rgba(212,168,71,0.05)',border:'1px solid rgba(212,168,71,0.2)',borderRadius:'16px',padding:'16px'}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'18px',color:'#f97316',marginBottom:'14px',letterSpacing:'0.05em'}}>
+      {/* PHASE: SETS — input greutate + repetări */}
+      {phase==='sets'&&selEx&&(
+        <div style={{flex:1,display:'flex',flexDirection:'column',padding:'20px',gap:'16px',overflowY:'auto'}}>
+          <div style={{textAlign:'center'}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'22px',fontWeight:900,color:'#f97316',letterSpacing:'0.05em'}}>
               {EXERCISES[selGroup].find(e=>e.id===selEx)?.name}
             </div>
+            {pr&&<div style={{fontSize:'13px',color:'rgba(212,168,71,0.6)',marginTop:'4px'}}>PR actual: {pr}kg</div>}
+          </div>
 
-            {/* Seturile */}
-            {sets.map((set,i)=>(
-              <div key={i} style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:'10px',marginBottom:'10px',alignItems:'center'}}>
-                <div>
-                  {i===0&&<div style={{fontSize:'11px',color:'rgba(160,144,112,0.6)',fontWeight:700,marginBottom:'4px',letterSpacing:'0.08em'}}>KG</div>}
-                  <input type="number" value={set.kg} onChange={e=>setSets(s=>s.map((x,j)=>j===i?{...x,kg:e.target.value}:x))}
-                    placeholder="kg" inputMode="decimal"
-                    style={{width:'100%',background:'rgba(255,255,255,0.06)',border:`1.5px solid ${set.kg?'rgba(249,115,22,0.4)':'rgba(212,168,71,0.15)'}`,borderRadius:'12px',padding:'14px 10px',color:'#f0ece4',fontSize:'22px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif",fontWeight:700}}/>
-                </div>
-                <div>
-                  {i===0&&<div style={{fontSize:'11px',color:'rgba(160,144,112,0.6)',fontWeight:700,marginBottom:'4px',letterSpacing:'0.08em'}}>REPS</div>}
-                  <input type="number" value={set.reps} onChange={e=>setSets(s=>s.map((x,j)=>j===i?{...x,reps:e.target.value}:x))}
-                    placeholder="reps" inputMode="numeric"
-                    style={{width:'100%',background:'rgba(255,255,255,0.06)',border:`1.5px solid ${set.reps?'rgba(74,222,128,0.4)':'rgba(212,168,71,0.15)'}`,borderRadius:'12px',padding:'14px 10px',color:'#f0ece4',fontSize:'22px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif",fontWeight:700}}/>
-                </div>
-                <button onClick={()=>saveSet(i)} disabled={!set.kg||!set.reps}
-                  style={{width:'52px',height:'52px',background:set.kg&&set.reps?'linear-gradient(135deg,#4ade80,#10b981)':'rgba(255,255,255,0.05)',border:'none',borderRadius:'12px',color:'#fff',fontSize:'22px',cursor:set.kg&&set.reps?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',marginTop:i===0?'20px':'0',transition:'all 0.2s',boxShadow:set.kg&&set.reps?'0 4px 12px rgba(74,222,128,0.3)':'none'}}>
-                  ✓
+          {/* Seturi salvate */}
+          {currentSets.length>0&&(
+            <div style={{background:'rgba(74,222,128,0.06)',border:'1px solid rgba(74,222,128,0.15)',borderRadius:'12px',padding:'12px'}}>
+              <div style={{fontSize:'11px',color:'#4ade80',fontWeight:700,marginBottom:'8px',letterSpacing:'0.08em'}}>SETURI SALVATE</div>
+              <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                {currentSets.map((s,i)=>(
+                  <div key={i} style={{padding:'6px 12px',background:'rgba(74,222,128,0.1)',borderRadius:'8px',fontSize:'14px',fontWeight:700,color:'#4ade80'}}>
+                    Set {i+1}: {s.kg}kg × {s.reps}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Input greutate */}
+          <div>
+            <div style={{fontSize:'12px',color:'rgba(160,144,112,0.6)',fontWeight:700,marginBottom:'8px',letterSpacing:'0.1em',textAlign:'center'}}>GREUTATE (kg)</div>
+            <div style={{display:'flex',gap:'6px',flexWrap:'wrap',justifyContent:'center',marginBottom:'10px'}}>
+              {[20,30,40,50,60,70,80,90,100].map(w=>(
+                <button key={w} onClick={()=>setCurrentKg(String(w))}
+                  style={{padding:'8px 12px',borderRadius:'10px',border:`1.5px solid ${currentKg===String(w)?'#f97316':'rgba(212,168,71,0.12)'}`,background:currentKg===String(w)?'rgba(249,115,22,0.15)':'rgba(255,255,255,0.03)',color:currentKg===String(w)?'#f97316':'rgba(160,144,112,0.6)',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>
+                  {w}
                 </button>
-              </div>
-            ))}
+              ))}
+            </div>
+            <input type="number" value={currentKg} onChange={e=>setCurrentKg(e.target.value)}
+              placeholder="sau introdu manual..." inputMode="decimal"
+              style={{width:'100%',background:'rgba(255,255,255,0.05)',border:`1.5px solid ${currentKg?'rgba(249,115,22,0.4)':'rgba(212,168,71,0.15)'}`,borderRadius:'12px',padding:'14px',color:'#f0ece4',fontSize:'24px',textAlign:'center',outline:'none',fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}/>
+          </div>
 
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginTop:'6px'}}>
-              <div>
-                <div style={{fontSize:'11px',color:'rgba(160,144,112,0.6)',fontWeight:700,marginBottom:'4px',letterSpacing:'0.08em'}}>ODIHNĂ (sec)</div>
-                <div style={{display:'flex',gap:'6px'}}>
-                  {[60,90,120,180].map(s=>(
-                    <button key={s} onClick={()=>setRestDuration(s)}
-                      style={{flex:1,padding:'8px 4px',borderRadius:'8px',border:`1px solid ${restDuration===s?'#d4a847':'rgba(212,168,71,0.15)'}`,background:restDuration===s?'rgba(212,168,71,0.12)':'transparent',color:restDuration===s?'#d4a847':'rgba(160,144,112,0.5)',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>
-                      {s<60?`${s}s`:`${s/60}m`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button onClick={finishExercise} disabled={!sets.some(s=>s.kg&&s.reps)}
-                style={{padding:'14px',background:sets.some(s=>s.kg&&s.reps)?'linear-gradient(135deg,#f97316,#ef4444)':'rgba(255,255,255,0.05)',border:'none',borderRadius:'12px',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:sets.some(s=>s.kg&&s.reps)?'0 4px 15px rgba(249,115,22,0.3)':'none',transition:'all 0.2s',alignSelf:'flex-end'}}>
-                FINALIZEAZĂ ◆
-              </button>
+          {/* Input repetări */}
+          <div>
+            <div style={{fontSize:'12px',color:'rgba(160,144,112,0.6)',fontWeight:700,marginBottom:'8px',letterSpacing:'0.1em',textAlign:'center'}}>REPETĂRI</div>
+            <div style={{display:'flex',gap:'6px',flexWrap:'wrap',justifyContent:'center',marginBottom:'10px'}}>
+              {[5,6,8,10,12,15,20].map(r=>(
+                <button key={r} onClick={()=>setCurrentReps(String(r))}
+                  style={{padding:'8px 14px',borderRadius:'10px',border:`1.5px solid ${currentReps===String(r)?'#4ade80':'rgba(212,168,71,0.12)'}`,background:currentReps===String(r)?'rgba(74,222,128,0.15)':'rgba(255,255,255,0.03)',color:currentReps===String(r)?'#4ade80':'rgba(160,144,112,0.6)',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>
+                  {r}
+                </button>
+              ))}
+            </div>
+            <input type="number" value={currentReps} onChange={e=>setCurrentReps(e.target.value)}
+              placeholder="sau introdu manual..." inputMode="numeric"
+              style={{width:'100%',background:'rgba(255,255,255,0.05)',border:`1.5px solid ${currentReps?'rgba(74,222,128,0.4)':'rgba(212,168,71,0.15)'}`,borderRadius:'12px',padding:'14px',color:'#f0ece4',fontSize:'24px',textAlign:'center',outline:'none',fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}/>
+          </div>
+
+          {/* Durata pauză */}
+          <div>
+            <div style={{fontSize:'12px',color:'rgba(160,144,112,0.6)',fontWeight:700,marginBottom:'8px',letterSpacing:'0.1em',textAlign:'center'}}>PAUZĂ DUPĂ SET</div>
+            <div style={{display:'flex',gap:'8px',justifyContent:'center'}}>
+              {[60,90,120,180].map(s=>(
+                <button key={s} onClick={()=>setRestDuration(s)}
+                  style={{flex:1,padding:'10px',borderRadius:'10px',border:`1.5px solid ${restDuration===s?'#d4a847':'rgba(212,168,71,0.12)'}`,background:restDuration===s?'rgba(212,168,71,0.12)':'transparent',color:restDuration===s?'#d4a847':'rgba(160,144,112,0.5)',fontSize:'13px',fontWeight:700,cursor:'pointer',textAlign:'center'}}>
+                  {s}s
+                </button>
+              ))}
             </div>
           </div>
-        )}
 
-        {/* Sesiune curentă */}
-        {(workouts.days[key]?.exercises||[]).length>0&&(
-          <div style={{background:'rgba(74,222,128,0.05)',border:'1px solid rgba(74,222,128,0.15)',borderRadius:'14px',padding:'14px'}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:'13px',color:'#4ade80',letterSpacing:'0.08em',marginBottom:'10px'}}>✅ EXERCIȚII COMPLETATE</div>
-            {(workouts.days[key].exercises||[]).map((ex,i)=>(
-              <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid rgba(74,222,128,0.08)'}}>
-                <span style={{fontSize:'14px',color:'#4ade80',fontWeight:600}}>{ex.name}</span>
-                <span style={{fontSize:'12px',color:'rgba(160,144,112,0.6)'}}>{ex.sets.map(s=>`${s.kg}×${s.reps}`).join(', ')}</span>
-              </div>
+          {/* Butoane */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginTop:'4px'}}>
+            <button onClick={saveSet} disabled={!currentKg||!currentReps}
+              style={{padding:'16px',background:currentKg&&currentReps?'linear-gradient(135deg,#4ade80,#10b981)':'rgba(255,255,255,0.05)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:currentKg&&currentReps?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:currentKg&&currentReps?'0 4px 16px rgba(74,222,128,0.3)':'none',transition:'all 0.2s'}}>
+              ✓ SALVEAZĂ SET
+            </button>
+            <button onClick={finishExercise} disabled={!currentSets.length}
+              style={{padding:'16px',background:currentSets.length?'linear-gradient(135deg,#f97316,#ef4444)':'rgba(255,255,255,0.05)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:currentSets.length?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:currentSets.length?'0 4px 16px rgba(249,115,22,0.3)':'none',transition:'all 0.2s'}}>
+              ◆ GATA EXERCIȚIU
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PHASE: PICK */}
+      {phase==='pick'&&(
+        <div style={{flex:1,overflowY:'auto',padding:'14px',display:'flex',flexDirection:'column',gap:'12px'}}>
+          <div style={{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'4px'}}>
+            {MUSCLE_GROUPS.map(g=>(
+              <button key={g.id} onClick={()=>setSelGroup(g.id)}
+                style={{padding:'8px 14px',borderRadius:'100px',fontSize:'13px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Barlow Condensed',sans-serif",flexShrink:0,
+                  borderColor:selGroup===g.id?g.color:'rgba(212,168,71,0.1)',
+                  background:selGroup===g.id?`${g.color}18`:'transparent',
+                  color:selGroup===g.id?g.color:'rgba(160,144,112,0.4)'}}>
+                {g.icon} {g.label}
+              </button>
             ))}
           </div>
-        )}
 
-        {/* PR-uri sesiune */}
-        {sessionPRs.length>0&&(
-          <div style={{background:'rgba(251,191,36,0.08)',border:'1px solid rgba(251,191,36,0.2)',borderRadius:'14px',padding:'14px',textAlign:'center'}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'16px',color:'#fbbf24',marginBottom:'8px'}}>🏅 RECORDURI SESIUNE</div>
-            {sessionPRs.map((pr,i)=>(
-              <div key={i} style={{fontSize:'14px',color:'#fbbf24',fontWeight:700}}>{pr.ex}: {pr.kg}kg</div>
-            ))}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+            {EXERCISES[selGroup].map(ex=>{
+              const done=sessionLog.some(l=>l.id===ex.id)||(workouts.days[key]?.exercises||[]).some(e=>e.id===ex.id);
+              const pr=getPR(ex.id);
+              return(
+                <button key={ex.id} onClick={()=>startExercise(ex.id)}
+                  style={{padding:'14px 12px',borderRadius:'12px',border:`1.5px solid ${done?'rgba(74,222,128,0.25)':'rgba(212,168,71,0.12)'}`,
+                    background:done?'rgba(74,222,128,0.05)':'rgba(255,255,255,0.02)',
+                    cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
+                  <div style={{fontSize:'14px',fontWeight:700,color:done?'#4ade80':'#f0ece4',marginBottom:'4px'}}>{done?'✓ ':''}{ex.name}</div>
+                  {pr&&<div style={{fontSize:'11px',color:'rgba(212,168,71,0.5)'}}>PR: {pr}kg</div>}
+                </button>
+              );
+            })}
           </div>
-        )}
 
-        <div style={{height:'20px'}}/>
+          {sessionLog.length>0&&(
+            <div style={{background:'rgba(74,222,128,0.05)',border:'1px solid rgba(74,222,128,0.12)',borderRadius:'14px',padding:'14px'}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:'13px',color:'#4ade80',letterSpacing:'0.08em',marginBottom:'10px'}}>✅ COMPLETATE</div>
+              {sessionLog.map((log,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(74,222,128,0.06)'}}>
+                  <span style={{fontSize:'13px',color:log.isPR?'#fbbf24':'#4ade80',fontWeight:600}}>{log.isPR?'🏅 ':''}{log.name}</span>
+                  <span style={{fontSize:'12px',color:'rgba(160,144,112,0.5)'}}>{log.sets?.map(s=>`${s.kg}×${s.reps}`).join(', ')}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {sessionLog.length>0&&(
+            <button onClick={()=>{wakeLockRef.current?.release?.();window.speechSynthesis?.cancel();onClose();}}
+              style={{width:'100%',padding:'16px',background:'linear-gradient(135deg,#d4a847,#f97316)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',boxShadow:'0 6px 24px rgba(212,168,71,0.35)'}}>
+              🏁 TERMINĂ ANTRENAMENTUL
+            </button>
+          )}
+          <div style={{height:'20px'}}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WorkoutTab({workouts,setWorkouts,onSendToCoach,theme=THEMES.dark}){
+
+  // Wake Lock
+  useEffect(()=>{
+    const req=async()=>{try{if('wakeLock' in navigator)wakeLockRef.current=await navigator.wakeLock.request('screen');}catch{}};
+    req();
+    return()=>{wakeLockRef.current?.release?.();clearInterval(intervalRef.current);};
+  },[]);
+
+  // Timere
+  useEffect(()=>{
+    clearInterval(intervalRef.current);
+    if(phase==='exercise'){
+      intervalRef.current=setInterval(()=>setExTimer(t=>t+1),1000);
+    } else if(phase==='rest'&&restTimer>0){
+      intervalRef.current=setInterval(()=>setRestTimer(t=>{
+        if(t<=1){
+          clearInterval(intervalRef.current);
+          setPhase('pick');
+          if(navigator.vibrate)navigator.vibrate([300,100,300]);
+          speak('Odihna terminată! Alege exercițiul următor!');
+          return 0;
+        }
+        return t-1;
+      }),1000);
+    }
+    return()=>clearInterval(intervalRef.current);
+  },[phase,restTimer]);
+
+  const speak=(text)=>{
+    if('speechSynthesis' in window){
+      window.speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(text);
+      u.lang='ro-RO';u.rate=0.95;u.volume=1;
+      window.speechSynthesis.speak(u);
+    }
+  };
+
+  const startExercise=(exId)=>{
+    const ex=EXERCISES[selGroup].find(e=>e.id===exId);
+    setSelEx(exId);setExTimer(0);setPhase('exercise');setStartTime(new Date());
+    speak(`${ex.name}. Începe!`);
+  };
+
+  const stopExercise=()=>{
+    const ex=EXERCISES[selGroup].find(e=>e.id===selEx);
+    const duration=exTimer;
+    setSessionLog(log=>[...log,{
+      id:selEx, name:ex.name, group:selGroup,
+      duration, time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})
+    }]);
+    speak(`Bine! ${ex.name} complet în ${Math.floor(duration/60)} minute ${duration%60} secunde. Repaus!`);
+    setPhase('rest');setRestTimer(restDuration);
+  };
+
+  const skipRest=()=>{
+    clearInterval(intervalRef.current);
+    setPhase('pick');setRestTimer(0);
+    speak('Repaus sărit. Alege următorul exercițiu!');
+  };
+
+  const finishSession=()=>{
+    clearInterval(intervalRef.current);
+    // Salvează în workouts
+    const nw={...workouts};
+    if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};
+    sessionLog.forEach(log=>{
+      nw.days[key].exercises.push({
+        id:log.id, name:log.name, group:log.group,
+        sets:[], volume:0,
+        duration:log.duration, time:log.time
+      });
+    });
+    saveWorkouts(nw);setWorkouts({...nw});
+    const names=sessionLog.map(l=>l.name).join(', ');
+    onSendToCoach(`Antrenament finalizat: ${names}. ${sessionLog.length} exerciții, ${Math.round((new Date()-startTime)/60000)} minute total.`);
+    setPhase('done');
+    speak(`Antrenament finalizat! Felicitări! Ai făcut ${sessionLog.length} exerciții!`);
+  };
+
+  const deleteDay=()=>{
+    const nw={...workouts};
+    if(nw.days[key]){delete nw.days[key];}
+    saveWorkouts(nw);setWorkouts({...nw});
+    setSessionLog([]);setPhase('pick');setSelEx(null);
+    speak('Ziua a fost ștearsă.');
+  };
+
+  const fmt=(s)=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  const restPct=restDuration>0?Math.round((restTimer/restDuration)*100):0;
+  const restColor=restTimer<=10?'#ef4444':restTimer<=30?'#f59e0b':'#10b981';
+  const exDone=(workouts.days[key]?.exercises||[]).map(e=>e.id);
+
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:200,background:'#060810',display:'flex',flexDirection:'column',fontFamily:"'Inter',sans-serif"}}>
+
+      {/* Header */}
+      <div style={{padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid rgba(212,168,71,0.12)'}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'20px',background:'linear-gradient(90deg,#d4a847,#f97316)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.08em'}}>
+          💪 GYM MODE
+        </div>
+        <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+          {sessionLog.length>0&&<span style={{fontSize:'13px',color:'#4ade80',fontWeight:700}}>{sessionLog.length} exerciții</span>}
+          <button onClick={deleteDay} style={{padding:'6px 12px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.25)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>🗑 Șterge ziua</button>
+          <button onClick={()=>{wakeLockRef.current?.release?.();window.speechSynthesis?.cancel();onClose();}} style={{padding:'6px 12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'8px',color:'rgba(160,144,112,0.7)',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>✕ Ieși</button>
+        </div>
       </div>
+
+      {/* PHASE: EXERCISE — cronometru mare */}
+      {phase==='exercise'&&(
+        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'24px',padding:'20px'}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'22px',fontWeight:900,color:'#f97316',letterSpacing:'0.05em',textAlign:'center'}}>
+            {EXERCISES[selGroup].find(e=>e.id===selEx)?.name}
+          </div>
+          <div style={{fontSize:'96px',fontWeight:900,color:'#d4a847',fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1,letterSpacing:'-2px'}}>
+            {fmt(exTimer)}
+          </div>
+          <div style={{fontSize:'14px',color:'rgba(160,144,112,0.5)'}}>cronometru exercițiu</div>
+          <button onClick={stopExercise} style={{padding:'18px 48px',background:'linear-gradient(135deg,#ef4444,#dc2626)',border:'none',borderRadius:'16px',color:'#fff',fontSize:'18px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',boxShadow:'0 6px 24px rgba(239,68,68,0.4)'}}>
+            ⏹ STOP EXERCIȚIU
+          </button>
+        </div>
+      )}
+
+      {/* PHASE: REST — countdown */}
+      {phase==='rest'&&(
+        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'20px',padding:'20px'}}>
+          <div style={{fontSize:'16px',color:'rgba(160,144,112,0.6)',fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase'}}>REPAUS</div>
+          <div style={{position:'relative',width:'200px',height:'200px'}}>
+            <svg viewBox="0 0 200 200" style={{width:'200px',height:'200px',transform:'rotate(-90deg)'}}>
+              <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(212,168,71,0.08)" strokeWidth="12"/>
+              <circle cx="100" cy="100" r="88" fill="none" stroke={restColor} strokeWidth="12"
+                strokeDasharray={`${2*Math.PI*88}`}
+                strokeDashoffset={`${2*Math.PI*88*(1-restPct/100)}`}
+                strokeLinecap="round" style={{transition:'stroke-dashoffset 1s linear,stroke 0.3s'}}/>
+            </svg>
+            <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+              <span style={{fontSize:'64px',fontWeight:900,color:restColor,fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1}}>{restTimer}</span>
+              <span style={{fontSize:'14px',color:'rgba(160,144,112,0.5)'}}>sec</span>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:'10px'}}>
+            {[30,60,90,120].map(s=>(
+              <button key={s} onClick={()=>setRestDuration(s)} style={{padding:'8px 14px',borderRadius:'100px',border:`1px solid ${restDuration===s?'#d4a847':'rgba(212,168,71,0.15)'}`,background:restDuration===s?'rgba(212,168,71,0.12)':'transparent',color:restDuration===s?'#d4a847':'rgba(160,144,112,0.4)',fontSize:'13px',fontWeight:700,cursor:'pointer'}}>
+                {s}s
+              </button>
+            ))}
+          </div>
+          <button onClick={skipRest} style={{padding:'14px 36px',background:'rgba(249,115,22,0.1)',border:'1px solid rgba(249,115,22,0.3)',borderRadius:'14px',color:'#f97316',fontSize:'16px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>
+            SKIP REPAUS ▶
+          </button>
+        </div>
+      )}
+
+      {/* PHASE: PICK — alege exercițiu */}
+      {phase==='pick'&&(
+        <div style={{flex:1,overflowY:'auto',padding:'14px',display:'flex',flexDirection:'column',gap:'12px'}}>
+          {/* Grupe musculare */}
+          <div style={{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'4px'}}>
+            {MUSCLE_GROUPS.map(g=>(
+              <button key={g.id} onClick={()=>setSelGroup(g.id)}
+                style={{padding:'8px 14px',borderRadius:'100px',fontSize:'13px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Barlow Condensed',sans-serif",flexShrink:0,
+                  borderColor:selGroup===g.id?g.color:'rgba(212,168,71,0.1)',
+                  background:selGroup===g.id?`${g.color}18`:'transparent',
+                  color:selGroup===g.id?g.color:'rgba(160,144,112,0.4)'}}>
+                {g.icon} {g.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Exerciții */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+            {EXERCISES[selGroup].map(ex=>{
+              const done=exDone.includes(ex.id)||sessionLog.some(l=>l.id===ex.id);
+              return(
+                <button key={ex.id} onClick={()=>startExercise(ex.id)}
+                  style={{padding:'14px 12px',borderRadius:'12px',border:`1.5px solid ${done?'rgba(74,222,128,0.25)':'rgba(212,168,71,0.12)'}`,
+                    background:done?'rgba(74,222,128,0.05)':'rgba(255,255,255,0.02)',
+                    cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
+                  <div style={{fontSize:'14px',fontWeight:700,color:done?'#4ade80':'#f0ece4',marginBottom:'4px'}}>{done?'✓ ':''}{ex.name}</div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Log sesiune */}
+          {sessionLog.length>0&&(
+            <div style={{background:'rgba(74,222,128,0.05)',border:'1px solid rgba(74,222,128,0.12)',borderRadius:'14px',padding:'14px'}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:'13px',color:'#4ade80',letterSpacing:'0.08em',marginBottom:'10px'}}>✅ COMPLETATE AZI</div>
+              {sessionLog.map((log,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(74,222,128,0.06)'}}>
+                  <span style={{fontSize:'13px',color:'#4ade80'}}>{log.name}</span>
+                  <span style={{fontSize:'12px',color:'rgba(160,144,112,0.5)'}}>{fmt(log.duration)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {sessionLog.length>0&&(
+            <button onClick={finishSession} style={{width:'100%',padding:'16px',background:'linear-gradient(135deg,#d4a847,#f97316)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',boxShadow:'0 6px 24px rgba(212,168,71,0.35)'}}>
+              🏁 FINALIZEAZĂ ANTRENAMENTUL
+            </button>
+          )}
+          <div style={{height:'20px'}}/>
+        </div>
+      )}
+
+      {/* PHASE: DONE */}
+      {phase==='done'&&(
+        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'16px',padding:'24px',textAlign:'center'}}>
+          <div style={{fontSize:'72px'}}>🏆</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'28px',fontWeight:900,background:'linear-gradient(90deg,#d4a847,#f97316)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'0.05em'}}>ANTRENAMENT COMPLET!</div>
+          <div style={{fontSize:'16px',color:'rgba(160,144,112,0.7)'}}>{sessionLog.length} exerciții finalizate</div>
+          <button onClick={()=>{wakeLockRef.current?.release?.();window.speechSynthesis?.cancel();onClose();}}
+            style={{padding:'14px 32px',background:'linear-gradient(135deg,#d4a847,#f97316)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'16px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',boxShadow:'0 6px 24px rgba(212,168,71,0.35)'}}>
+            ◆ ÎNAPOI LA APLICAȚIE
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -648,9 +648,11 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
   const [recipeIngFood,setRecipeIngFood]=useState(FOODS[0].id);
   // Custom foods
   const [customFoods,setCustomFoods]=useState(()=>ls(CUSTOM_KEY,[]));
-  const [showCustomForm,setShowCustomForm]=useState(false);
-  const [customForm,setCustomForm]=useState({name:'',emoji:'🍽',unit:'g',kcal:'',p:'',c:'',fat:'',fiber:''});
   const [customSearch,setCustomSearch]=useState('');
+  const [searchResults,setSearchResults]=useState([]);
+  const [searching,setSearching]=useState(false);
+  const [searchDone,setSearchDone]=useState(false);
+  const searchTimerRef=useRef(null);
 
   const allFoods=[...FOODS,...customFoods];
   const filtered=cat==='all'?allFoods:allFoods.filter(f=>f.cat===cat||(cat==='custom'&&customFoods.some(cf=>cf.id===f.id)));
@@ -720,25 +722,42 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
   };
 
   // Custom food handlers
-  const saveCustomFood=()=>{
-    if(!customForm.name.trim()||!customForm.kcal)return;
+  const saveCustomFood=(food)=>{
     const newFood={
       id:`custom_${Date.now()}`,
-      name:customForm.name,
-      emoji:customForm.emoji||'🍽',
-      unit:customForm.unit||'g',
-      unitG:1,
-      kcal:parseFloat(customForm.kcal)||0,
-      p:parseFloat(customForm.p)||0,
-      c:parseFloat(customForm.c)||0,
-      fat:parseFloat(customForm.fat)||0,
-      fiber:parseFloat(customForm.fiber)||0,
+      name:food.name,
+      emoji:food.emoji||'🍽',
+      unit:'g',unitG:1,
+      kcal:Math.round(food.kcal)||0,
+      p:Math.round(food.p*10)/10||0,
+      c:Math.round(food.c*10)/10||0,
+      fat:Math.round(food.fat*10)/10||0,
+      fiber:Math.round((food.fiber||0)*10)/10,
       cat:'custom',
     };
     const upd=[...customFoods,newFood];
     setCustomFoods(upd);lsSet(CUSTOM_KEY,upd);
-    setCustomForm({name:'',emoji:'🍽',unit:'g',kcal:'',p:'',c:'',fat:'',fiber:''});
-    setShowCustomForm(false);
+    setSearchResults([]);setCustomSearch('');setSearchDone(false);
+  };
+  const searchFood=async(query)=>{
+    if(!query||query.length<2){setSearchResults([]);setSearchDone(false);return;}
+    setSearching(true);setSearchDone(false);
+    try{
+      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments,image_small_url`;
+      const res=await fetch(url);
+      const data=await res.json();
+      const results=(data.products||[]).filter(p=>p.product_name&&p.nutriments).map(p=>({
+        name:p.product_name+(p.brands?` (${p.brands.split(',')[0]})` :''),
+        emoji:'🍽',
+        kcal:parseFloat(p.nutriments['energy-kcal_100g'])||parseFloat(p.nutriments['energy-kcal'])||0,
+        p:parseFloat(p.nutriments['proteins_100g'])||0,
+        c:parseFloat(p.nutriments['carbohydrates_100g'])||0,
+        fat:parseFloat(p.nutriments['fat_100g'])||0,
+        fiber:parseFloat(p.nutriments['fiber_100g'])||0,
+      })).filter(r=>r.kcal>0);
+      setSearchResults(results);setSearchDone(true);
+    }catch{setSearchResults([]);setSearchDone(true);}
+    finally{setSearching(false);}
   };
   const delCustomFood=(id)=>{
     const upd=customFoods.filter(f=>f.id!==id);
@@ -847,95 +866,72 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
         {activeTab==='custom'&&(
           <div style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px'}}>
 
-            {/* Buton adauga */}
-            {!showCustomForm&&(
-              <button onClick={()=>setShowCustomForm(true)}
-                style={{padding:'13px',background:'rgba(249,115,22,0.1)',border:'1px dashed rgba(249,115,22,0.4)',borderRadius:'12px',color:'#f97316',fontSize:'15px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>
-                ➕ ALIMENT NOU
-              </button>
-            )}
+            {/* Search bar */}
+            <div style={{position:'relative'}}>
+              <input
+                value={customSearch}
+                onChange={e=>{
+                  setCustomSearch(e.target.value);
+                  clearTimeout(searchTimerRef.current);
+                  searchTimerRef.current=setTimeout(()=>searchFood(e.target.value),600);
+                }}
+                placeholder="🔍 Caută: calamari, ciocolată, lapte cocos..."
+                style={{width:'100%',background:theme.surface,border:`1.5px solid rgba(249,115,22,0.3)`,borderRadius:'12px',padding:'11px 14px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+              {searching&&<div style={{position:'absolute',right:'12px',top:'12px',fontSize:'14px',color:'#f97316'}}>⟳</div>}
+            </div>
 
-            {/* Formular adaugare */}
-            {showCustomForm&&(
-              <div style={{background:theme.surface,border:`1px solid rgba(249,115,22,0.25)`,borderRadius:'16px',padding:'14px',display:'flex',flexDirection:'column',gap:'10px'}}>
-                <div style={{fontSize:'13px',color:'#f97316',fontWeight:700,letterSpacing:'0.08em'}}>➕ ALIMENT NOU</div>
-
-                {/* Emoji + Nume */}
-                <div style={{display:'flex',gap:'8px'}}>
-                  <input value={customForm.emoji} onChange={e=>setCustomForm(f=>({...f,emoji:e.target.value}))}
-                    placeholder="🍽" style={{...inp,width:'52px',textAlign:'center',fontSize:'20px'}}/>
-                  <input value={customForm.name} onChange={e=>setCustomForm(f=>({...f,name:e.target.value}))}
-                    placeholder="Numele alimentului..." style={{...inp,flex:1}}/>
-                </div>
-
-                {/* Unitate */}
-                <div>
-                  <div style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.1em',marginBottom:'5px'}}>UNITATE DE MĂSURĂ</div>
-                  <div style={{display:'flex',gap:'6px'}}>
-                    {['g','ml','buc','felie','lingura','cana'].map(u=>(
-                      <button key={u} onClick={()=>setCustomForm(f=>({...f,unit:u}))}
-                        style={{flex:1,padding:'7px 4px',borderRadius:'8px',border:`1.5px solid ${customForm.unit===u?'#f97316':theme.border}`,background:customForm.unit===u?'rgba(249,115,22,0.12)':theme.surface2,color:customForm.unit===u?'#f97316':theme.text3,fontSize:'12px',fontWeight:700,cursor:'pointer'}}>
-                        {u}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Macro-uri la 100g/ml/buc */}
-                <div style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.1em'}}>MACRO LA 100{customForm.unit==='buc'?'buc':customForm.unit}</div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                  {[
-                    {key:'kcal',label:'🔥 Calorii',color:'#f97316'},
-                    {key:'p',label:'💪 Proteine (g)',color:'#3b82f6'},
-                    {key:'c',label:'🌾 Carbs (g)',color:'#f59e0b'},
-                    {key:'fat',label:'🫒 Grăsimi (g)',color:'#10b981'},
-                    {key:'fiber',label:'🌿 Fibre (g)',color:'#8b5cf6'},
-                  ].map(({key,label,color})=>(
-                    <div key={key}>
-                      <div style={{fontSize:'10px',color:theme.text3,marginBottom:'4px'}}>{label}</div>
-                      <input type="number" value={customForm[key]} onChange={e=>setCustomForm(f=>({...f,[key]:e.target.value}))}
-                        placeholder="0" inputMode="decimal"
-                        style={{...inp,width:'100%',textAlign:'center',borderColor:customForm[key]?color:theme.border}}/>
+            {/* Rezultate search */}
+            {searchResults.length>0&&(
+              <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.1em'}}>REZULTATE OPEN FOOD FACTS</div>
+                {searchResults.map((r,i)=>{
+                  const alreadySaved=customFoods.some(f=>f.name===r.name);
+                  return(
+                    <div key={i} style={{background:theme.surface,border:`1px solid ${alreadySaved?'rgba(74,222,128,0.3)':'rgba(249,115,22,0.15)'}`,borderRadius:'12px',padding:'11px 13px',display:'flex',alignItems:'center',gap:'10px'}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:'13px',fontWeight:600,color:theme.text,marginBottom:'3px',lineHeight:1.3}}>{r.name}</div>
+                        <div style={{fontSize:'11px',color:theme.text3}}>
+                          🔥{Math.round(r.kcal)}kcal · P:{Math.round(r.p*10)/10}g · C:{Math.round(r.c*10)/10}g · G:{Math.round(r.fat*10)/10}g{r.fiber?` · F:${Math.round(r.fiber*10)/10}g`:''} <span style={{opacity:0.5}}>/ 100g</span>
+                        </div>
+                      </div>
+                      {alreadySaved
+                        ? <span style={{fontSize:'12px',color:'#4ade80',fontWeight:700}}>✓ Salvat</span>
+                        : <button onClick={()=>saveCustomFood(r)}
+                            style={{padding:'7px 12px',background:'rgba(249,115,22,0.12)',border:'1px solid rgba(249,115,22,0.3)',borderRadius:'8px',color:'#f97316',fontSize:'13px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap'}}>
+                            + Salvează
+                          </button>
+                      }
                     </div>
-                  ))}
-                </div>
-
-                {/* Preview */}
-                {customForm.kcal&&(
-                  <div style={{background:'rgba(249,115,22,0.06)',border:'1px solid rgba(249,115,22,0.15)',borderRadius:'10px',padding:'10px',textAlign:'center',fontSize:'12px',color:theme.text3}}>
-                    {customForm.emoji} <strong style={{color:theme.text}}>{customForm.name||'Aliment'}</strong> · {customForm.kcal}kcal · P:{customForm.p||0}g · C:{customForm.c||0}g · G:{customForm.fat||0}g / 100{customForm.unit}
-                  </div>
-                )}
-
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                  <button onClick={()=>{setShowCustomForm(false);setCustomForm({name:'',emoji:'🍽',unit:'g',kcal:'',p:'',c:'',fat:'',fiber:''}); }}
-                    style={{padding:'10px',background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'10px',color:theme.text3,fontSize:'14px',fontWeight:600,cursor:'pointer'}}>
-                    Anulează
-                  </button>
-                  <button onClick={saveCustomFood} disabled={!customForm.name.trim()||!customForm.kcal}
-                    style={{padding:'10px',background:customForm.name&&customForm.kcal?'linear-gradient(135deg,#f97316,#ef4444)':'rgba(255,255,255,0.05)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>
-                    💾 Salvează
-                  </button>
-                </div>
+                  );
+                })}
               </div>
             )}
 
-            {/* Cautare */}
+            {/* No results */}
+            {searchDone&&searchResults.length===0&&(
+              <div style={{textAlign:'center',padding:'16px',color:theme.text3,fontSize:'13px'}}>
+                Niciun rezultat. Încearcă în engleză (ex: "squid" pentru calamari).
+              </div>
+            )}
+
+            {/* Separator */}
             {customFoods.length>0&&(
-              <input value={customSearch} onChange={e=>setCustomSearch(e.target.value)}
-                placeholder="Caută în alimentele tale..."
-                style={{...inp,width:'100%',padding:'10px 14px',fontSize:'14px'}}/>
-            )}
-
-            {/* Lista alimente custom */}
-            {filteredCustom.length===0&&!showCustomForm&&(
-              <div style={{textAlign:'center',padding:'30px 20px',color:theme.text3}}>
-                <div style={{fontSize:'40px',marginBottom:'8px'}}>🥢</div>
-                <div style={{fontSize:'14px',fontWeight:600}}>Niciun aliment adăugat încă</div>
-                <div style={{fontSize:'12px',marginTop:'4px',opacity:0.6}}>Calamari, ciocolată, lapte vegetal... orice!</div>
+              <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.1em',marginTop:'4px',paddingTop:'8px',borderTop:`1px solid ${theme.border}`}}>
+                ALIMENTELE TALE SALVATE ({customFoods.length})
               </div>
             )}
-            {filteredCustom.map(food=>(
+
+            {/* Lista salvate */}
+            {customFoods.length===0&&!searching&&!searchDone&&(
+              <div style={{textAlign:'center',padding:'30px 20px',color:theme.text3}}>
+                <div style={{fontSize:'40px',marginBottom:'8px'}}>🔍</div>
+                <div style={{fontSize:'14px',fontWeight:600}}>Caută orice aliment</div>
+                <div style={{fontSize:'12px',marginTop:'4px',opacity:0.6}}>Calamari, ciocolată, lapte de cocos, condimente...</div>
+                <div style={{fontSize:'11px',marginTop:'8px',opacity:0.4}}>Baza de date: Open Food Facts (milioane de alimente)</div>
+              </div>
+            )}
+
+            {customFoods.map(food=>(
               <div key={food.id} style={{display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',background:theme.surface,borderRadius:'12px',border:`1px solid rgba(249,115,22,0.15)`}}>
                 <span style={{fontSize:'22px'}}>{food.emoji}</span>
                 <div style={{flex:1,minWidth:0}}>
@@ -951,7 +947,6 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
             ))}
           </div>
         )}
-
         {activeTab==='templates'&&(
           <div style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px'}}>
             {hasItems&&(

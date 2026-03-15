@@ -2791,16 +2791,80 @@ export default function App(){
     }catch{}
   },[]);
 
+  // Calcul TDEE Mifflin-St Jeor din profil
+  const calcTDEE=(p)=>{
+    if(!p?.weight||!p?.height||!p?.age)return null;
+    const w=parseFloat(p.weight),h=parseFloat(p.height),a=parseFloat(p.age);
+    const sex=p.sex||'male';
+    const bmr=sex==='female'?(10*w+6.25*h-5*a-161):(10*w+6.25*h-5*a+5);
+    const actMult={sedentar:1.2,usor:1.375,moderat:1.55,activ:1.725,foarte_activ:1.9};
+    const tdee=Math.round(bmr*(actMult[p.activity]||1.55));
+    const goals={slabit:Math.round(tdee*0.8),recompozitie:Math.round(tdee*0.9),masa:Math.round(tdee*1.1),mentinere:tdee};
+    const targetKcal=goals[p.goal]||Math.round(tdee*0.85);
+    const protein=Math.round(w*2.0);
+    const fat=Math.round(w*1.0);
+    const carbs=Math.round((targetKcal-protein*4-fat*9)/4);
+    return{bmr:Math.round(bmr),tdee,targetKcal,protein,fat,carbs:Math.max(carbs,50)};
+  };
+
+  const buildStartZiPrompt=(p,dayType)=>{
+    const macros=calcTDEE(p);
+    if(!macros||!p?.name)return'Start zi';
+    const dayLabels={antrenament:'ZI CU ANTRENAMENT',normal:'ZI ACTIVĂ',rest:'ZI DE REPAUS'};
+    const dayLabel=dayLabels[dayType]||'ZI ACTIVĂ';
+    const isWorkoutDay=dayType==='antrenament';
+    return `START ZI — ${dayLabel}
+
+PROFIL: ${p.name}, ${p.age} ani, ${p.weight}kg, ${p.height}cm, ${p.sex==='female'?'feminin':'masculin'}, obiectiv: ${p.goal||'recompozitie'}, activitate: ${p.activity||'moderat'}
+SUPLIMENTE UTILIZATOR: ${p.supplements||'nespecificate'}
+
+Structurează răspunsul EXACT în acest format:
+
+## 🎯 TARGET ZILNIC
+- **Calorii:** ${macros.targetKcal} kcal (TDEE ${macros.tdee} kcal, deficit/surplus calculat Mifflin-St Jeor)
+- **Proteine:** ${macros.protein}g (2.0g/kg — pentru ${p.goal==='masa'?'creștere musculară':'recompozitie/fat loss'})
+- **Grăsimi:** ${macros.fat}g (1.0g/kg — hormoni, absorbție vitamine)
+- **Carbohidrați:** ${macros.carbs}g (restul caloric)
+
+## 💊 SUPLIMENTE PE STOMACUL GOL (acum, dimineața)
+Bazat pe suplimentele utilizatorului și știință — ce se ia înainte de masă și de ce (timing bazat pe studii).
+
+## 🍳 MICUL DEJUN
+Așteaptă să îți spun ce am mâncat, apoi analizezi: macro-uri realizate vs target, evaluare scurtă pro/contra, ce lipsește.
+
+${isWorkoutDay?`## 🏋 PRE-WORKOUT
+Când îmi spui că urmează antrenamentul, recomandă:
+- Masa pre-workout (timing optim, macro-uri specifice din studii)
+- Suplimente pre-workout cu minutele exacte înainte de antrenament
+
+## ⚡ POST-WORKOUT
+Imediat după ce introduc antrenamentul:
+- Fereastra anabolică (timing exact din studii)
+- Macro-uri necesare în primele 30-60 minute
+- Ce suplimente post-workout și când`:''}
+
+## 🍽 CINĂ
+Când introduc cina, calculezi macro-urile rămase și recomanzi suplimentele serale.
+
+## 📊 STOP ZI
+La final: sinteză totală calorii/macro vs target, ce a mers bine, ce se îmbunătățește mâine.
+
+Începe ACUM cu secțiunile TARGET și SUPLIMENTE PE STOMACUL GOL. Fii concis, bazat pe știință, fără generalități.`;
+  };
+
   const sendMessage=useCallback(async(text)=>{
     if(!text.trim()||loading)return;
+    // Construieste prompt inteligent pentru Start zi
+    const isStartZi=text.trim()==='Start zi';
+    const actualText=isStartZi?buildStartZiPrompt(userProfile,dayType):text;
     const prefix=`[Context: ${currentDay?.label} — ${currentDay?.desc}]\n`;
-    const userMsg={role:'user',content:text,display:text};
+    const userMsg={role:'user',content:actualText,display:isStartZi?'🌅 Start zi':text};
     const snapshot=[...messagesRef.current,userMsg];
     setMessages(snapshot);setInput('');setLoading(true);
     if(tab!=='coach')setTab('coach');
     try{
-      const apiMsgs=snapshot.map(m=>({role:m.role,content:m.role==='user'?(m===userMsg?prefix+text:m.content):m.content}));
-      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:buildSystemPrompt(userProfile),messages:apiMsgs})});
+      const apiMsgs=snapshot.map(m=>({role:m.role,content:m.role==='user'?(m===userMsg?prefix+actualText:m.content):m.content}));
+      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:buildSystemPrompt(userProfile),messages:apiMsgs})});
       const data=await res.json();
       const reply=data.content?.[0]?.text||'Eroare la răspuns.';
       extractAndSave(reply);
@@ -2810,7 +2874,7 @@ export default function App(){
     }finally{
       setLoading(false);
     }
-  },[loading,currentDay,tab,extractAndSave]);
+  },[loading,currentDay,dayType,userProfile,tab,extractAndSave]);
 
   const handleKey=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage(input);}};
   const clearHistory=()=>{setMessages([]);try{localStorage.removeItem(KEYS.session);}catch{}showToast('Istoric șters');};

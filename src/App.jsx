@@ -636,6 +636,7 @@ function BarcodeScanner({onResult,theme=THEMES.dark}){
 
 // ─── FOOD PICKER ──────────────────────────────────────────────────────────────
 function FoodPicker({onSend,onClose,theme=THEMES.dark}){
+  const CUSTOM_KEY='mp_custom_foods_v1';
   const [cat,setCat]=useState('all'),[quantities,setQuantities]=useState({});
   const [activeTab,setActiveTab]=useState('alimente');
   const [templates,setTemplates]=useState(ls(KEYS.templates,DEFAULT_TEMPLATES));
@@ -645,24 +646,52 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
   const [recipeIngName,setRecipeIngName]=useState('');
   const [recipeIngQty,setRecipeIngQty]=useState('');
   const [recipeIngFood,setRecipeIngFood]=useState(FOODS[0].id);
-  const filtered=cat==='all'?FOODS:FOODS.filter(f=>f.cat===cat);
+  // Custom foods
+  const [customFoods,setCustomFoods]=useState(()=>ls(CUSTOM_KEY,[]));
+  const [showCustomForm,setShowCustomForm]=useState(false);
+  const [customForm,setCustomForm]=useState({name:'',emoji:'🍽',unit:'g',kcal:'',p:'',c:'',fat:'',fiber:''});
+  const [customSearch,setCustomSearch]=useState('');
+
+  const allFoods=[...FOODS,...customFoods];
+  const filtered=cat==='all'?allFoods:allFoods.filter(f=>f.cat===cat||(cat==='custom'&&customFoods.some(cf=>cf.id===f.id)));
   const setQty=(id,val)=>setQuantities(q=>({...q,[id]:val}));
-  const totals=Object.entries(quantities).reduce((acc,[id,qty])=>{if(!qty||isNaN(qty)||qty<=0)return acc;const food=FOODS.find(f=>f.id===id);if(!food)return acc;const m=calcMacros(food,parseFloat(qty));return{kcal:acc.kcal+m.kcal,p:acc.p+m.p,c:acc.c+m.c,fat:acc.fat+m.fat,fiber:acc.fiber+(m.fiber||0)};},{kcal:0,p:0,c:0,fat:0,fiber:0});
+  const totals=Object.entries(quantities).reduce((acc,[id,qty])=>{
+    if(!qty||isNaN(qty)||qty<=0)return acc;
+    const food=allFoods.find(f=>f.id===id);
+    if(!food)return acc;
+    const m=calcMacros(food,parseFloat(qty));
+    return{kcal:acc.kcal+m.kcal,p:acc.p+m.p,c:acc.c+m.c,fat:acc.fat+m.fat,fiber:acc.fiber+(m.fiber||0)};
+  },{kcal:0,p:0,c:0,fat:0,fiber:0});
   const hasItems=Object.values(quantities).some(q=>q&&parseFloat(q)>0);
-  const handleSend=()=>{const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>{const food=FOODS.find(f=>f.id===id);return`${food.name} ${q}${food.unit}`;});if(!items.length)return;onSend(`Masă: ${items.join(', ')} — ${totals.kcal} kcal, P:${totals.p}g, C:${totals.c}g, G:${totals.fat}g, Fibre:${totals.fiber}g`);onClose();};
-  const sendTemplate=tpl=>{const items=tpl.items.map(i=>{const food=FOODS.find(f=>f.id===i.id);return food?`${food.name} ${i.qty}${food.unit}`:null;}).filter(Boolean);onSend(`Masă: ${items.join(', ')} (${tpl.name})`);onClose();};
-  const saveAsTpl=()=>{if(!newTplName.trim()||!hasItems)return;const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>({id,qty:parseFloat(q)}));const upd=[...templates,{id:`tpl_${Date.now()}`,name:newTplName,icon:'⭐',items}];setTemplates(upd);lsSet(KEYS.templates,upd);setNewTplName('');};
+  const handleSend=()=>{
+    const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>{
+      const food=allFoods.find(f=>f.id===id);return`${food.name} ${q}${food.unit}`;
+    });
+    if(!items.length)return;
+    onSend(`Masă: ${items.join(', ')} — ${totals.kcal} kcal, P:${totals.p}g, C:${totals.c}g, G:${totals.fat}g, Fibre:${totals.fiber}g`);
+    onClose();
+  };
+  const sendTemplate=tpl=>{
+    const items=tpl.items.map(i=>{const food=allFoods.find(f=>f.id===i.id);return food?`${food.name} ${i.qty}${food.unit}`:null;}).filter(Boolean);
+    onSend(`Masă: ${items.join(', ')} (${tpl.name})`);onClose();
+  };
+  const saveAsTpl=()=>{
+    if(!newTplName.trim()||!hasItems)return;
+    const items=Object.entries(quantities).filter(([,q])=>q&&parseFloat(q)>0).map(([id,q])=>({id,qty:parseFloat(q)}));
+    const upd=[...templates,{id:`tpl_${Date.now()}`,name:newTplName,icon:'⭐',items}];
+    setTemplates(upd);lsSet(KEYS.templates,upd);setNewTplName('');
+  };
   const delTpl=id=>{const upd=templates.filter(t=>t.id!==id);setTemplates(upd);lsSet(KEYS.templates,upd);};
 
   const calcRecipeMacros=(ingredients)=>ingredients.reduce((acc,ing)=>{
-    const food=FOODS.find(f=>f.id===ing.foodId);if(!food)return acc;
+    const food=allFoods.find(f=>f.id===ing.foodId);if(!food)return acc;
     const m=calcMacros(food,parseFloat(ing.qty)||0);
     return{kcal:acc.kcal+m.kcal,p:acc.p+m.p,c:acc.c+m.c,fat:acc.fat+m.fat};
   },{kcal:0,p:0,c:0,fat:0});
 
   const addRecipeIng=()=>{
     if(!recipeIngQty||parseFloat(recipeIngQty)<=0)return;
-    const food=FOODS.find(f=>f.id===recipeIngFood);
+    const food=allFoods.find(f=>f.id===recipeIngFood);
     setRecipeForm(rf=>({...rf,ingredients:[...rf.ingredients,{foodId:recipeIngFood,name:food.name,qty:parseFloat(recipeIngQty),unit:food.unit}]}));
     setRecipeIngQty('');
   };
@@ -690,6 +719,37 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
     onClose();
   };
 
+  // Custom food handlers
+  const saveCustomFood=()=>{
+    if(!customForm.name.trim()||!customForm.kcal)return;
+    const newFood={
+      id:`custom_${Date.now()}`,
+      name:customForm.name,
+      emoji:customForm.emoji||'🍽',
+      unit:customForm.unit||'g',
+      unitG:1,
+      kcal:parseFloat(customForm.kcal)||0,
+      p:parseFloat(customForm.p)||0,
+      c:parseFloat(customForm.c)||0,
+      fat:parseFloat(customForm.fat)||0,
+      fiber:parseFloat(customForm.fiber)||0,
+      cat:'custom',
+    };
+    const upd=[...customFoods,newFood];
+    setCustomFoods(upd);lsSet(CUSTOM_KEY,upd);
+    setCustomForm({name:'',emoji:'🍽',unit:'g',kcal:'',p:'',c:'',fat:'',fiber:''});
+    setShowCustomForm(false);
+  };
+  const delCustomFood=(id)=>{
+    const upd=customFoods.filter(f=>f.id!==id);
+    setCustomFoods(upd);lsSet(CUSTOM_KEY,upd);
+    setQuantities(q=>{const nq={...q};delete nq[id];return nq;});
+  };
+
+  const filteredCustom=customFoods.filter(f=>f.name.toLowerCase().includes(customSearch.toLowerCase()));
+
+  const inp={background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'8px',padding:'8px 10px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"};
+
   return(
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:50,display:'flex',flexDirection:'column',justifyContent:'flex-end'}} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{background:theme.bg2,borderRadius:'24px 24px 0 0',maxHeight:'90vh',display:'flex',flexDirection:'column',border:`1px solid ${theme.border}`,borderBottom:'none'}}>
@@ -699,10 +759,19 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
             <button onClick={onClose} style={{background:theme.surface2,border:'none',borderRadius:'10px',color:theme.text3,padding:'6px 12px',cursor:'pointer',fontSize:'16px'}}>✕</button>
           </div>
           <div style={{display:'flex',borderBottom:`1px solid ${theme.border}`}}>
-            {[{id:'scanare',label:'📷'},{id:'retete',label:'👨‍🍳'},{id:'alimente',label:'🍙'},{id:'templates',label:'⭐'}].map(t=><button key={t.id} onClick={()=>setActiveTab(t.id)} style={{flex:1,padding:'8px',fontSize:'16px',fontWeight:700,cursor:'pointer',border:'none',background:'transparent',color:activeTab===t.id?'#f97316':theme.text3,borderBottom:`2px solid ${activeTab===t.id?'#f97316':'transparent'}`}}>{t.label}</button>)}
+            {[{id:'scanare',label:'📷'},{id:'retete',label:'👨‍🍳'},{id:'alimente',label:'🍙'},{id:'custom',label:'➕'},{id:'templates',label:'⭐'}].map(t=>(
+              <button key={t.id} onClick={()=>setActiveTab(t.id)}
+                style={{flex:1,padding:'8px',fontSize:'16px',fontWeight:700,cursor:'pointer',border:'none',background:'transparent',
+                  color:activeTab===t.id?'#f97316':theme.text3,
+                  borderBottom:`2px solid ${activeTab===t.id?'#f97316':'transparent'}`}}>
+                {t.label}
+              </button>
+            ))}
           </div>
         </div>
+
         {activeTab==='scanare'&&<BarcodeScanner onResult={handleBarcodeResult} theme={theme}/>}
+
         {activeTab==='retete'&&(
           <div style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px'}}>
             {!recipeForm.show&&(
@@ -711,10 +780,10 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
             {recipeForm.show&&(
               <div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'14px',padding:'14px',display:'flex',flexDirection:'column',gap:'10px'}}>
                 <div style={{display:'flex',gap:'8px'}}>
-                  <select value={recipeForm.icon} onChange={e=>setRecipeForm(rf=>({...rf,icon:e.target.value}))} style={{background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'8px',padding:'8px',color:theme.text,fontSize:'18px',outline:'none'}}>
+                  <select value={recipeForm.icon} onChange={e=>setRecipeForm(rf=>({...rf,icon:e.target.value}))} style={{...inp,fontSize:'18px',width:'52px',padding:'8px'}}>
                     {['🍳','🥗','🍲','🥩','🐟','🥚','🥣','🫕','🍱','🥙'].map(ic=><option key={ic} value={ic}>{ic}</option>)}
                   </select>
-                  <input value={recipeForm.name} onChange={e=>setRecipeForm(rf=>({...rf,name:e.target.value}))} placeholder="Numele rețetei..." style={{flex:1,background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'8px',padding:'8px 10px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+                  <input value={recipeForm.name} onChange={e=>setRecipeForm(rf=>({...rf,name:e.target.value}))} placeholder="Numele rețetei..." style={{...inp,flex:1}}/>
                 </div>
                 <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.08em'}}>INGREDIENTE</div>
                 {recipeForm.ingredients.map((ing,i)=>(
@@ -724,71 +793,204 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
                   </div>
                 ))}
                 <div style={{display:'grid',gridTemplateColumns:'1fr auto auto',gap:'6px',alignItems:'center'}}>
-                  <select value={recipeIngFood} onChange={e=>setRecipeIngFood(e.target.value)} style={{background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'8px',padding:'8px',color:theme.text,fontSize:'13px',outline:'none',fontFamily:"'Inter',sans-serif"}}>
-                    {FOODS.map(f=><option key={f.id} value={f.id}>{f.name}</option>)}
+                  <select value={recipeIngFood} onChange={e=>setRecipeIngFood(e.target.value)} style={{...inp,fontSize:'13px'}}>
+                    {allFoods.map(f=><option key={f.id} value={f.id}>{f.emoji||'🍽'} {f.name}</option>)}
                   </select>
-                  <input type="number" value={recipeIngQty} onChange={e=>setRecipeIngQty(e.target.value)} placeholder="qty" style={{width:'60px',background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'8px',padding:'8px',color:theme.text,fontSize:'13px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
-                  <button onClick={addRecipeIng} style={{padding:'8px 12px',background:'rgba(249,115,22,0.15)',border:'1px solid rgba(249,115,22,0.3)',borderRadius:'8px',color:'#f97316',fontWeight:700,cursor:'pointer',fontSize:'14px'}}>+</button>
+                  <input type="number" value={recipeIngQty} onChange={e=>setRecipeIngQty(e.target.value)} placeholder="qty" style={{...inp,width:'60px',textAlign:'center'}}/>
+                  <button onClick={addRecipeIng} style={{padding:'8px 12px',background:'rgba(249,115,22,0.15)',border:'1px solid rgba(249,115,22,0.3)',borderRadius:'8px',color:'#f97316',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>+</button>
                 </div>
-                {recipeForm.ingredients.length>0&&(
-                  <div style={{padding:'8px 12px',background:'rgba(249,115,22,0.06)',borderRadius:'10px',fontSize:'12px',color:theme.text3}}>
-                    {(()=>{const m=calcRecipeMacros(recipeForm.ingredients);return`Total: ${m.kcal} kcal · P:${m.p}g · C:${m.c}g · G:${m.fat}g`;})()}
-                  </div>
-                )}
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                  <button onClick={()=>setRecipeForm({show:false,name:'',icon:'🍳',ingredients:[]})} style={{padding:'10px',background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'10px',color:theme.text3,fontSize:'13px',fontWeight:600,cursor:'pointer'}}>Anulează</button>
-                  <button onClick={saveRecipe} disabled={!recipeForm.name.trim()||!recipeForm.ingredients.length} style={{padding:'10px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>SALVEAZĂ ◆</button>
+                  <button onClick={()=>setRecipeForm({show:false,name:'',icon:'🍳',ingredients:[]})} style={{padding:'10px',background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'10px',color:theme.text3,fontSize:'14px',fontWeight:600,cursor:'pointer'}}>Anulează</button>
+                  <button onClick={saveRecipe} disabled={!recipeForm.name.trim()||!recipeForm.ingredients.length} style={{padding:'10px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>Salvează</button>
                 </div>
-              </div>
-            )}
-            {recipes.length===0&&!recipeForm.show&&(
-              <div style={{textAlign:'center',padding:'24px',color:theme.text3,fontSize:'13px'}}>
-                <div style={{fontSize:'32px',marginBottom:'8px'}}>👨‍🍳</div>
-                <div style={{fontWeight:600,color:theme.text2,marginBottom:'4px'}}>Nicio rețetă salvată</div>
-                <div>Creează prima ta rețetă cu macros calculate automat!</div>
               </div>
             )}
             {recipes.map(r=>(
-              <div key={r.id} style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'14px',padding:'14px',display:'flex',alignItems:'center',gap:'12px'}}>
-                <div style={{fontSize:'28px',flexShrink:0}}>{r.icon}</div>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:'15px',fontWeight:700,color:theme.text,marginBottom:'4px'}}>{r.name}</div>
-                  <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-                    {[{l:'kcal',v:r.macros.kcal,c:'#f97316'},{l:'P',v:`${r.macros.p}g`,c:'#8b5cf6'},{l:'C',v:`${r.macros.c}g`,c:'#3b82f6'},{l:'G',v:`${r.macros.fat}g`,c:'#10b981'}].map(x=><span key={x.l} style={{fontSize:'12px',fontWeight:700,color:x.c}}>{x.v} {x.l}</span>)}
+              <div key={r.id} style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'12px',padding:'12px'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
+                  <span style={{fontSize:'16px',fontWeight:700,color:theme.text}}>{r.icon} {r.name}</span>
+                  <div style={{display:'flex',gap:'6px'}}>
+                    <button onClick={()=>sendRecipe(r)} style={{padding:'5px 12px',background:'rgba(249,115,22,0.12)',border:'1px solid rgba(249,115,22,0.25)',borderRadius:'8px',color:'#f97316',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>+ Adaugă</button>
+                    <button onClick={()=>delRecipe(r.id)} style={{padding:'5px 8px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.15)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',cursor:'pointer'}}>🗑</button>
                   </div>
                 </div>
+                <div style={{fontSize:'12px',color:theme.text3}}>{r.macros.kcal}kcal · P:{r.macros.p}g · C:{r.macros.c}g · G:{r.macros.fat}g</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ─── TAB: ALIMENTE ─── */}
+        {activeTab==='alimente'&&(
+          <div style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px'}}>
+            <div style={{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'4px'}}>
+              {[{id:'all',l:'Toate'},{id:'proteine',l:'🥩 Proteine'},{id:'carbs',l:'🌾 Carbs'},{id:'legume',l:'🥦 Legume'},{id:'grasimi',l:'🫒 Grăsimi'},{id:'diverse',l:'🫙 Diverse'}].map(c=>(
+                <button key={c.id} onClick={()=>setCat(c.id)} style={{padding:'5px 12px',borderRadius:'100px',fontSize:'12px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:`1.5px solid ${cat===c.id?'#f97316':theme.border}`,background:cat===c.id?'rgba(249,115,22,0.12)':theme.surface,color:cat===c.id?'#f97316':theme.text3,flexShrink:0}}>{c.l}</button>
+              ))}
+            </div>
+            {filtered.map(food=>(
+              <div key={food.id} style={{display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',background:theme.surface,borderRadius:'12px',border:`1px solid ${theme.border}`}}>
+                <span style={{fontSize:'22px'}}>{food.emoji||'🍽'}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:'14px',fontWeight:600,color:theme.text,marginBottom:'2px'}}>{food.name}</div>
+                  <div style={{fontSize:'11px',color:theme.text3}}>{food.kcal}kcal · P:{food.p}g · C:{food.c}g · G:{food.fat||food.f||0}g{food.fiber?` · F:${food.fiber}g`:''} / 100{food.unit}</div>
+                </div>
+                <input type="number" value={quantities[food.id]||''} onChange={e=>setQty(food.id,e.target.value)}
+                  placeholder={food.unit} inputMode="decimal"
+                  style={{width:'72px',background:theme.surface2,border:`1.5px solid ${quantities[food.id]?'#f97316':theme.border}`,borderRadius:'8px',padding:'7px 6px',color:theme.text,fontSize:'14px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ─── TAB: CUSTOM ─── */}
+        {activeTab==='custom'&&(
+          <div style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px'}}>
+
+            {/* Buton adauga */}
+            {!showCustomForm&&(
+              <button onClick={()=>setShowCustomForm(true)}
+                style={{padding:'13px',background:'rgba(249,115,22,0.1)',border:'1px dashed rgba(249,115,22,0.4)',borderRadius:'12px',color:'#f97316',fontSize:'15px',fontWeight:700,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em'}}>
+                ➕ ALIMENT NOU
+              </button>
+            )}
+
+            {/* Formular adaugare */}
+            {showCustomForm&&(
+              <div style={{background:theme.surface,border:`1px solid rgba(249,115,22,0.25)`,borderRadius:'16px',padding:'14px',display:'flex',flexDirection:'column',gap:'10px'}}>
+                <div style={{fontSize:'13px',color:'#f97316',fontWeight:700,letterSpacing:'0.08em'}}>➕ ALIMENT NOU</div>
+
+                {/* Emoji + Nume */}
+                <div style={{display:'flex',gap:'8px'}}>
+                  <input value={customForm.emoji} onChange={e=>setCustomForm(f=>({...f,emoji:e.target.value}))}
+                    placeholder="🍽" style={{...inp,width:'52px',textAlign:'center',fontSize:'20px'}}/>
+                  <input value={customForm.name} onChange={e=>setCustomForm(f=>({...f,name:e.target.value}))}
+                    placeholder="Numele alimentului..." style={{...inp,flex:1}}/>
+                </div>
+
+                {/* Unitate */}
+                <div>
+                  <div style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.1em',marginBottom:'5px'}}>UNITATE DE MĂSURĂ</div>
+                  <div style={{display:'flex',gap:'6px'}}>
+                    {['g','ml','buc','felie','lingura','cana'].map(u=>(
+                      <button key={u} onClick={()=>setCustomForm(f=>({...f,unit:u}))}
+                        style={{flex:1,padding:'7px 4px',borderRadius:'8px',border:`1.5px solid ${customForm.unit===u?'#f97316':theme.border}`,background:customForm.unit===u?'rgba(249,115,22,0.12)':theme.surface2,color:customForm.unit===u?'#f97316':theme.text3,fontSize:'12px',fontWeight:700,cursor:'pointer'}}>
+                        {u}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Macro-uri la 100g/ml/buc */}
+                <div style={{fontSize:'10px',color:theme.text3,fontWeight:700,letterSpacing:'0.1em'}}>MACRO LA 100{customForm.unit==='buc'?'buc':customForm.unit}</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                  {[
+                    {key:'kcal',label:'🔥 Calorii',color:'#f97316'},
+                    {key:'p',label:'💪 Proteine (g)',color:'#3b82f6'},
+                    {key:'c',label:'🌾 Carbs (g)',color:'#f59e0b'},
+                    {key:'fat',label:'🫒 Grăsimi (g)',color:'#10b981'},
+                    {key:'fiber',label:'🌿 Fibre (g)',color:'#8b5cf6'},
+                  ].map(({key,label,color})=>(
+                    <div key={key}>
+                      <div style={{fontSize:'10px',color:theme.text3,marginBottom:'4px'}}>{label}</div>
+                      <input type="number" value={customForm[key]} onChange={e=>setCustomForm(f=>({...f,[key]:e.target.value}))}
+                        placeholder="0" inputMode="decimal"
+                        style={{...inp,width:'100%',textAlign:'center',borderColor:customForm[key]?color:theme.border}}/>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Preview */}
+                {customForm.kcal&&(
+                  <div style={{background:'rgba(249,115,22,0.06)',border:'1px solid rgba(249,115,22,0.15)',borderRadius:'10px',padding:'10px',textAlign:'center',fontSize:'12px',color:theme.text3}}>
+                    {customForm.emoji} <strong style={{color:theme.text}}>{customForm.name||'Aliment'}</strong> · {customForm.kcal}kcal · P:{customForm.p||0}g · C:{customForm.c||0}g · G:{customForm.fat||0}g / 100{customForm.unit}
+                  </div>
+                )}
+
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                  <button onClick={()=>{setShowCustomForm(false);setCustomForm({name:'',emoji:'🍽',unit:'g',kcal:'',p:'',c:'',fat:'',fiber:''}); }}
+                    style={{padding:'10px',background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'10px',color:theme.text3,fontSize:'14px',fontWeight:600,cursor:'pointer'}}>
+                    Anulează
+                  </button>
+                  <button onClick={saveCustomFood} disabled={!customForm.name.trim()||!customForm.kcal}
+                    style={{padding:'10px',background:customForm.name&&customForm.kcal?'linear-gradient(135deg,#f97316,#ef4444)':'rgba(255,255,255,0.05)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>
+                    💾 Salvează
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Cautare */}
+            {customFoods.length>0&&(
+              <input value={customSearch} onChange={e=>setCustomSearch(e.target.value)}
+                placeholder="Caută în alimentele tale..."
+                style={{...inp,width:'100%',padding:'10px 14px',fontSize:'14px'}}/>
+            )}
+
+            {/* Lista alimente custom */}
+            {filteredCustom.length===0&&!showCustomForm&&(
+              <div style={{textAlign:'center',padding:'30px 20px',color:theme.text3}}>
+                <div style={{fontSize:'40px',marginBottom:'8px'}}>🥢</div>
+                <div style={{fontSize:'14px',fontWeight:600}}>Niciun aliment adăugat încă</div>
+                <div style={{fontSize:'12px',marginTop:'4px',opacity:0.6}}>Calamari, ciocolată, lapte vegetal... orice!</div>
+              </div>
+            )}
+            {filteredCustom.map(food=>(
+              <div key={food.id} style={{display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',background:theme.surface,borderRadius:'12px',border:`1px solid rgba(249,115,22,0.15)`}}>
+                <span style={{fontSize:'22px'}}>{food.emoji}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:'14px',fontWeight:600,color:theme.text,marginBottom:'2px'}}>{food.name}</div>
+                  <div style={{fontSize:'11px',color:theme.text3}}>{food.kcal}kcal · P:{food.p}g · C:{food.c}g · G:{food.fat}g / 100{food.unit}</div>
+                </div>
+                <input type="number" value={quantities[food.id]||''} onChange={e=>setQty(food.id,e.target.value)}
+                  placeholder={food.unit} inputMode="decimal"
+                  style={{width:'72px',background:theme.surface2,border:`1.5px solid ${quantities[food.id]?'#f97316':theme.border}`,borderRadius:'8px',padding:'7px 6px',color:theme.text,fontSize:'14px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+                <button onClick={()=>delCustomFood(food.id)}
+                  style={{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.15)',borderRadius:'8px',color:'#ef4444',padding:'6px 8px',cursor:'pointer',fontSize:'14px'}}>🗑</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab==='templates'&&(
+          <div style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px'}}>
+            {hasItems&&(
+              <div style={{display:'flex',gap:'8px'}}>
+                <input value={newTplName} onChange={e=>setNewTplName(e.target.value)} placeholder="Salvează selecția ca template..." style={{flex:1,background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'10px',padding:'9px 12px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
+                <button onClick={saveAsTpl} style={{padding:'9px 14px',background:'rgba(249,115,22,0.15)',border:'1px solid rgba(249,115,22,0.3)',borderRadius:'10px',color:'#f97316',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>💾</button>
+              </div>
+            )}
+            {templates.map(tpl=>(
+              <div key={tpl.id} style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'12px',padding:'12px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div>
+                  <div style={{fontSize:'15px',fontWeight:700,color:theme.text,marginBottom:'4px'}}>{tpl.icon} {tpl.name}</div>
+                  <div style={{fontSize:'11px',color:theme.text3}}>{tpl.items.length} alimente</div>
+                </div>
                 <div style={{display:'flex',gap:'6px'}}>
-                  <button onClick={()=>sendRecipe(r)} style={{padding:'8px 14px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>◆</button>
-                  <button onClick={()=>delRecipe(r.id)} style={{padding:'8px 10px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'10px',color:'#ef4444',fontSize:'13px',cursor:'pointer'}}>×</button>
+                  <button onClick={()=>sendTemplate(tpl)} style={{padding:'7px 14px',background:'rgba(249,115,22,0.12)',border:'1px solid rgba(249,115,22,0.25)',borderRadius:'8px',color:'#f97316',fontSize:'13px',fontWeight:700,cursor:'pointer'}}>+ Adaugă</button>
+                  <button onClick={()=>delTpl(tpl.id)} style={{padding:'7px 9px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.15)',borderRadius:'8px',color:'#ef4444',fontSize:'13px',cursor:'pointer'}}>🗑</button>
                 </div>
               </div>
             ))}
-            <div style={{height:'16px'}}/>
           </div>
         )}
-        {activeTab==='alimente'&&<>
-          <div style={{display:'flex',gap:'6px',padding:'10px 16px',overflowX:'auto',flexShrink:0}}>
-            {FOOD_CATS.map(c=><button key={c.id} onClick={()=>setCat(c.id)} style={{padding:'6px 14px',borderRadius:'100px',fontSize:'12px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Inter',sans-serif",borderColor:cat===c.id?'#f97316':theme.softBorder,background:cat===c.id?'rgba(249,115,22,0.12)':'transparent',color:cat===c.id?'#f97316':theme.text3}}>{c.label}</button>)}
-          </div>
-          <div style={{overflowY:'auto',flex:1,padding:'0 16px'}}>
-            <table style={{width:'100%',borderCollapse:'collapse'}}>
-              <thead style={{position:'sticky',top:0,background:theme.bg2,zIndex:2}}><tr>{['ALIMENT','CANT.','MACRO'].map((h,i)=><th key={i} style={{textAlign:i===2?'right':i===1?'center':'left',padding:'8px '+(i===1?'6px':'0'),fontSize:'11px',color:theme.text4,fontWeight:700,letterSpacing:'0.08em',borderBottom:`1px solid ${theme.border}`,width:i===1?'80px':i===2?'90px':'auto'}}>{h}</th>)}</tr></thead>
-              <tbody>{filtered.map(food=>{const qty=quantities[food.id]||'';const m=qty&&parseFloat(qty)>0?calcMacros(food,parseFloat(qty)):null;const active=!!(qty&&parseFloat(qty)>0);return(<tr key={food.id} style={{borderBottom:`1px solid ${theme.border}`,background:active?'rgba(249,115,22,0.04)':'transparent'}}><td style={{padding:'10px 0'}}><div style={{fontSize:'15px',fontWeight:600,color:active?'#f97316':theme.text2}}>{food.emoji} {food.name}</div><div style={{fontSize:'11px',color:theme.text4,marginTop:'1px'}}>{food.kcal} kcal · {food.p}g P / 100{food.unit==='buc'||food.unit==='felie'?'g':food.unit}</div></td><td style={{padding:'10px 6px',textAlign:'center'}}><div style={{display:'flex',alignItems:'center',gap:'4px',justifyContent:'center'}}><input type="number" value={qty} onChange={e=>setQty(food.id,e.target.value)} placeholder="0" style={{width:'52px',background:theme.surface2,border:`1.5px solid ${active?'rgba(249,115,22,0.4)':theme.softBorder}`,borderRadius:'8px',padding:'6px 8px',color:theme.text,fontSize:'15px',textAlign:'center',outline:'none',fontFamily:"'Inter',sans-serif"}}/><span style={{fontSize:'11px',color:theme.text3}}>{food.unit}</span></div></td><td style={{padding:'10px 0',textAlign:'right'}}>{m?<div><div style={{fontSize:'14px',fontWeight:700,color:'#f97316'}}>{m.kcal} kcal</div><div style={{fontSize:'11px',color:theme.text3}}>{m.p}P</div></div>:<div style={{fontSize:'11px',color:theme.text4}}>—</div>}</td></tr>);})}</tbody>
-            </table>
-          </div>
-          <div style={{padding:'12px 16px',borderTop:`1px solid ${theme.border}`,flexShrink:0}}>
-            {hasItems&&<div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'10px'}}>{[{l:'KCAL',v:totals.kcal,c:'#f97316'},{l:'PROT',v:`${totals.p}g`,c:'#8b5cf6'},{l:'CARBS',v:`${totals.c}g`,c:'#3b82f6'},{l:'GR',v:`${totals.fat}g`,c:'#10b981'}].map(x=><div key={x.l} style={{background:theme.surface,borderRadius:'10px',padding:'8px',textAlign:'center'}}><div style={{fontSize:'10px',color:theme.text3,marginBottom:'2px'}}>{x.l}</div><div style={{fontSize:'16px',fontWeight:800,color:x.c}}>{x.v}</div></div>)}</div>}
-            {hasItems&&<div style={{display:'flex',gap:'8px',marginBottom:'8px'}}><input value={newTplName} onChange={e=>setNewTplName(e.target.value)} placeholder="Salvează ca template..." style={{flex:1,background:theme.surface2,border:`1px solid ${theme.border}`,borderRadius:'10px',padding:'8px 12px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/><button onClick={saveAsTpl} disabled={!newTplName.trim()} style={{padding:'8px 14px',background:newTplName.trim()?'rgba(251,191,36,0.15)':theme.surface,border:`1px solid ${newTplName.trim()?'rgba(251,191,36,0.3)':theme.softBorder}`,borderRadius:'10px',color:newTplName.trim()?'#fbbf24':theme.text4,fontSize:'13px',fontWeight:700,cursor:newTplName.trim()?'pointer':'not-allowed'}}>⭐</button></div>}
-            <button onClick={handleSend} disabled={!hasItems} style={{width:'100%',padding:'14px',background:hasItems?'linear-gradient(135deg,#f97316,#ef4444)':theme.surface2,border:'none',borderRadius:'14px',color:hasItems?'#fff':'#334155',fontSize:'15px',fontWeight:800,cursor:hasItems?'pointer':'not-allowed',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',textTransform:'uppercase',transition:'all 0.2s'}}>
-              {hasItems?`◆ TRIMITE MASA (${totals.kcal} kcal)`:'Introduceți cantitățile'}
+
+        {/* Footer cu totale */}
+        {hasItems&&(
+          <div style={{padding:'12px 16px',borderTop:`1px solid ${theme.border}`,background:theme.bg2,flexShrink:0}}>
+            <div style={{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}}>
+              {[{l:'Kcal',v:totals.kcal,c:'#f97316'},{l:'Prot',v:`${totals.p}g`,c:'#3b82f6'},{l:'Carbs',v:`${totals.c}g`,c:'#f59e0b'},{l:'Grăs',v:`${totals.fat}g`,c:'#10b981'},{l:'Fibre',v:`${totals.fiber}g`,c:'#8b5cf6'}].map(x=>(
+                <div key={x.l} style={{flex:1,textAlign:'center',background:`${x.c}10`,border:`1px solid ${x.c}25`,borderRadius:'8px',padding:'5px 4px'}}>
+                  <div style={{fontSize:'14px',fontWeight:800,color:x.c}}>{x.v}</div>
+                  <div style={{fontSize:'10px',color:theme.text3}}>{x.l}</div>
+                </div>
+              ))}
+            </div>
+            <button onClick={handleSend} style={{width:'100%',padding:'13px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'12px',color:'#fff',fontSize:'16px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.05em',boxShadow:'0 4px 15px rgba(249,115,22,0.35)'}}>
+              ◆ TRIMITE LA COACH
             </button>
           </div>
-        </>
-        }
-        {activeTab==='templates'&&<div style={{overflowY:'auto',flex:1,padding:'12px 16px',display:'flex',flexDirection:'column',gap:'10px'}}>
-          {templates.map(tpl=>{const m=calcTemplateMacros(tpl.items);return(<div key={tpl.id} style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'14px',padding:'14px',display:'flex',alignItems:'center',gap:'12px'}}><div style={{fontSize:'28px',flexShrink:0}}>{tpl.icon}</div><div style={{flex:1}}><div style={{fontSize:'15px',fontWeight:700,color:theme.text,marginBottom:'4px'}}>{tpl.name}</div><div style={{display:'flex',gap:'10px'}}><span style={{fontSize:'12px',color:'#f97316',fontWeight:600}}>{m.kcal} kcal</span><span style={{fontSize:'12px',color:'#8b5cf6'}}>{m.p}g prot</span></div></div><div style={{display:'flex',gap:'6px'}}><button onClick={()=>sendTemplate(tpl)} style={{padding:'8px 16px',background:'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'10px',color:'#fff',fontSize:'13px',fontWeight:800,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif"}}>◆</button>{!DEFAULT_TEMPLATES.find(d=>d.id===tpl.id)&&<button onClick={()=>delTpl(tpl.id)} style={{padding:'8px 10px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'10px',color:'#ef4444',fontSize:'13px',cursor:'pointer'}}>×</button>}</div></div>);})}
-          <div style={{height:'20px'}}/>
-        </div>}
+        )}
       </div>
     </div>
   );

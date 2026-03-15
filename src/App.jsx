@@ -743,19 +743,26 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
     if(!query||query.length<2){setSearchResults([]);setSearchDone(false);return;}
     setSearching(true);setSearchDone(false);
     try{
-      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments,image_small_url`;
-      const res=await fetch(url);
+      const res=await fetch('/api/chat',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:600,
+          system:`Esti un expert in nutritie. Utilizatorul scrie un aliment in orice limba (romana, engleza etc).
+Returneaza DOAR un JSON array cu 1-4 variante ale acelui aliment (ex: crud, fiert, prajit).
+Format strict - DOAR JSON, fara text inainte sau dupa:
+[{"name":"Calamari prajiti","emoji":"🦑","kcal":175,"p":18,"c":8,"fat":8,"fiber":0},...]
+Valorile sunt la 100g. Fii precis din punct de vedere nutritional.`,
+          messages:[{role:'user',content:query}]
+        })
+      });
       const data=await res.json();
-      const results=(data.products||[]).filter(p=>p.product_name&&p.nutriments).map(p=>({
-        name:p.product_name+(p.brands?` (${p.brands.split(',')[0]})` :''),
-        emoji:'🍽',
-        kcal:parseFloat(p.nutriments['energy-kcal_100g'])||parseFloat(p.nutriments['energy-kcal'])||0,
-        p:parseFloat(p.nutriments['proteins_100g'])||0,
-        c:parseFloat(p.nutriments['carbohydrates_100g'])||0,
-        fat:parseFloat(p.nutriments['fat_100g'])||0,
-        fiber:parseFloat(p.nutriments['fiber_100g'])||0,
-      })).filter(r=>r.kcal>0);
-      setSearchResults(results);setSearchDone(true);
+      const text=data.content?.[0]?.text||'[]';
+      const clean=text.replace(/```json|```/g,'').trim();
+      const results=JSON.parse(clean);
+      setSearchResults(Array.isArray(results)?results:[]);
+      setSearchDone(true);
     }catch{setSearchResults([]);setSearchDone(true);}
     finally{setSearching(false);}
   };
@@ -875,15 +882,15 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
                   clearTimeout(searchTimerRef.current);
                   searchTimerRef.current=setTimeout(()=>searchFood(e.target.value),600);
                 }}
-                placeholder="🔍 Caută: calamari, ciocolată, lapte cocos..."
+                placeholder="🤖 Scrie orice: calamari prăjiți, ciocolată Milka..."
                 style={{width:'100%',background:theme.surface,border:`1.5px solid rgba(249,115,22,0.3)`,borderRadius:'12px',padding:'11px 14px',color:theme.text,fontSize:'14px',outline:'none',fontFamily:"'Inter',sans-serif"}}/>
-              {searching&&<div style={{position:'absolute',right:'12px',top:'12px',fontSize:'14px',color:'#f97316'}}>⟳</div>}
+              {searching&&<div style={{position:'absolute',right:'12px',top:'12px',fontSize:'12px',color:'#f97316',fontWeight:700}}>AI ⟳</div>}
             </div>
 
             {/* Rezultate search */}
             {searchResults.length>0&&(
               <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-                <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.1em'}}>REZULTATE OPEN FOOD FACTS</div>
+                <div style={{fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.1em'}}>🤖 REZULTATE AI (la 100g)</div>
                 {searchResults.map((r,i)=>{
                   const alreadySaved=customFoods.some(f=>f.name===r.name);
                   return(
@@ -910,7 +917,7 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
             {/* No results */}
             {searchDone&&searchResults.length===0&&(
               <div style={{textAlign:'center',padding:'16px',color:theme.text3,fontSize:'13px'}}>
-                Niciun rezultat. Încearcă în engleză (ex: "squid" pentru calamari).
+                AI-ul nu a putut estima macro-urile. Încearcă mai specific: "piept de pui fiert" sau "orez brun fiert".
               </div>
             )}
 
@@ -926,7 +933,7 @@ function FoodPicker({onSend,onClose,theme=THEMES.dark}){
               <div style={{textAlign:'center',padding:'30px 20px',color:theme.text3}}>
                 <div style={{fontSize:'40px',marginBottom:'8px'}}>🔍</div>
                 <div style={{fontSize:'14px',fontWeight:600}}>Caută orice aliment</div>
-                <div style={{fontSize:'12px',marginTop:'4px',opacity:0.6}}>Calamari, ciocolată, lapte de cocos, condimente...</div>
+                <div style={{fontSize:'12px',marginTop:'4px',opacity:0.6}}>Scrie orice aliment în română — AI calculează macro-urile</div>
                 <div style={{fontSize:'11px',marginTop:'8px',opacity:0.4}}>Baza de date: Open Food Facts (milioane de alimente)</div>
               </div>
             )}

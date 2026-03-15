@@ -1406,23 +1406,17 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
 
   const speakRef=useRef(null);
   // Detecteaza daca vocea selectata e engleza
-  const isEnVoice=()=>{
-    const voices=window.speechSynthesis?.getVoices()||[];
-    const v=voices.find(x=>x.name===selectedVoice);
-    return v?v.lang.startsWith('en'):false;
-  };
-  // t(ro, en) - returneaza textul in limba vocii
-  const t=(ro,en)=>isEnVoice()?en:ro;
+  // Speak: doar 3 cuvinte EN (Start/Pause/Stop), rest = beep-uri only
   const speak=(text)=>{
     if(!window.speechSynthesis)return;
+    // Doar cuvinte cheie scurte in engleza
+    const keywords=['Start','Pause','Stop','Done','Rest'];
+    const isKeyword=keywords.some(k=>text===k);
+    if(!isKeyword)return; // ignora orice alt text - doar beep-uri
     window.speechSynthesis.cancel();
     const doSpeak=()=>{
       const u=new SpeechSynthesisUtterance(text);
-      u.rate=voiceRate;u.volume=1;
-      const voices=window.speechSynthesis.getVoices();
-      const v=voices.find(x=>x.name===selectedVoice);
-      if(v){u.voice=v;u.lang=v.lang;}
-      else{u.lang='ro-RO';}
+      u.lang='en-US';u.rate=1;u.volume=1;
       window.speechSynthesis.speak(u);
     };
     if(window.speechSynthesis.getVoices().length>0){doSpeak();}
@@ -1513,10 +1507,10 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
     currentSetIdxRef.current=nextIdx;
 
     if(nextIdx>=targetSetsRef.current){
-      speakRef.current(`${targetSetsRef.current} ${t('seturi complete! Excelent','sets complete! Excellent')}!`);
+      speakRef.current('Done');
       setTimeout(()=>autoFinishExercise(newCompleted),500);
     } else {
-      speakRef.current(`Set ${idx+1} ${t('complet! Pauza','complete! Rest')} ${restDurationRef.current} ${t('secunde','seconds')}!`);
+      speakRef.current('Pause');
       setPhase('rest');
       setRestTimer(restDurationRef.current);
     }
@@ -1538,7 +1532,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
           if(navigator.vibrate)navigator.vibrate([300,100,300]);
           const reps=parseInt(currentRepsRef.current)||5;
           const nextIdx=currentSetIdxRef.current;
-          speakRef.current(`${t('Pauza terminata','Rest done')}! Set ${nextIdx+1} ${t('din','of')} ${targetSetsRef.current}! ${reps} ${t('repetari','reps')}!`);
+          speakRef.current('Start');
           setPhase('active');setSetTimer(0);setRepCount(0);setTimerRef.current=0;
           setTimeout(()=>{
             if(tempoEnabled) startTempo(reps,()=>doStopSetRef.current());
@@ -1546,8 +1540,8 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
           },700);
           return 0;
         }
-        if(t===10)speakRef.current(isEnVoice()?'10 seconds!':'10 secunde!');
-        if(t===5)speakRef.current('5!');
+        // countdown - beep only
+        // countdown - beep only
         if(t===3)beepDown();
         if(t===2)beepDown();
         if(t===1)beepDown();
@@ -1570,7 +1564,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
     setCurrentSetIdx(0);currentSetIdxRef.current=0;
     setCurrentKg('');setCurrentReps('');
     setPhase('setup');
-    speak(`${ex.name}. ${t('Configureaza exercitiul','Configure the exercise')}!`);
+    speak('Start');
   };
 
   const beginSets=()=>{
@@ -1584,7 +1578,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
       setTotalTimer(0);
       totalRef.current=setInterval(()=>setTotalTimer(t=>t+1),1000);
     }
-    speak(`Start! Set 1 ${t('din','of')} ${targetSets}! ${reps} ${t('repetari','reps')}!`);
+    speak('Start');
     setTimeout(()=>{
       if(tempoEnabled) startTempo(reps,()=>doStopSetRef.current());
       else startSimpleTimer(reps,()=>doStopSetRef.current());
@@ -1601,7 +1595,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
     clearInterval(intervalRef.current);
     const reps=parseInt(currentRepsRef.current)||5;
     const nextIdx=currentSetIdxRef.current;
-    speak(`Set ${nextIdx+1} ${t('din','of')} ${targetSetsRef.current}! ${reps} ${t('repetari','reps')}!`);
+    speak('Start');
     setPhase('active');setSetTimer(0);setRepCount(0);setRestTimer(0);setTimerRef.current=0;
     setTimeout(()=>{
       if(tempoEnabled) startTempo(reps,()=>doStopSetRef.current());
@@ -1624,7 +1618,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
     saveWorkouts(nw);setWorkouts({...nw});
     setSessionLog(l=>[...l,entry]);
     onSendToCoach(`Forta: ${ex.name} — ${sets.map(s=>`${s.kg}kg×${s.reps}`).join(', ')}`);
-    speak(`${ex.name} ${t('finalizat! Alege urmatorul exercitiu','done! Choose next exercise')}!`);
+    speak('Stop');
     setCompletedSets([]);completedSetsRef.current=[];
     setCurrentKg('');setCurrentReps('');
     setSelEx(null);selExRef.current=null;
@@ -1635,7 +1629,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
     clearInterval(totalRef.current);
     totalRef.current=null;
     setPhase('summary');
-    speak(`${t('Antrenament finalizat! Ai facut','Workout done! Completed')} ${sessionLog.length} ${t('exercitii in','exercises in')} ${fmt(totalTimer)}. ${t('Felicitari','Congratulations')}!`);
+    speak('Stop');
   };
 
   const deleteDay=()=>{

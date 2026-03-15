@@ -1,10 +1,36 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
 // ─── System Prompt ────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `# ASISTENT PERSONAL — NUTRIȚIE, METABOLISM, PERFORMANȚĂ FIZICĂ & OPTIMIZARE HORMONALĂ
+// Profile key
+const PROFILE_KEY='mp_profile_v1';
+function loadProfile(){
+  return JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')||{
+    name:'',age:'',height:'',weight:'',targetWeight:'',
+    bodyType:'', // ectomorf | mezomorf | endomorf
+    goal:'',     // slabit | masa | recompozitie | mentinere
+    activity:'', // sedentar | usor | moderat | activ | foarte_activ
+    supplements:'',notes:''
+  };
+}
+function saveProfile(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p));}
 
-## IDENTITATE ȘI MISIUNE
-Ești asistentul personal al lui Mihai. Răspunzi concis, tehnic, structurat. Formatezi cu markdown. Folosești emoji-uri.
+function buildSystemPrompt(profile){
+  const hasProfile=profile&&profile.name;
+  const name=profile?.name||'Utilizator';
+  const age=profile?.age?`${profile.age} ani`:'';
+  const height=profile?.height?`${profile.height} cm`:'';
+  const weight=profile?.weight?`~${profile.weight} kg`:'';
+  const target=profile?.targetWeight?`→ Țintă ${profile.targetWeight} kg`:'';
+  const bodyTypes={ectomorf:'Ectomorf (slab natural, greu de pus masă)',mezomorf:'Mezomorf (atletico, răspunde bine la antrenament)',endomorf:'Endomorf (tinde să acumuleze grăsime ușor)'};
+  const goals={slabit:'Slăbit / pierdere grăsime',masa:'Creștere masă musculară',recompozitie:'Recompozitie corporală (slăbit + masă simultan)',mentinere:'Menținere greutate actuală'};
+  const activities={sedentar:'Sedentar (birou, fără sport)',usor:'Ușor activ (1-3 zile/săpt)',moderat:'Moderat activ (3-5 zile/săpt)',activ:'Foarte activ (6-7 zile/săpt)',foarte_activ:'Extrem activ (2x/zi sau muncă fizică)'};
+  const bodyTypeStr=bodyTypes[profile?.bodyType]||profile?.bodyType||'Necunoscut';
+  const goalStr=goals[profile?.goal]||profile?.goal||'Nespecificat';
+  const actStr=activities[profile?.activity]||profile?.activity||'Nespecificat';
+  return `# ASISTENT PERSONAL — NUTRIȚIE, METABOLISM, PERFORMANȚĂ FIZICĂ
+
+## IDENTITATE
+E ti asistentul personal al lui ${name}. Răspunzi concis, tehnic, structurat. Formatezi cu markdown. Folosești emoji-uri.
 
 IMPORTANT — EXTRAGERE DATE:
 Când utilizatorul raportează date, adaugă JSON la final (ultima linie):
@@ -17,24 +43,19 @@ Dacă nu există date de extras, NU adăuga JSON.
 ## PROFIL
 | Parametru | Valoare |
 |---|---|
-| Nume | Mihai, 45 ani, 188 cm, ~96 kg → Țintă 88–90 kg |
-| TDEE | 2.550–2.750 kcal/zi |
-| Antrenament | 2× Fullbody + 3× Split/săptămână |
-
-## MACRO ȚINTĂ
-| Tip zi | Calorii | Proteine |
-|---|---|---|
-| Antrenament | 2.150–2.250 | 165–180g |
-| Activă | 1.900–2.000 | 160–175g |
-| Repaus | 1.700–1.800 | 155–170g |
-
-## SUPLIMENTE
-L-Carnitină, Mg bisglicinat, Zinc, Vitamax, CoQ10, D3, Omega-3, Boron, Centrum Energy, Ghimbir, Creatină 3–5g, Citrulină malat 6–8g
+| Utilizator | ${name}${age?', '+age:''}${height?', '+height:''}${weight?', '+weight:''} ${target} |
+| Tip corp | ${bodyTypeStr} |
+| Obiectiv | ${goalStr} |
+| Activitate | ${actStr} |
+${profile?.supplements?`| Suplimente | ${profile.supplements} |`:''}
+${profile?.notes?`| Note | ${profile.notes} |`:''}
 
 ## REGULI
-1. Proteine ≥150g întotdeauna
-2. Nuci braziliene: max 1–2 buc/zi
-3. Somn <6h = alertă testosteron`;
+1. Adaptează recomandările la profilul și obiectivul utilizatorului
+2. Proteine ≥ 1.6g/kg corp
+3. Respectă tipul de corp la calculul macronutrienților`;
+}
+
 
 // ─── Style helpers ────────────────────────────────────────────────────────────
 const panel        = (th, r=16) => ({background:th.surface, border:`1px solid ${th.border}`, borderRadius:`${r}px`});
@@ -1401,7 +1422,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
   useEffect(()=>{
     const req=async()=>{try{if('wakeLock' in navigator)wakeLockRef.current=await navigator.wakeLock.request('screen');}catch{}};
     req();
-    totalRef.current=setInterval(()=>setTotalTimer(t=>t+1),1000);
+    // totalTimer porneste la primul exercitiu, nu la deschiderea GymMode
     const loadVoices=()=>{
       const v=window.speechSynthesis?.getVoices()||[];
       setVoices(v);
@@ -1544,6 +1565,11 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
     setCurrentSetIdx(0);currentSetIdxRef.current=0;
     setCompletedSets([]);completedSetsRef.current=[];
     setPhase('active');setSetTimer(0);setRepCount(0);setTimerRef.current=0;
+    // Porneste cronometrul sesiunii la primul exercitiu
+    if(!totalRef.current){
+      setTotalTimer(0);
+      totalRef.current=setInterval(()=>setTotalTimer(t=>t+1),1000);
+    }
     speak(`Start! Set 1 din ${targetSets}! ${reps} repetari!`);
     setTimeout(()=>{
       if(tempoEnabled) startTempo(reps,()=>doStopSetRef.current());
@@ -1593,6 +1619,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
 
   const finishWorkout=()=>{
     clearInterval(totalRef.current);
+    totalRef.current=null;
     setPhase('summary');
     speak(`Antrenament finalizat! Ai facut ${sessionLog.length} exercitii in ${fmt(totalTimer)}. Felicitari!`);
   };
@@ -1854,7 +1881,7 @@ function GymMode({workouts,setWorkouts,onSendToCoach,onClose,theme=THEMES.dark})
         <div style={{flex:1,overflowY:'auto',padding:'14px',display:'flex',flexDirection:'column',gap:'12px'}}>
           <div style={{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'4px'}}>
             {MUSCLE_GROUPS.map(g=>(
-              <button key={g.id} onClick={()=>setSelGroup(g.id)}
+              <button key={g.id} onClick={()=>{setSelGroup(g.id);selGroupRef.current=g.id;}}
                 style={{padding:'8px 14px',borderRadius:'100px',fontSize:'13px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',border:'1.5px solid',fontFamily:"'Barlow Condensed',sans-serif",flexShrink:0,
                   borderColor:selGroup===g.id?g.color:'rgba(236,72,153,0.1)',
                   background:selGroup===g.id?`${g.color}18`:'transparent',
@@ -2313,6 +2340,199 @@ function StatsTab({stats,workouts,onSendToCoach,setStats,theme=THEMES.dark}){
 }
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
+
+// ─── PROFILE TAB ─────────────────────────────────────────────────────────────
+function ProfileTab({theme,onSave}){
+  const [profile,setProfile]=useState(()=>loadProfile());
+  const [saved,setSaved]=useState(false);
+
+  const update=(k,v)=>setProfile(p=>({...p,[k]:v}));
+
+  const save=()=>{
+    saveProfile(profile);
+    setSaved(true);
+    setTimeout(()=>setSaved(false),2000);
+    if(onSave)onSave(profile);
+  };
+
+  const BODY_TYPES=[
+    {val:'ectomorf',label:'Ectomorf',desc:'Slab natural, metabolism rapid, greu de pus masă',icon:'🦴'},
+    {val:'mezomorf',label:'Mezomorf',desc:'Atletico, răspunde bine la antrenament',icon:'💪'},
+    {val:'endomorf',label:'Endomorf',desc:'Tinde să acumuleze grăsime, metabolism lent',icon:'🔥'},
+  ];
+  const GOALS=[
+    {val:'slabit',label:'Slăbit',desc:'Pierdere grăsime',icon:'🔻'},
+    {val:'masa',label:'Masă',desc:'Creștere musculară',icon:'📈'},
+    {val:'recompozitie',label:'Recompozitie',desc:'Slăbit + masă simultan',icon:'⚡'},
+    {val:'mentinere',label:'Menținere',desc:'Greutate stabilă',icon:'⚖️'},
+  ];
+  const ACTIVITIES=[
+    {val:'sedentar',label:'Sedentar',desc:'Birou, fără sport'},
+    {val:'usor',label:'Ușor activ',desc:'1-3 zile/săpt'},
+    {val:'moderat',label:'Moderat',desc:'3-5 zile/săpt'},
+    {val:'activ',label:'Activ',desc:'6-7 zile/săpt'},
+    {val:'foarte_activ',label:'Extrem activ',desc:'2x/zi sau muncă fizică'},
+  ];
+
+  const inp={background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'10px',padding:'10px 14px',color:theme.text,fontSize:'16px',outline:'none',fontFamily:"'Inter',sans-serif",width:'100%'};
+  const label={fontSize:'11px',color:theme.text3,fontWeight:700,letterSpacing:'0.1em',marginBottom:'6px',display:'block'};
+
+  const bmr=profile.weight&&profile.height&&profile.age?
+    Math.round(10*parseFloat(profile.weight)+6.25*parseFloat(profile.height)-5*parseFloat(profile.age)+5):null;
+  const actMult={sedentar:1.2,usor:1.375,moderat:1.55,activ:1.725,foarte_activ:1.9};
+  const tdee=bmr&&profile.activity?Math.round(bmr*(actMult[profile.activity]||1.55)):null;
+
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'16px',display:'flex',flexDirection:'column',gap:'16px'}}>
+
+      {/* Header */}
+      <div style={{textAlign:'center',padding:'8px 0'}}>
+        <div style={{fontSize:'48px',marginBottom:'8px'}}>👤</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'22px',fontWeight:900,color:theme.text,letterSpacing:'0.05em'}}>PROFILUL TĂU</div>
+        <div style={{fontSize:'13px',color:theme.text3,marginTop:'4px'}}>Completează o dată — AI-ul se adaptează automat</div>
+      </div>
+
+      {/* Date personale */}
+      <div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'16px',display:'flex',flexDirection:'column',gap:'14px'}}>
+        <div style={{fontSize:'13px',color:'#f97316',fontWeight:700,letterSpacing:'0.1em'}}>📋 DATE PERSONALE</div>
+
+        <div>
+          <span style={label}>NUME</span>
+          <input value={profile.name} onChange={e=>update('name',e.target.value)} placeholder="ex: Mihai" style={inp}/>
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'10px'}}>
+          <div>
+            <span style={label}>VÂRSTĂ</span>
+            <input type="number" value={profile.age} onChange={e=>update('age',e.target.value)} placeholder="ani" inputMode="numeric" style={inp}/>
+          </div>
+          <div>
+            <span style={label}>ÎNĂLȚIME</span>
+            <input type="number" value={profile.height} onChange={e=>update('height',e.target.value)} placeholder="cm" inputMode="numeric" style={inp}/>
+          </div>
+          <div>
+            <span style={label}>SEX</span>
+            <select value={profile.sex||'male'} onChange={e=>update('sex',e.target.value)} style={inp}>
+              <option value="male">Masculin</option>
+              <option value="female">Feminin</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+          <div>
+            <span style={label}>GREUTATE ACTUALĂ (kg)</span>
+            <input type="number" step="0.1" value={profile.weight} onChange={e=>update('weight',e.target.value)} placeholder="ex: 96" inputMode="decimal" style={{...inp,borderColor:profile.weight?'rgba(249,115,22,0.4)':theme.border}}/>
+          </div>
+          <div>
+            <span style={label}>GREUTATE DORITĂ (kg)</span>
+            <input type="number" step="0.1" value={profile.targetWeight} onChange={e=>update('targetWeight',e.target.value)} placeholder="ex: 88" inputMode="decimal" style={{...inp,borderColor:profile.targetWeight?'rgba(74,222,128,0.4)':theme.border}}/>
+          </div>
+        </div>
+
+        {/* Calcul TDEE automat */}
+        {tdee&&(
+          <div style={{background:'rgba(249,115,22,0.08)',border:'1px solid rgba(249,115,22,0.2)',borderRadius:'12px',padding:'12px',display:'flex',gap:'16px',flexWrap:'wrap'}}>
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:'11px',color:theme.text3,letterSpacing:'0.1em'}}>BMR</div>
+              <div style={{fontSize:'22px',fontWeight:900,color:'#f97316',fontFamily:"'Barlow Condensed',sans-serif"}}>{bmr}</div>
+              <div style={{fontSize:'10px',color:theme.text3}}>kcal/zi</div>
+            </div>
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:'11px',color:theme.text3,letterSpacing:'0.1em'}}>TDEE</div>
+              <div style={{fontSize:'22px',fontWeight:900,color:'#4ade80',fontFamily:"'Barlow Condensed',sans-serif"}}>{tdee}</div>
+              <div style={{fontSize:'10px',color:theme.text3}}>kcal/zi</div>
+            </div>
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:'11px',color:theme.text3,letterSpacing:'0.1em'}}>DEFICIT (-500)</div>
+              <div style={{fontSize:'22px',fontWeight:900,color:'#60a5fa',fontFamily:"'Barlow Condensed',sans-serif"}}>{tdee-500}</div>
+              <div style={{fontSize:'10px',color:theme.text3}}>kcal/zi</div>
+            </div>
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:'11px',color:theme.text3,letterSpacing:'0.1em'}}>PROTEINE MIN</div>
+              <div style={{fontSize:'22px',fontWeight:900,color:'#ec4899',fontFamily:"'Barlow Condensed',sans-serif"}}>{Math.round(parseFloat(profile.weight)*1.8)}</div>
+              <div style={{fontSize:'10px',color:theme.text3}}>g/zi</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Tip corp */}
+      <div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'16px',display:'flex',flexDirection:'column',gap:'12px'}}>
+        <div style={{fontSize:'13px',color:'#8b5cf6',fontWeight:700,letterSpacing:'0.1em'}}>🏃 TIP DE CORP</div>
+        <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+          {BODY_TYPES.map(bt=>(
+            <button key={bt.val} onClick={()=>update('bodyType',bt.val)}
+              style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px 14px',borderRadius:'12px',border:`2px solid ${profile.bodyType===bt.val?'#8b5cf6':theme.border}`,background:profile.bodyType===bt.val?'rgba(139,92,246,0.1)':theme.surface2,cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
+              <span style={{fontSize:'24px'}}>{bt.icon}</span>
+              <div>
+                <div style={{fontSize:'15px',fontWeight:700,color:profile.bodyType===bt.val?'#8b5cf6':theme.text}}>{bt.label}</div>
+                <div style={{fontSize:'12px',color:theme.text3}}>{bt.desc}</div>
+              </div>
+              {profile.bodyType===bt.val&&<span style={{marginLeft:'auto',color:'#8b5cf6',fontSize:'18px'}}>✓</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Obiectiv */}
+      <div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'16px',display:'flex',flexDirection:'column',gap:'12px'}}>
+        <div style={{fontSize:'13px',color:'#4ade80',fontWeight:700,letterSpacing:'0.1em'}}>🎯 OBIECTIV PRINCIPAL</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+          {GOALS.map(g=>(
+            <button key={g.val} onClick={()=>update('goal',g.val)}
+              style={{padding:'14px 10px',borderRadius:'12px',border:`2px solid ${profile.goal===g.val?'#4ade80':theme.border}`,background:profile.goal===g.val?'rgba(74,222,128,0.1)':theme.surface2,cursor:'pointer',textAlign:'center',transition:'all 0.15s'}}>
+              <div style={{fontSize:'24px',marginBottom:'4px'}}>{g.icon}</div>
+              <div style={{fontSize:'14px',fontWeight:700,color:profile.goal===g.val?'#4ade80':theme.text}}>{g.label}</div>
+              <div style={{fontSize:'11px',color:theme.text3,marginTop:'2px'}}>{g.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Nivel activitate */}
+      <div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'16px',display:'flex',flexDirection:'column',gap:'12px'}}>
+        <div style={{fontSize:'13px',color:'#f59e0b',fontWeight:700,letterSpacing:'0.1em'}}>⚡ NIVEL DE ACTIVITATE</div>
+        <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+          {ACTIVITIES.map(a=>(
+            <button key={a.val} onClick={()=>update('activity',a.val)}
+              style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 14px',borderRadius:'10px',border:`1.5px solid ${profile.activity===a.val?'#f59e0b':theme.border}`,background:profile.activity===a.val?'rgba(245,158,11,0.1)':theme.surface2,cursor:'pointer',transition:'all 0.15s'}}>
+              <div>
+                <span style={{fontSize:'14px',fontWeight:700,color:profile.activity===a.val?'#f59e0b':theme.text}}>{a.label}</span>
+                <span style={{fontSize:'12px',color:theme.text3,marginLeft:'8px'}}>{a.desc}</span>
+              </div>
+              {profile.activity===a.val&&<span style={{color:'#f59e0b'}}>✓</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Suplimente & note */}
+      <div style={{background:theme.surface,border:`1px solid ${theme.border}`,borderRadius:'16px',padding:'16px',display:'flex',flexDirection:'column',gap:'12px'}}>
+        <div style={{fontSize:'13px',color:'#60a5fa',fontWeight:700,letterSpacing:'0.1em'}}>💊 SUPLIMENTE & NOTE</div>
+        <div>
+          <span style={label}>SUPLIMENTE (opțional)</span>
+          <input value={profile.supplements} onChange={e=>update('supplements',e.target.value)} placeholder="ex: Creatina, D3, Omega-3, Zinc..." style={inp}/>
+        </div>
+        <div>
+          <span style={label}>NOTE SPECIALE (alergii, condiții, preferințe)</span>
+          <textarea value={profile.notes} onChange={e=>update('notes',e.target.value)}
+            placeholder="ex: Intoleranță lactoză, evit gluten, antrenez dimineața..."
+            rows={3}
+            style={{...inp,resize:'vertical',lineHeight:'1.5'}}/>
+        </div>
+      </div>
+
+      {/* Save */}
+      <button onClick={save}
+        style={{padding:'16px',background:saved?'linear-gradient(135deg,#4ade80,#10b981)':'linear-gradient(135deg,#f97316,#ef4444)',border:'none',borderRadius:'14px',color:'#fff',fontSize:'17px',fontWeight:900,cursor:'pointer',fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.08em',boxShadow:saved?'0 6px 20px rgba(74,222,128,0.35)':'0 6px 20px rgba(249,115,22,0.35)',transition:'all 0.3s'}}>
+        {saved?'✓ PROFIL SALVAT!':'◆ SALVEAZĂ PROFILUL'}
+      </button>
+      <div style={{height:'20px'}}/>
+    </div>
+  );
+}
+
 export default function App(){
   const session=loadSession();
   const [messages,setMessages]=useState(()=>session.messages||[]);
@@ -2329,6 +2549,7 @@ export default function App(){
   const [quickWeight,setQuickWeight]=useState('');
   const [gymMode,setGymMode]=useState(false);
   const [darkMode,setDarkMode]=useState(()=>ls(KEYS.theme,true));
+  const [userProfile,setUserProfile]=useState(()=>loadProfile());
   const messagesEndRef=useRef(null),textareaRef=useRef(null),messagesRef=useRef(messages);
   useEffect(()=>{messagesRef.current=messages;},[messages]);
   const currentDay=DAY_TYPES.find(d=>d.val===dayType);
@@ -2365,7 +2586,7 @@ export default function App(){
     if(tab!=='coach')setTab('coach');
     try{
       const apiMsgs=snapshot.map(m=>({role:m.role,content:m.role==='user'?(m===userMsg?prefix+text:m.content):m.content}));
-      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:SYSTEM_PROMPT,messages:apiMsgs})});
+      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:buildSystemPrompt(userProfile),messages:apiMsgs})});
       const data=await res.json();
       const reply=data.content?.[0]?.text||'Eroare la răspuns.';
       extractAndSave(reply);
@@ -2505,6 +2726,7 @@ export default function App(){
         <button className={`tab-btn ${tab==='coach'?'active':''}`} onClick={()=>setTab('coach')} style={{color:tab==='coach'?(darkMode?'#d4a847':'#b8860b'):darkMode?'rgba(160,144,112,0.5)':'#7a6a50',borderBottomColor:tab==='coach'?(darkMode?'#d4a847':'#b8860b'):'transparent'}}>🤖 Coach</button>
         <button className={`tab-btn ${tab==='workout'?'active':''}`} onClick={()=>setTab('workout')} style={{color:tab==='workout'?(darkMode?'#d4a847':'#b8860b'):darkMode?'rgba(160,144,112,0.5)':'#7a6a50',borderBottomColor:tab==='workout'?(darkMode?'#d4a847':'#b8860b'):'transparent'}}>🏋 Workout</button>
         <button className={`tab-btn ${tab==='stats'?'active':''}`} onClick={()=>setTab('stats')} style={{color:tab==='stats'?(darkMode?'#d4a847':'#b8860b'):darkMode?'rgba(160,144,112,0.5)':'#7a6a50',borderBottomColor:tab==='stats'?(darkMode?'#d4a847':'#b8860b'):'transparent'}}>📈 Stats</button>
+        <button className={`tab-btn ${tab==='profil'?'active':''}`} onClick={()=>setTab('profil')} style={{color:tab==='profil'?'#8b5cf6':darkMode?'rgba(160,144,112,0.5)':'#7a6a50',borderBottomColor:tab==='profil'?'#8b5cf6':'transparent'}}>👤 Profil</button>
       </div>
 
       {tab==='coach'&&(<>
@@ -2543,6 +2765,7 @@ export default function App(){
       </div>}
       {gymMode&&<GymMode workouts={workouts} setWorkouts={setWorkouts} onSendToCoach={sendMessage} onClose={()=>setGymMode(false)} theme={theme}/>}
       {tab==='stats'&&<div style={{flex:1,overflowY:'auto',minHeight:0,animation:'tabIn 0.25s ease'}}><StatsTab stats={stats} workouts={workouts} onSendToCoach={sendMessage} setStats={setStats} theme={theme}/></div>}
+      {tab==='profil'&&<div style={{flex:1,overflowY:'auto',minHeight:0,animation:'tabIn 0.25s ease'}}><ProfileTab theme={theme} onSave={(p)=>{setUserProfile(p);showToast('✓ Profil salvat!');}}/></div>}
 
       {picker&&<FoodPicker onSend={sendMessage} onClose={()=>setPicker(false)} theme={theme}/>}
       {toast&&<div className="toast">{toast}</div>}

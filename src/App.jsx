@@ -2240,6 +2240,18 @@ function WorkoutTab({workouts,setWorkouts,onSendToCoach,theme=THEMES.dark}){
     return null;
   };
 
+  const saveCardio=()=>{
+    if(!cardioDur||parseInt(cardioDur)<=0)return;
+    const ct=CARDIO_TYPES.find(c=>c.id===cardioType)||CARDIO_TYPES[0];
+    const kcal=calcBurned(ct.met,parseInt(cardioDur));
+    const entry={id:cardioType,name:ct.name,icon:ct.icon,duration:parseInt(cardioDur),intensity:cardioInt,kcal,time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})};
+    const nw={...workouts};
+    if(!nw.days[key])nw.days[key]={exercises:[],cardio:[]};
+    nw.days[key].cardio=[...(nw.days[key].cardio||[]),entry];
+    saveWorkouts(nw);setWorkouts({...nw});setCD('');
+    onSendToCoach(`Cardio: ${ct.name} ${cardioDur} min (${cardioInt}) — ${kcal} kcal arse`);
+  };
+
   const saveEx=()=>{
     if(!selEx||!sets.length)return;
     const valid=sets.filter(s=>s.kg&&s.reps&&parseFloat(s.kg)>0&&parseInt(s.reps)>0);

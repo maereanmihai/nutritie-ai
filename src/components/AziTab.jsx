@@ -95,72 +95,114 @@ function AziTab({ th, profile, dayType, setDayType, currentDay, dayMacros, today
   return (
     <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── HEADER ── */}
-      <div style={{ background: darkMode ? 'linear-gradient(160deg,#0f1535 0%,#070a12 100%)' : 'linear-gradient(160deg,#1e3a8a 0%,#1e40af 100%)', padding: '12px 16px 16px', flexShrink: 0 }}>
+      {/* ══ HEADER MODERN ══ */}
+      <div style={{ background: darkMode ? 'linear-gradient(160deg,#0a0f2e 0%,#0d1535 50%,#070a18 100%)' : 'linear-gradient(160deg,#1e3a8a 0%,#2563eb 60%,#3b82f6 100%)', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
 
-        {/* Top row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+        {/* Decorative background circles */}
+        <div style={{ position:'absolute', top:'-30px', right:'-30px', width:'140px', height:'140px', borderRadius:'50%', background:'rgba(255,255,255,0.04)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:'-20px', left:'20px', width:'90px', height:'90px', borderRadius:'50%', background:'rgba(255,255,255,0.03)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', top:'20px', left:'40%', width:'60px', height:'60px', borderRadius:'50%', background: `${currentDay?.color || '#f97316'}18`, pointerEvents:'none' }}/>
+
+        {/* ── ROW 1: data + actions ── */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px 0', position:'relative', zIndex:1 }}>
           <div>
-            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '1px' }}>
-              {new Date().toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' })}
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.45)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'3px' }}>
+              {new Date().toLocaleDateString('ro-RO', { weekday:'long', day:'numeric', month:'long' })}
             </div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>
+            <div style={{ fontSize:'20px', fontWeight:900, color:'#fff', letterSpacing:'-0.3px', lineHeight:1.1 }}>
               {profile?.name ? `Bună, ${profile.name}! 👋` : 'Health Agent 💪'}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '7px', alignItems: 'center' }}>
+          <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
             {streak > 0 && (
-              <div style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', borderRadius: '10px', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                <span style={{ fontSize: '12px' }}>🔥</span>
-                <span style={{ fontSize: '12px', fontWeight: 800, color: '#fff' }}>{streak}</span>
+              <div style={{ background:'linear-gradient(135deg,#f59e0b,#ef4444)', borderRadius:'12px', padding:'5px 10px', display:'flex', alignItems:'center', gap:'4px', boxShadow:'0 2px 8px rgba(245,158,11,0.4)' }}>
+                <span style={{ fontSize:'13px' }}>🔥</span>
+                <span style={{ fontSize:'13px', fontWeight:900, color:'#fff' }}>{streak}</span>
               </div>
             )}
-            <button onClick={() => setActiveView(v => v === 'calendar' ? 'azi' : 'calendar')}
-              style={{ padding: '5px 10px', background: activeView === 'calendar' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#fff', fontWeight: 700 }}>
+            <button onClick={() => setActiveView(v => v==='calendar'?'azi':'calendar')}
+              style={{ width:'34px', height:'34px', borderRadius:'10px', background: activeView==='calendar'?'rgba(255,255,255,0.25)':'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', cursor:'pointer', fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center' }}>
               📅
             </button>
             <button onClick={() => setDarkMode(d => !d)}
-              style={{ width: '32px', height: '32px', borderRadius: '9px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              style={{ width:'34px', height:'34px', borderRadius:'10px', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)', cursor:'pointer', fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center' }}>
               {darkMode ? '☀️' : '🌙'}
             </button>
           </div>
         </div>
 
-        {/* CITAT */}
-        <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '10px', padding: '9px 12px', marginBottom: '11px', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4, fontStyle: 'italic' }}>"{quote.text}"</div>
-          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>— {quote.author}</div>
+        {/* ── ROW 2: macro ring + stats rapide ── */}
+        <div style={{ display:'flex', alignItems:'center', gap:'14px', padding:'14px 16px', position:'relative', zIndex:1 }}>
+          {/* Ring caloric compact */}
+          <div style={{ position:'relative', width:'72px', height:'72px', flexShrink:0 }}>
+            <svg viewBox="0 0 72 72" style={{ width:'72px', height:'72px', transform:'rotate(-90deg)' }}>
+              <circle cx="36" cy="36" r="28" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="7"/>
+              <circle cx="36" cy="36" r="28" fill="none"
+                stroke={calPct > 100 ? '#ef4444' : (currentDay?.color || '#f97316')}
+                strokeWidth="7" strokeLinecap="round"
+                strokeDasharray={`${2*Math.PI*28}`}
+                strokeDashoffset={`${2*Math.PI*28*(1-Math.min(calPct,100)/100)}`}
+                style={{ transition:'stroke-dashoffset 0.8s ease', filter:`drop-shadow(0 0 6px ${currentDay?.color||'#f97316'}80)` }}/>
+            </svg>
+            <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+              <span style={{ fontSize:'16px', fontWeight:900, color:'#fff', lineHeight:1 }}>{calPct}%</span>
+              <span style={{ fontSize:'8px', color:'rgba(255,255,255,0.5)', marginTop:'1px' }}>kcal</span>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div style={{ flex:1 }}>
+            <div style={{ display:'flex', gap:'5px', marginBottom:'6px' }}>
+              <div style={{ fontSize:'24px', fontWeight:900, color:'#fff', lineHeight:1 }}>{todayStats?.calories||0}</div>
+              <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.5)', alignSelf:'flex-end', marginBottom:'2px' }}>/ {dayMacros?.kcal||0} kcal</div>
+            </div>
+            <div style={{ display:'flex', gap:'8px' }}>
+              {[
+                { l:'P', v: todayStats?.protein||0, t: dayMacros?.protein||0, c:'#10b981' },
+                { l:'C', v: todayStats?.carbs||0,   t: dayMacros?.carbs||0,   c:'#3b82f6' },
+                { l:'G', v: todayStats?.fat||0,     t: dayMacros?.fat||0,     c:'#f59e0b' },
+              ].map(m => (
+                <div key={m.l} style={{ flex:1 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'3px' }}>
+                    <span style={{ fontSize:'10px', color:m.c, fontWeight:700 }}>{m.l}</span>
+                    <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.4)' }}>{Math.round(m.v)}g</span>
+                  </div>
+                  <div style={{ height:'4px', background:'rgba(255,255,255,0.1)', borderRadius:'2px', overflow:'hidden' }}>
+                    <div style={{ width:`${m.t?Math.min(100,Math.round(m.v/m.t*100)):0}%`, height:'100%', background:m.c, borderRadius:'2px', transition:'width 0.5s', boxShadow:`0 0 4px ${m.c}80` }}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* TIP ZI */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '7px', marginBottom: '11px' }}>
+        {/* ── ROW 3: citat ── */}
+        <div style={{ margin:'0 16px', padding:'10px 13px', background:'rgba(255,255,255,0.07)', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.1)', position:'relative', zIndex:1 }}>
+          <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.88)', lineHeight:1.45, fontStyle:'italic' }}>"{quote.text}"</div>
+          <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.35)', marginTop:'4px' }}>— {quote.author}</div>
+        </div>
+
+        {/* ── ROW 4: tip zi ── */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', padding:'12px 16px 0', position:'relative', zIndex:1 }}>
           {DAY_TYPES.map(d => (
             <button key={d.val} onClick={() => setDayType(d.val)} className="btn-tap"
-              style={{ borderRadius: '11px', padding: '9px 6px', border: dayType === d.val ? 'none' : '1px solid rgba(255,255,255,0.1)', background: dayType === d.val ? d.bg : 'rgba(255,255,255,0.05)', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s', boxShadow: dayType === d.val ? `0 3px 12px ${d.glow}` : 'none' }}>
-              <div style={{ fontSize: '16px', marginBottom: '2px' }}>{d.icon}</div>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#fff' }}>{d.short}</div>
-              <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', marginTop: '1px' }}>{getDayMacros(profile, d.val)?.kcal || 0} kcal</div>
+              style={{ borderRadius:'14px', padding:'11px 6px', border: dayType===d.val ? 'none' : '1px solid rgba(255,255,255,0.1)', background: dayType===d.val ? d.bg : 'rgba(255,255,255,0.05)', cursor:'pointer', textAlign:'center', transition:'all 0.25s', boxShadow: dayType===d.val ? `0 4px 16px ${d.glow}` : 'none', transform: dayType===d.val ? 'scale(1.02)' : 'scale(1)' }}>
+              <div style={{ fontSize:'20px', marginBottom:'3px' }}>{d.icon}</div>
+              <div style={{ fontSize:'11px', fontWeight:800, color:'#fff', letterSpacing:'0.03em' }}>{d.short}</div>
+              <div style={{ fontSize:'9px', color:'rgba(255,255,255,0.55)', marginTop:'2px' }}>{getDayMacros(profile, d.val)?.kcal||0} kcal</div>
             </button>
           ))}
         </div>
 
-        {/* START / STOP ZI */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        {/* ── ROW 5: START / STOP ── */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'12px 16px 16px', position:'relative', zIndex:1 }}>
           <button onClick={handleStartZi} disabled={loading} className="btn-tap"
-            style={{ padding: '11px', background: loading && !stopZiSent ? 'linear-gradient(135deg,#059669,#047857)' : 'linear-gradient(135deg,#10b981,#059669)', border: 'none', borderRadius: '11px', color: '#fff', fontSize: '13px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: loading ? 0.8 : 1 }}>
-            {loading && startZiSent && !stopZiSent ? (
-              <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}/> AI gândește...</>
-            ) : startZiSent && !loading ? (
-              <><span>✓</span> Ziua a început</>
-            ) : '🌅 START ZI'}
+            style={{ padding:'13px', background: startZiSent&&!loading ? 'rgba(16,185,129,0.2)' : 'linear-gradient(135deg,#10b981,#059669)', border: startZiSent&&!loading ? '1.5px solid #10b981' : 'none', borderRadius:'13px', color:'#fff', fontSize:'13px', fontWeight:800, cursor:loading?'not-allowed':'pointer', fontFamily:'inherit', boxShadow: startZiSent&&!loading ? 'none' : '0 4px 14px rgba(16,185,129,0.45)', display:'flex', alignItems:'center', justifyContent:'center', gap:'7px', opacity:loading?0.8:1 }}>
+            {loading&&startZiSent&&!stopZiSent ? (<><div style={{ width:'13px', height:'13px', border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/> Gândesc...</>) : startZiSent&&!loading ? '✓ Zi pornită' : '🌅 START ZI'}
           </button>
           <button onClick={handleStopZi} disabled={loading} className="btn-tap"
-            style={{ padding: '11px', background: loading && stopZiSent ? 'linear-gradient(135deg,#6d28d9,#4c1d95)' : 'linear-gradient(135deg,#8b5cf6,#6366f1)', border: 'none', borderRadius: '11px', color: '#fff', fontSize: '13px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: loading ? 0.8 : 1 }}>
-            {loading && stopZiSent ? (
-              <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}/> AI gândește...</>
-            ) : stopZiSent && !loading ? (
-              <><span>✓</span> Sinteză gata</>
-            ) : '🌙 STOP ZI'}
+            style={{ padding:'13px', background: stopZiSent&&!loading ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg,#8b5cf6,#6366f1)', border: stopZiSent&&!loading ? '1.5px solid #8b5cf6' : 'none', borderRadius:'13px', color:'#fff', fontSize:'13px', fontWeight:800, cursor:loading?'not-allowed':'pointer', fontFamily:'inherit', boxShadow: stopZiSent&&!loading ? 'none' : '0 4px 14px rgba(139,92,246,0.45)', display:'flex', alignItems:'center', justifyContent:'center', gap:'7px', opacity:loading?0.8:1 }}>
+            {loading&&stopZiSent ? (<><div style={{ width:'13px', height:'13px', border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/> Gândesc...</>) : stopZiSent&&!loading ? '✓ Sinteză gata' : '🌙 STOP ZI'}
           </button>
         </div>
       </div>

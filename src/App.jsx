@@ -43,7 +43,7 @@ export default function App() {
   const [toast, setToast]         = useState(null);
   const [tabDir, setTabDir]       = useState(1); // 1=right, -1=left
   const touchStartX = useRef(null);
-  const TAB_ORDER = ['azi','progres','antrenament','profil'];
+  const TAB_ORDER = ['azi','progres','antrenament','profil','setari'];
   const messagesEndRef = useRef(null);
   const messagesRef    = useRef(messages);
 
@@ -332,44 +332,49 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
         )}
       </div>
 
-      {/* ── BOTTOM TAB BAR — MyFitnessPal style ── */}
-      <div style={{ background: darkMode ? 'rgba(7,10,18,0.97)' : 'rgba(255,255,255,0.97)', borderTop: `1px solid ${th.border}`, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', paddingBottom: 'max(10px,env(safe-area-inset-bottom))', paddingTop: '6px', flexShrink: 0, backdropFilter: 'blur(20px)', zIndex: 10, position: 'relative', minHeight: '68px' }}>
-        {/* Left tabs: Azi, Log */}
-        {[
-          { id: 'azi',      icon: '🏠', label: 'Azi'    },
-          { id: 'progres',  icon: '📊', label: 'Progres' },
-        ].map(t => (
-          <button key={t.id} onClick={() => switchTab(t.id)} className="btn-tap"
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 14px', flex: 1 }}>
-            <div style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', transition: 'all 0.2s', filter: tab === t.id ? 'none' : 'grayscale(0.3) opacity(0.6)' }}>
-              {t.icon}
-            </div>
-            <span style={{ fontSize: '10px', fontWeight: tab === t.id ? 700 : 400, color: tab === t.id ? th.accent : th.text3 }}>{t.label}</span>
-          </button>
-        ))}
+      {/* ── BOTTOM TAB BAR — MFP style, mare ── */}
+      <div style={{ background: darkMode ? 'rgba(7,10,18,0.98)' : 'rgba(255,255,255,0.98)', borderTop: `1px solid ${th.border}`, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', paddingBottom: 'max(14px,env(safe-area-inset-bottom))', paddingTop: '8px', flexShrink: 0, backdropFilter: 'blur(20px)', zIndex: 10, position: 'relative', minHeight: '76px' }}>
+
+        {/* Azi */}
+        <button onClick={() => switchTab('azi')} className="btn-tap"
+          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', background:'none', border:'none', cursor:'pointer', flex:1, paddingBottom:'2px' }}>
+          <div style={{ width:'34px', height:'34px', borderRadius:'12px', background: tab==='azi' ? (currentDay?.bg||'linear-gradient(135deg,#f97316,#ef4444)') : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', transition:'all 0.2s' }}>🏠</div>
+          <span style={{ fontSize:'11px', fontWeight: tab==='azi'?800:500, color: tab==='azi'?th.accent:th.text3, transition:'all 0.2s' }}>Azi</span>
+        </button>
+
+        {/* Progres */}
+        <button onClick={() => switchTab('progres')} className="btn-tap"
+          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', background:'none', border:'none', cursor:'pointer', flex:1, paddingBottom:'2px' }}>
+          <div style={{ width:'34px', height:'34px', borderRadius:'12px', background: tab==='progres' ? (currentDay?.bg||'linear-gradient(135deg,#f97316,#ef4444)') : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', transition:'all 0.2s' }}>📊</div>
+          <span style={{ fontSize:'11px', fontWeight: tab==='progres'?800:500, color: tab==='progres'?th.accent:th.text3, transition:'all 0.2s' }}>Progres</span>
+        </button>
 
         {/* CENTER + button */}
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-          <button onClick={() => { if(navigator.vibrate) navigator.vibrate(15); setShowFoodSearch(true); }} className="btn-tap"
-            style={{ width: '58px', height: '58px', borderRadius: '50%', background: currentDay?.bg || 'linear-gradient(135deg,#f97316,#ef4444)', border: '4px solid ' + (darkMode?'rgba(7,10,18,0.97)':'rgba(255,255,255,0.97)'), boxShadow: `0 4px 20px ${currentDay?.glow||'rgba(249,115,22,0.45)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'absolute', bottom: '8px', zIndex: 2 }}>
-            <span style={{ fontSize: '28px', color: '#fff', fontWeight: 300, lineHeight: 1, marginTop: '-2px' }}>+</span>
+        <div style={{ position:'relative', display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
+          <button onClick={() => { navigator.vibrate?.(15); setShowFoodSearch(true); }} className="btn-tap"
+            style={{ width:'62px', height:'62px', borderRadius:'50%', background: currentDay?.bg||'linear-gradient(135deg,#f97316,#ef4444)', border: `4px solid ${darkMode?'#070a12':'#fff'}`, boxShadow:`0 6px 24px ${currentDay?.glow||'rgba(249,115,22,0.5)'}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', position:'absolute', bottom:'10px', zIndex:2, transition:'transform 0.15s' }}>
+            <span style={{ fontSize:'30px', color:'#fff', lineHeight:1, marginTop:'-2px' }}>+</span>
           </button>
-          <span style={{ fontSize: '10px', color: th.text3, marginTop: '36px' }}>Log</span>
+          <span style={{ fontSize:'11px', color:th.text3, marginTop:'38px', fontWeight:500 }}>Log</span>
         </div>
 
-        {/* Right tabs: Sport, Eu */}
-        {[
-          { id: 'antrenament', icon: '💪', label: 'Sport'  },
-          { id: 'profil',      icon: '👤', label: 'Eu'     },
-        ].map(t => (
-          <button key={t.id} onClick={() => switchTab(t.id)} className="btn-tap"
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 14px', flex: 1 }}>
-            <div style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', transition: 'all 0.2s', filter: tab === t.id ? 'none' : 'grayscale(0.3) opacity(0.6)' }}>
-              {t.icon}
-            </div>
-            <span style={{ fontSize: '10px', fontWeight: tab === t.id ? 700 : 400, color: tab === t.id ? th.accent : th.text3 }}>{t.label}</span>
-          </button>
-        ))}
+        {/* Sport */}
+        <button onClick={() => switchTab('antrenament')} className="btn-tap"
+          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', background:'none', border:'none', cursor:'pointer', flex:1, paddingBottom:'2px' }}>
+          <div style={{ width:'34px', height:'34px', borderRadius:'12px', background: tab==='antrenament' ? (currentDay?.bg||'linear-gradient(135deg,#f97316,#ef4444)') : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', transition:'all 0.2s' }}>💪</div>
+          <span style={{ fontSize:'11px', fontWeight: tab==='antrenament'?800:500, color: tab==='antrenament'?th.accent:th.text3, transition:'all 0.2s' }}>Sport</span>
+        </button>
+
+        {/* Profil + Setări */}
+        <button onClick={() => switchTab(tab==='profil' ? 'setari' : 'profil')} className="btn-tap"
+          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', background:'none', border:'none', cursor:'pointer', flex:1, paddingBottom:'2px' }}>
+          <div style={{ width:'34px', height:'34px', borderRadius:'12px', background: (tab==='profil'||tab==='setari') ? (currentDay?.bg||'linear-gradient(135deg,#f97316,#ef4444)') : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', transition:'all 0.2s' }}>
+            {tab==='setari' ? '⚙️' : '👤'}
+          </div>
+          <span style={{ fontSize:'11px', fontWeight: (tab==='profil'||tab==='setari')?800:500, color: (tab==='profil'||tab==='setari')?th.accent:th.text3, transition:'all 0.2s' }}>
+            {tab==='setari' ? 'Setări' : 'Profil'}
+          </span>
+        </button>
       </div>
 
       {/* ── OVERLAYS ── */}

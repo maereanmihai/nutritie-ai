@@ -40,6 +40,8 @@ export default function App() {
   const [gymMode, setGymMode]     = useState(false);
   const [showFoodPicker, setShowFoodPicker] = useState(false);
   const [showFoodSearch, setShowFoodSearch] = useState(false);
+  const [showActionSheet, setShowActionSheet] = useState(false);
+  const [showPhotoMode, setShowPhotoMode] = useState(false);
   const [toast, setToast]         = useState(null);
   const [tabDir, setTabDir]       = useState(1); // 1=right, -1=left
   const touchStartX = useRef(null);
@@ -264,7 +266,7 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
             }}
             messages={messages} input={input} setInput={setInput}
             loading={loading} onSend={sendMessage} messagesEndRef={messagesEndRef}
-            onOpenFoodPicker={() => setShowFoodSearch(true)}
+            onOpenFoodPicker={() => setShowActionSheet(true)}
             onDeleteMeal={(id) => {
               const meal = todayMeals.find(m => m.id === id);
               if (!meal) return;
@@ -351,7 +353,7 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
 
         {/* CENTER + button */}
         <div style={{ position:'relative', display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
-          <button onClick={() => { navigator.vibrate?.(15); setShowFoodSearch(true); }} className="btn-tap"
+          <button onClick={() => { navigator.vibrate?.(15); setShowActionSheet(true); }} className="btn-tap"
             style={{ width:'62px', height:'62px', borderRadius:'50%', background: currentDay?.bg||'linear-gradient(135deg,#f97316,#ef4444)', border: `4px solid ${darkMode?'#070a12':'#fff'}`, boxShadow:`0 6px 24px ${currentDay?.glow||'rgba(249,115,22,0.5)'}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', position:'absolute', bottom:'10px', zIndex:2, transition:'transform 0.15s' }}>
             <span style={{ fontSize:'30px', color:'#fff', lineHeight:1, marginTop:'-2px' }}>+</span>
           </button>
@@ -378,6 +380,40 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
       </div>
 
       {/* ── OVERLAYS ── */}
+
+      {/* Action Sheet — selectează metoda de log */}
+      {showActionSheet && (
+        <div style={{ position:'fixed', inset:0, zIndex:300, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}
+          onClick={() => setShowActionSheet(false)}>
+          <div style={{ background:'rgba(0,0,0,0.5)', position:'absolute', inset:0 }}/>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: darkMode?'#0c1020':'#fff', borderRadius:'24px 24px 0 0', padding:'16px 16px max(24px,env(safe-area-inset-bottom))', position:'relative', zIndex:1 }}>
+            <div style={{ width:'40px', height:'4px', background: darkMode?'rgba(255,255,255,0.15)':'rgba(0,0,0,0.1)', borderRadius:'2px', margin:'0 auto 20px' }}/>
+            <div style={{ fontSize:'16px', fontWeight:800, color: darkMode?'#fff':'#0f172a', marginBottom:'16px', textAlign:'center' }}>Adaugă masă</div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'12px' }}>
+              {[
+                { icon:'🔍', label:'Caută aliment', sub:'Local · USDA · AI', color:'#f97316', action:() => { setShowActionSheet(false); setShowFoodSearch(true); } },
+                { icon:'📷', label:'Fotografiază', sub:'AI analizează macro', color:'#10b981', action:() => { setShowActionSheet(false); switchTab('alimente'); } },
+                { icon:'🔲', label:'Barcode', sub:'Scanează produsul', color:'#3b82f6', action:() => { setShowActionSheet(false); switchTab('alimente'); } },
+                { icon:'📋', label:'Listă & Template', sub:'Selectează cantități', color:'#8b5cf6', action:() => { setShowActionSheet(false); switchTab('alimente'); } },
+              ].map(opt => (
+                <button key={opt.label} onClick={opt.action} className="btn-tap"
+                  style={{ display:'flex', alignItems:'center', gap:'12px', padding:'14px', background: darkMode?'rgba(255,255,255,0.05)':'#f8fafc', border:`1px solid ${darkMode?'rgba(255,255,255,0.08)':'#e2e8f0'}`, borderRadius:'16px', cursor:'pointer', textAlign:'left' }}>
+                  <div style={{ width:'44px', height:'44px', borderRadius:'12px', background:`${opt.color}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', flexShrink:0 }}>{opt.icon}</div>
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ fontSize:'13px', fontWeight:700, color: darkMode?'#fff':'#0f172a' }}>{opt.label}</div>
+                    <div style={{ fontSize:'11px', color: darkMode?'rgba(255,255,255,0.4)':'#94a3b8', marginTop:'1px' }}>{opt.sub}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowActionSheet(false)}
+              style={{ width:'100%', padding:'14px', background: darkMode?'rgba(255,255,255,0.06)':'#f1f5f9', border:'none', borderRadius:'14px', color: darkMode?'rgba(255,255,255,0.5)':'#64748b', fontSize:'15px', fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+              Anulează
+            </button>
+          </div>
+        </div>
+      )}
       {gymMode && (
         <GymMode workouts={workouts} setWorkouts={setWorkouts}
           onClose={() => setGymMode(false)} onSendToCoach={sendMessage}

@@ -12,6 +12,7 @@ import ProfilTab from './components/ProfilTab';
 import FoodPickerModal from './components/FoodPickerModal';
 import GymMode from './components/GymMode';
 import { SetariTab } from './components/SetariTab';
+import FoodSearch from './components/FoodSearch';
 import { registerServiceWorker, scheduleSupplementNotifications } from './utils/notifications';
 
 // ─── Profile helpers ──────────────────────────────────────────────────────────
@@ -38,19 +39,19 @@ export default function App() {
   const [loading, setLoading]     = useState(false);
   const [gymMode, setGymMode]     = useState(false);
   const [showFoodPicker, setShowFoodPicker] = useState(false);
+  const [showFoodSearch, setShowFoodSearch] = useState(false);
   const [toast, setToast]         = useState(null);
   const [tabDir, setTabDir]       = useState(1); // 1=right, -1=left
   const touchStartX = useRef(null);
-  const TAB_ORDER = ['azi','alimente','antrenament','progres','profil','setari'];
+  const TAB_ORDER = ['azi','progres','antrenament','profil'];
   const messagesEndRef = useRef(null);
   const messagesRef    = useRef(messages);
 
   // ── Effects ────────────────────────────────────────────────────────────────
   useEffect(() => { messagesRef.current = messages; }, [messages]);
   useEffect(() => {
-    // Register SW and schedule supplement notifications
     registerServiceWorker().then(reg => {
-      if (reg && supplements?.length) {
+      if (reg && supplements?.length && Notification.permission === 'granted') {
         scheduleSupplementNotifications(supplements);
       }
     });
@@ -180,7 +181,8 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
       extractAndSave(reply);
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Eroare de conexiune.' }]);
+      const errMsg = e?.message?.includes('Timeout') ? e.message : '⚠️ Eroare de conexiune. Verifică internetul și încearcă din nou.';
+      setMessages(prev => [...prev, { role: 'assistant', content: errMsg }]);
     } finally {
       setLoading(false);
     }
@@ -262,7 +264,7 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
             }}
             messages={messages} input={input} setInput={setInput}
             loading={loading} onSend={sendMessage} messagesEndRef={messagesEndRef}
-            onOpenFoodPicker={() => setShowFoodPicker(true)}
+            onOpenFoodPicker={() => setShowFoodSearch(true)}
             onDeleteMeal={(id) => {
               const meal = todayMeals.find(m => m.id === id);
               if (!meal) return;
@@ -330,22 +332,42 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
         )}
       </div>
 
-      {/* ── BOTTOM TAB BAR ── */}
-      <div style={{ background: darkMode ? 'rgba(7,10,18,0.97)' : 'rgba(255,255,255,0.97)', borderTop: `1px solid ${th.border}`, display: 'flex', justifyContent: 'space-around', padding: '8px 0 max(8px,env(safe-area-inset-bottom))', flexShrink: 0, backdropFilter: 'blur(20px)', zIndex: 10 }}>
+      {/* ── BOTTOM TAB BAR — MyFitnessPal style ── */}
+      <div style={{ background: darkMode ? 'rgba(7,10,18,0.97)' : 'rgba(255,255,255,0.97)', borderTop: `1px solid ${th.border}`, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', paddingBottom: 'max(10px,env(safe-area-inset-bottom))', paddingTop: '6px', flexShrink: 0, backdropFilter: 'blur(20px)', zIndex: 10, position: 'relative', minHeight: '68px' }}>
+        {/* Left tabs: Azi, Log */}
         {[
-          { id: 'azi',          icon: '🏠', label: 'Azi'      },
-          { id: 'alimente',     icon: '🍽', label: 'Alimente' },
-          { id: 'antrenament',  icon: '💪', label: 'Sport'    },
-          { id: 'progres',      icon: '📊', label: 'Progres'  },
-          { id: 'profil',       icon: '👤', label: 'Profil'   },
-          { id: 'setari',       icon: '⚙️', label: 'Setări'   },
+          { id: 'azi',      icon: '🏠', label: 'Azi'    },
+          { id: 'progres',  icon: '📊', label: 'Progres' },
         ].map(t => (
           <button key={t.id} onClick={() => switchTab(t.id)} className="btn-tap"
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 10px', minWidth: '52px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: tab === t.id ? (currentDay?.bg || 'linear-gradient(135deg,#f97316,#ef4444)') : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', transition: 'all 0.2s' }}>
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 14px', flex: 1 }}>
+            <div style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', transition: 'all 0.2s', filter: tab === t.id ? 'none' : 'grayscale(0.3) opacity(0.6)' }}>
               {t.icon}
             </div>
-            <span style={{ fontSize: '10px', fontWeight: tab === t.id ? 700 : 400, color: tab === t.id ? th.accent : th.text3, transition: 'all 0.2s' }}>{t.label}</span>
+            <span style={{ fontSize: '10px', fontWeight: tab === t.id ? 700 : 400, color: tab === t.id ? th.accent : th.text3 }}>{t.label}</span>
+          </button>
+        ))}
+
+        {/* CENTER + button */}
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+          <button onClick={() => { if(navigator.vibrate) navigator.vibrate(15); setShowFoodSearch(true); }} className="btn-tap"
+            style={{ width: '58px', height: '58px', borderRadius: '50%', background: currentDay?.bg || 'linear-gradient(135deg,#f97316,#ef4444)', border: '4px solid ' + (darkMode?'rgba(7,10,18,0.97)':'rgba(255,255,255,0.97)'), boxShadow: `0 4px 20px ${currentDay?.glow||'rgba(249,115,22,0.45)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'absolute', bottom: '8px', zIndex: 2 }}>
+            <span style={{ fontSize: '28px', color: '#fff', fontWeight: 300, lineHeight: 1, marginTop: '-2px' }}>+</span>
+          </button>
+          <span style={{ fontSize: '10px', color: th.text3, marginTop: '36px' }}>Log</span>
+        </div>
+
+        {/* Right tabs: Sport, Eu */}
+        {[
+          { id: 'antrenament', icon: '💪', label: 'Sport'  },
+          { id: 'profil',      icon: '👤', label: 'Eu'     },
+        ].map(t => (
+          <button key={t.id} onClick={() => switchTab(t.id)} className="btn-tap"
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 14px', flex: 1 }}>
+            <div style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', transition: 'all 0.2s', filter: tab === t.id ? 'none' : 'grayscale(0.3) opacity(0.6)' }}>
+              {t.icon}
+            </div>
+            <span style={{ fontSize: '10px', fontWeight: tab === t.id ? 700 : 400, color: tab === t.id ? th.accent : th.text3 }}>{t.label}</span>
           </button>
         ))}
       </div>
@@ -357,6 +379,13 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
           profile={profile} th={th}
         />
       )}
+      {showFoodSearch && (
+        <FoodSearch th={th} darkMode={darkMode}
+          customFoods={customFoods} onAddMeal={addMeal}
+          onClose={() => setShowFoodSearch(false)}
+          dayType={dayType} todayStats={todayStats} dayMacros={dayMacros}
+        />
+      )}
       {showFoodPicker && (
         <FoodPickerModal th={th} darkMode={darkMode}
           customFoods={customFoods}
@@ -366,7 +395,7 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
         />
       )}
       {toast && (
-        <div style={{ position: 'fixed', bottom: '90px', left: '50%', transform: 'translateX(-50%)', background: darkMode ? '#1e293b' : '#fff', color: th.text, fontSize: '13px', fontWeight: 600, padding: '10px 20px', borderRadius: '100px', border: `1px solid ${th.border}`, zIndex: 100, whiteSpace: 'nowrap', boxShadow: '0 8px 30px rgba(0,0,0,0.2)', animation: 'fadeUp 0.3s ease' }}>{toast}</div>
+        <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', background: darkMode ? '#1e293b' : '#fff', color: th.text, fontSize: '13px', fontWeight: 600, padding: '10px 20px', borderRadius: '100px', border: `1px solid ${th.border}`, zIndex: 100, whiteSpace: 'nowrap', boxShadow: '0 8px 30px rgba(0,0,0,0.2)', animation: 'fadeUp 0.3s ease' }}>{toast}</div>
       )}
     </div>
   );

@@ -14,6 +14,7 @@ import GymMode from './components/GymMode';
 import { SetariTab } from './components/SetariTab';
 import FoodSearch from './components/FoodSearch';
 import { registerServiceWorker, scheduleSupplementNotifications } from './utils/notifications';
+import { prefetchCommonFoods } from './utils/prefetch';
 
 // ─── Profile helpers ──────────────────────────────────────────────────────────
 const defaultProfile = () => ({
@@ -40,8 +41,7 @@ export default function App() {
   const [gymMode, setGymMode]     = useState(false);
   const [showFoodPicker, setShowFoodPicker] = useState(false);
   const [showFoodSearch, setShowFoodSearch] = useState(false);
-  const [showActionSheet, setShowActionSheet] = useState(false);
-  const [showPhotoMode, setShowPhotoMode] = useState(false);
+
   const [toast, setToast]         = useState(null);
   const [tabDir, setTabDir]       = useState(1); // 1=right, -1=left
   const touchStartX = useRef(null);
@@ -57,6 +57,8 @@ export default function App() {
         scheduleSupplementNotifications(supplements);
       }
     });
+    // Pre-cache alimente comune în background — după 3s ca să nu blocheze UI
+    setTimeout(() => prefetchCommonFoods(), 3000);
   }, []);
   useEffect(() => { lsSave(K.theme, darkMode); }, [darkMode]);
   useEffect(() => { lsSave(K.session, { date: todayKey(), messages }); }, [messages]);
@@ -266,7 +268,7 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
             }}
             messages={messages} input={input} setInput={setInput}
             loading={loading} onSend={sendMessage} messagesEndRef={messagesEndRef}
-            onOpenFoodPicker={() => setShowActionSheet(true)}
+            onOpenFoodPicker={() => setShowFoodSearch(true)}
             onDeleteMeal={(id) => {
               const meal = todayMeals.find(m => m.id === id);
               if (!meal) return;
@@ -353,7 +355,7 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
 
         {/* CENTER + button */}
         <div style={{ position:'relative', display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
-          <button onClick={() => { navigator.vibrate?.(15); setShowActionSheet(true); }} className="btn-tap"
+          <button onClick={() => { navigator.vibrate?.(15); setShowFoodSearch(true); }} className="btn-tap"
             style={{ width:'62px', height:'62px', borderRadius:'50%', background: currentDay?.bg||'linear-gradient(135deg,#f97316,#ef4444)', border: `4px solid ${darkMode?'#070a12':'#fff'}`, boxShadow:`0 6px 24px ${currentDay?.glow||'rgba(249,115,22,0.5)'}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', position:'absolute', bottom:'10px', zIndex:2, transition:'transform 0.15s' }}>
             <span style={{ fontSize:'30px', color:'#fff', lineHeight:1, marginTop:'-2px' }}>+</span>
           </button>
@@ -378,6 +380,9 @@ ${isWorkout ? `## 🏋 PRE-WORKOUT\n## ⚡ POST-WORKOUT — fereastra anabolică
           </span>
         </button>
       </div>
+
+      {/* ── OVERLAYS ── */}
+
 
       {/* ── OVERLAYS ── */}
 
